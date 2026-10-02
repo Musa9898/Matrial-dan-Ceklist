@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Project Monitor Preview</title>
+  <style>
+    :root {
+      --primary-purple: #4f46e5;
+      --primary-dark: #3730a3;
+      --bg-light: #f8fafc;
+      --card-bg: #ffffff;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --border-subtle: #f1f5f9;
+      --success-green: #10b981;
+      --warning-orange: #f59e0b;
+      --danger-red: #ef4444;
+      --badge-plumbing-bg: #ede9fe;
+      --badge-plumbing-text: #6366f1;
+      --badge-electrical-bg: #e0e7ff;
+      --badge-electrical-text: #4f46e5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: #0b1120;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    /* Container Smartphone Frame */
+    .app-container {
+      width: 100%;
+      max-width: 412px;
+      height: 840px;
+      background: var(--bg-light);
+      border-radius: 28px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Header Ungu Melengkung */
+    .app-header {
+      background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+      color: white;
+      padding: 24px 20px 34px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      position: relative;
+    }
+
+    .project-info h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.3px;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: #e0e7ff;
+      margin-top: 4px;
+    }
+
+    .dot-pulse {
+      width: 7px;
+      height: 7px;
+      background-color: #34d399;
+      border-radius: 50%;
+    }
+
+    .btn-settings {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 50%;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: white;
+      transition: background 0.2s;
+    }
+
+    /* 3 Metrik Ringkasan Melayang */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      padding: 0 16px;
+      margin-top: -18px;
+      z-index: 10;
+    }
+
+    .metric-box {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 12px 6px;
+      text-align: center;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .metric-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .metric-val {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .color-purple { color: #4f46e5; }
+    .color-green { color: #10b981; }
+    .color-red { color: #ef4444; }
+
+    /* Area Konten Scroll */
+    .scroll-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 16px 85px 16px;
+    }
+
+    /* Sub-header Bar */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-action-primary {
+      background: #4f46e5;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 4px rgba(79, 70, 229, 0.25);
+    }
+
+    .btn-action-primary:active {
+      transform: scale(0.98);
+      background: #4338ca;
+    }
+
+    /* Kartu Item */
+    .item-card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      border: 1px solid #eef2f6;
+    }
+
+    .item-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .badge-category {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-plumbing { background: var(--badge-plumbing-bg); color: var(--badge-plumbing-text); }
+    .badge-electrical { background: var(--badge-electrical-bg); color: var(--badge-electrical-text); }
+
+    .status-text {
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .text-kurang { color: var(--warning-orange); }
+    .text-komplit { color: var(--success-green); }
+    .text-danger { color: var(--danger-red); }
+
+    .item-card-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 12px;
+    }
+
+    .item-card-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .item-card-meta b {
+      color: var(--text-dark);
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 7px;
+      background: #e2e8f0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 10px;
+      background: #4f46e5;
+      transition: width 0.3s ease;
+    }
+
+    .bar-fill.green {
+      background: #10b981;
+    }
+
+    /* Bottom Navigation Bar */
+    .bottom-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: white;
+      border-top: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 20;
+    }
+
+    .nav-button {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: none;
+      color: #94a3b8;
+      font-size: 0.7rem;
+      font-weight: 500;
+      cursor: pointer;
+      gap: 4px;
+    }
+
+    .nav-button.active {
+      color: #4f46e5;
+      font-weight: 700;
+    }
+
+    .nav-button svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
+    }
+
+    /* Modal Form Input Pop-up */
+    .modal-backdrop {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6);
+      display: none;
+      justify-content: center;
+      align-items: flex-end;
+      z-index: 100;
+    }
+
+    .modal-sheet {
+      background: white;
+      width: 100%;
+      max-height: 85%;
+      overflow-y: auto;
+      border-radius: 20px 20px 0 0;
+      padding: 20px;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+      animation: modalSlide 0.25s ease-out;
+    }
+
+    @keyframes modalSlide {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-sheet h3 {
+      font-size: 1rem;
+      color: var(--text-dark);
+      margin-bottom: 12px;
+    }
+
+    .scope-toggle {
+      display: flex;
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 3px;
+      margin-bottom: 12px;
+    }
+
+    .scope-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .scope-btn.active {
+      background: white;
+      color: #4f46e5;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .form-row {
+      margin-bottom: 10px;
+    }
+
+    .form-row label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-row input, .form-row select, .form-row textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 0.85rem;
+      outline: none;
+      background: white;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .btn-cancel {
+      flex: 1;
+      padding: 11px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: white;
+      color: var(--text-muted);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-save {
+      flex: 2;
+      padding: 11px;
+      border-radius: 8px;
+      border: none;
+      background: #4f46e5;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- Header Ungu Melengkung -->
+    <header class="app-header">
+      <div class="project-info">
+        <h1>
+          <span>👷</span> Proyek Sentral Tower
+        </h1>
+        <div class="status-indicator">
+          <div class="dot-pulse"></div>
+          <span>Mode Demo (Tersimpan di Lokal)</span>
+        </div>
+      </div>
+      <button class="btn-settings" onclick="alert('Pengaturan Koneksi Google Sheets')">
+        <svg style="width: 18px; height: 18px; fill: white;" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- 3 Metrik Box Melayang -->
+    <section class="metrics-row">
+      <div class="metric-box">
+        <div class="metric-label">Total Material</div>
+        <div class="metric-value color-purple">3 Item</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Ceklist Lolos</div>
+        <div class="metric-value color-green" id="metricLolos">1</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Kendala/Reject</div>
+        <div class="metric-value color-red" id="metricReject">1</div>
+      </div>
+    </section>
+
+    <!-- TAB 1: STOK & KEDATANGAN MATERIAL -->
+    <main class="scroll-content" id="tabViewMaterial">
+      <div class="section-header">
+        <div class="section-title">
+          <span>📦</span> Stok & Kedatangan
+        </div>
+        <button class="btn-action-primary" onclick="openInputModal()">
+          <span>🚚</span> + Catat Masuk
+        </button>
+      </div>
+
+      <!-- Item 1: Pipa PPR -->
+      <article class="item-card">
+        <div class="item-card-top">
+          <span class="badge-category badge-plumbing">PLUMBING</span>
+          <span class="status-text text-kurang">Kurang 130 Meter</span>
+        </div>
+        <div class="item-card-name">Pipa PPR PN 10 Dia 50mm</div>
+        <div class="item-card-meta">
+          <span>Diterima: <b>320</b> / 450 Meter</span>
+          <b>71%</b>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width: 71%;"></div>
+        </div>
+      </article>
+
+      <!-- Item 2: Kabel NYY -->
+      <article class="item-card">
+        <div class="item-card-top">
+          <span class="badge-category badge-electrical">ELECTRICAL</span>
+          <span class="status-text text-kurang">Kurang 600 Meter</span>
+        </div>
+        <div class="item-card-name">Kabel NYY 4x16mm</div>
+        <div class="item-card-meta">
+          <span>Diterima: <b>600</b> / 1200 Meter</span>
+          <b>50%</b>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width: 50%;"></div>
+        </div>
+      </article>
+
+      <!-- Item 3: Fitting Elbow -->
+      <article class="item-card">
+        <div class="item-card-top">
+          <span class="badge-category badge-plumbing">PLUMBING</span>
+          <span class="status-text text-komplit">✓ Komplit</span>
+        </div>
+        <div class="item-card-name">Fitting Elbow 90 PPR 50mm</div>
+        <div class="item-card-meta">
+          <span>Diterima: <b>150</b> / 150 Pcs</span>
+          <b>100%</b>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill green" style="width: 100%;"></div>
+        </div>
+      </article>
+    </main>
+
+    <!-- TAB 2: CEKLIST MEP -->
+    <main class="scroll-content" id="tabViewCeklist" style="display: none;">
+      <div class="section-header">
+        <div class="section-title">
+          <span>📋</span> Ceklist MEP Lapangan
+        </div>
+        <button class="btn-action-primary" onclick="openChecklistModal()">
+          + Inspeksi Baru
+        </button>
+      </div>
+
+      <div id="checklistCardList">
+        <article class="item-card">
+          <div class="item-card-top">
+            <span class="badge-category badge-electrical">LANTAI 3 - 2BR</span>
+            <span class="status-text text-danger">Defect (By VUK)</span>
+          </div>
+          <div class="item-card-name">Instalasi Stop Kontak (Kamar 1)</div>
+          <div class="item-card-meta">
+            <span>SPV: Wiwi</span>
+            <b>Progres: 50%</b>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width: 50%;"></div>
+          </div>
+        </article>
+
+        <article class="item-card">
+          <div class="item-card-top">
+            <span class="badge-category badge-plumbing">LANTAI 3 - SHAFT 1</span>
+            <span class="status-text text-komplit">✓ Selesai Tes Glontor</span>
+          </div>
+          <div class="item-card-name">Riser Pipa Air Kotor (AK)</div>
+          <div class="item-card-meta">
+            <span>SPV: Wiwi</span>
+            <b>Progres: 100%</b>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill green" style="width: 100%;"></div>
+          </div>
+        </article>
+      </div>
+    </main>
+
+    <!-- TAB 3: SURAT JALAN -->
+    <main class="scroll-content" id="tabViewSuratJalan" style="display: none;">
+      <div class="section-header">
+        <div class="section-title">
+          <span>📄</span> Riwayat Surat Jalan
+        </div>
+      </div>
+      <article class="item-card">
+        <div class="item-card-top">
+          <span class="badge-category badge-plumbing">SJ-2026-089</span>
+          <span class="status-text text-komplit">Diterima Gudang</span>
+        </div>
+        <div class="item-card-name">Pipa PPR PN 10 Dia 50mm (320 Meter)</div>
+        <div class="item-card-meta">
+          <span>Vendor: PT. Lesso Indonesia</span>
+          <b>Tgl: 29/09/2026</b>
+        </div>
+      </article>
+    </main>
+
+    <!-- MODAL 1: INPUT SURAT JALAN -->
+    <div class="modal-backdrop" id="modalInput">
+      <div class="modal-sheet">
+        <h3>Input Surat Jalan / Kedatangan</h3>
+        <div class="form-row">
+          <label>Pilih Material</label>
+          <select id="modalMat">
+            <option>Pipa PPR PN 10 Dia 50mm</option>
+            <option>Kabel NYY 4x16mm</option>
+            <option>Pipa BSP Sch.40 4'' (Spindo)</option>
+            <option>Inbowdos (Lesso)</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Jumlah Masuk</label>
+          <input type="number" id="modalQty" placeholder="Masukkan angka Qty">
+        </div>
+        <div class="form-row">
+          <label>Nomor Surat Jalan</label>
+          <input type="text" id="modalSJ" placeholder="Contoh: SJ-2026-091">
+        </div>
+        <div class="btn-group">
+          <button class="btn-cancel" onclick="closeInputModal()">Batal</button>
+          <button class="btn-save" onclick="saveNewDelivery()">Simpan Data</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 2: FORM CEKLIST MEP BARU -->
+    <div class="modal-backdrop" id="modalChecklist">
+      <div class="modal-sheet">
+        <h3>Form Inspeksi Ceklist MEP</h3>
+
+        <!-- Pilihan Lingkup -->
+        <div class="scope-toggle">
+          <button class="scope-btn active" id="btnScopeUnit" onclick="setScope('unit')">Unit Tipikal / Koridor</button>
+          <button class="scope-btn" id="btnScopeShaft" onclick="setScope('shaft')">Area SHAFT Riser</button>
+        </div>
+
+        <div class="form-row">
+          <label>Lantai Proyek</label>
+          <select id="formLantai">
+            <option value="Lantai 3">Lantai 3</option>
+            <option value="Lantai 4">Lantai 4</option>
+            <option value="Lantai 5">Lantai 5</option>
+            <option value="Lantai 6">Lantai 6</option>
+            <option value="Lantai 7">Lantai 7</option>
+            <option value="Lantai 8">Lantai 8</option>
+            <option value="Lantai 9">Lantai 9</option>
+            <option value="Lantai 10">Lantai 10</option>
+            <option value="Lantai 11">Lantai 11</option>
+            <option value="Lantai 12">Lantai 12</option>
+            <option value="Lantai 15">Lantai 15</option>
+            <option value="Lantai 16">Lantai 16</option>
+            <option value="Lantai 17">Lantai 17</option>
+            <option value="Lantai 18">Lantai 18</option>
+            <option value="Lantai 19">Lantai 19</option>
+            <option value="Lantai 20">Lantai 20</option>
+            <option value="Lantai 21">Lantai 21</option>
+            <option value="Lantai 22">Lantai 22</option>
+          </select>
+        </div>
+
+        <!-- Scope Area Unit -->
+        <div id="areaUnit">
+          <div class="grid-2">
+            <div class="form-row">
+              <label>Tipe Ruangan</label>
+              <select id="formTipe">
+                <option value="Standard">Standard</option>
+                <option value="2BR">2BR</option>
+                <option value="KORIDOR">KORIDOR</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Nomor Kamar</label>
+              <input type="text" id="formKamar" placeholder="misal: 01, 27">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label>Kategori Pekerjaan MEP</label>
+            <select id="formKategoriMEP">
+              <option value="Instalasi Penerangan">Instalasi Penerangan</option>
+              <option value="Instalasi Stop Kontak">Instalasi Stop Kontak</option>
+              <option value="Instalasi Pipa AC">Instalasi Pipa AC</option>
+              <option value="Instalasi Fire Alarm">Instalasi Fire Alarm</option>
+              <option value="Instalasi Splingker">Instalasi Splingker</option>
+              <option value="Instalasi Pipa AK">Instalasi Pipa AK (Air Kotor)</option>
+              <option value="ABK">ABK (Air Bekas)</option>
+              <option value="Instalasi Air Bersih">Instalasi Air Bersih</option>
+              <option value="Armature Lampu">Armature Lampu</option>
+              <option value="Head Splingker">Head Splingker</option>
+              <option value="MCB Box & KwH">MCB Box & KwH</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Scope Area Shaft -->
+        <div id="areaShaft" style="display: none;">
+          <div class="grid-2">
+            <div class="form-row">
+              <label>Nomor Shaft</label>
+              <select id="formShaftNo">
+                <option value="Shaft 1">Shaft 1</option>
+                <option value="Shaft 2">Shaft 2</option>
+                <option value="Shaft 3">Shaft 3</option>
+                <option value="Shaft 4">Shaft 4</option>
+                <option value="Shaft 5">Shaft 5</option>
+                <option value="Shaft 6">Shaft 6</option>
+                <option value="Shaft 7">Shaft 7</option>
+                <option value="Shaft 8">Shaft 8</option>
+                <option value="Shaft 9">Shaft 9</option>
+                <option value="Shaft 10">Shaft 10</option>
+                <option value="Shaft Utama Electrical">Shaft Utama Electrical</option>
+                <option value="Shaft Fire Fighting">Shaft Fire Fighting</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Item Riser</label>
+              <select id="formShaftItem">
+                <option value="Riser AK">Riser AK</option>
+                <option value="Riser Air Hujan">Riser Air Hujan</option>
+                <option value="Riser Air Bersih">Riser Air Bersih</option>
+                <option value="Feeder Electrical">Feeder Electrical</option>
+                <option value="Tes Glontor">Tes Glontor</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-row">
+            <label>Hasil Pemeriksaan</label>
+            <select id="formStatus">
+              <option value="OK">OK / Sesuai</option>
+              <option value="Defect">Defect (Temuan)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Nama SPV</label>
+            <input type="text" id="formSPV" placeholder="contoh: WIWI">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>Progres Fisik: <b id="valProgres" style="color: #4f46e5;">100%</b></label>
+          <input type="range" id="formProgres" min="0" max="100" value="100" 
+                 oninput="document.getElementById('valProgres').innerText = this.value + '%'">
+        </div>
+
+        <div class="form-row">
+          <label>Foto Dokumentasi (Kamera HP)</label>
+          <input type="file" accept="image/*" capture="environment">
+        </div>
+
+        <div class="form-row">
+          <label>Catatan Lapangan</label>
+          <textarea id="formCatatan" rows="2" placeholder="Catatan kendala atau penanganan by VUK..."></textarea>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn-cancel" onclick="closeChecklistModal()">Batal</button>
+          <button class="btn-save" onclick="saveNewChecklist()">Simpan Ceklist</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-bar">
+      <button class="nav-button" id="navMat" onclick="switchTab('material')">
+        <svg viewBox="0 0 20 20"><path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/><path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+        Material
+      </button>
+      <button class="nav-button active" id="navChk" onclick="switchTab('ceklist')">
+        <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+        Ceklist
+      </button>
+      <button class="nav-button" id="navSJ" onclick="switchTab('suratjalan')">
+        <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
+        Surat Jalan
+      </button>
+    </nav>
+
+  </div>
+
+  <script>
+    let currentScope = 'unit';
+    let countLolos = 1;
+    let countReject = 1;
+
+    function switchTab(tab) {
+      document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('tabViewMaterial').style.display = 'none';
+      document.getElementById('tabViewCeklist').style.display = 'none';
+      document.getElementById('tabViewSuratJalan').style.display = 'none';
+
+      if (tab === 'material') {
+        document.getElementById('navMat').classList.add('active');
+        document.getElementById('tabViewMaterial').style.display = 'block';
+      } else if (tab === 'ceklist') {
+        document.getElementById('navChk').classList.add('active');
+        document.getElementById('tabViewCeklist').style.display = 'block';
+      } else if (tab === 'suratjalan') {
+        document.getElementById('navSJ').classList.add('active');
+        document.getElementById('tabViewSuratJalan').style.display = 'block';
+      }
+    }
+
+    // Modal Input Kedatangan Material
+    function openInputModal() {
+      document.getElementById('modalInput').style.display = 'flex';
+    }
+    function closeInputModal() {
+      document.getElementById('modalInput').style.display = 'none';
+    }
+    function saveNewDelivery() {
+      const mat = document.getElementById('modalMat').value;
+      const qty = document.getElementById('modalQty').value;
+      const sj = document.getElementById('modalSJ').value;
+
+      if (!qty || !sj) {
+        alert('Mohon lengkapi Jumlah Masuk dan Nomor Surat Jalan!');
+        return;
+      }
+      alert(`Pencatatan Berhasil!\n\nMaterial: ${mat}\nQty: ${qty}\nNo. SJ: ${sj}`);
+      closeInputModal();
+    }
+
+    // Modal Ceklist Lapangan
+    function openChecklistModal() {
+      document.getElementById('modalChecklist').style.display = 'flex';
+    }
+    function closeChecklistModal() {
+      document.getElementById('modalChecklist').style.display = 'none';
+    }
+
+    function setScope(scope) {
+      currentScope = scope;
+      const btnUnit = document.getElementById('btnScopeUnit');
+      const btnShaft = document.getElementById('btnScopeShaft');
+      const areaUnit = document.getElementById('areaUnit');
+      const areaShaft = document.getElementById('areaShaft');
+
+      if (scope === 'unit') {
+        btnUnit.classList.add('active');
+        btnShaft.classList.remove('active');
+        areaUnit.style.display = 'block';
+        areaShaft.style.display = 'none';
+      } else {
+        btnShaft.classList.add('active');
+        btnUnit.classList.remove('active');
+        areaUnit.style.display = 'none';
+        areaShaft.style.display = 'block';
+      }
+    }
+
+    function saveNewChecklist() {
+      const lantai = document.getElementById('formLantai').value;
+      const status = document.getElementById('formStatus').value;
+      const progres = document.getElementById('formProgres').value;
+      const spv = document.getElementById('formSPV').value || 'Inspektor';
+      
+      let badgeText = "";
+      let itemTitle = "";
+
+      if (currentScope === 'unit') {
+        const tipe = document.getElementById('formTipe').value;
+        const kamar = document.getElementById('formKamar').value || '-';
+        const kategori = document.getElementById('formKategoriMEP').value;
+        badgeText = `${lantai.toUpperCase()} - ${tipe}`;
+        itemTitle = `${kategori} (Kamar ${kamar})`;
+      } else {
+        const shaft = document.getElementById('formShaftNo').value;
+        const itemShaft = document.getElementById('formShaftItem').value;
+        badgeText = `${lantai.toUpperCase()} - ${shaft.toUpperCase()}`;
+        itemTitle = itemShaft;
+      }
+
+      // Update Metrik
+      if (status === 'OK') {
+        countLolos++;
+        document.getElementById('metricLolos').innerText = countLolos;
+      } else {
+        countReject++;
+        document.getElementById('metricReject').innerText = countReject;
+      }
+
+      const isOk = status === 'OK';
+      const statusClass = isOk ? 'text-komplit' : 'text-danger';
+      const statusLabel = isOk ? '✓ Selesai Sesuai' : 'Defect (Temuan)';
+      const fillClass = isOk ? 'bar-fill green' : 'bar-fill';
+
+      // Buat Kartu Baru
+      const newCard = document.createElement('article');
+      newCard.className = 'item-card';
+      newCard.innerHTML = `
+        <div class="item-card-top">
+          <span class="badge-category badge-electrical">${badgeText}</span>
+          <span class="status-text ${statusClass}">${statusLabel}</span>
+        </div>
+        <div class="item-card-name">${itemTitle}</div>
+        <div class="item-card-meta">
+          <span>SPV: ${spv}</span>
+          <b>Progres: ${progres}%</b>
+        </div>
+        <div class="bar-track">
+          <div class="${fillClass}" style="width: ${progres}%;"></div>
+        </div>
+      `;
+
+      // Masukkan ke daftar paling atas
+      const list = document.getElementById('checklistCardList');
+      list.insertBefore(newCard, list.firstChild);
+
+      closeChecklistModal();
+      document.getElementById('formCatatan').value = '';
+    }
+  </script>
+</body>
+</html>

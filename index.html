@@ -1,0 +1,4963 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Project Monitor Preview</title>
+  <style>
+    :root {
+      --brand-navy: #29377d;
+      --brand-navy-deep: #161f4d;
+      --brand-gold: #f0b51b;
+      --brand-gold-light: #ffe28a;
+      --brand-gold-soft: #fff3c9;
+      --brand-blue-soft: #e9edf8;
+      --primary-purple: var(--brand-navy);
+      --primary-dark: var(--brand-navy-deep);
+      --bg-light: #f8fafc;
+      --card-bg: #ffffff;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --border-subtle: #f1f5f9;
+      --success-green: #10b981;
+      --warning-orange: #f59e0b;
+      --danger-red: #ef4444;
+      --badge-plumbing-bg: var(--brand-gold-soft);
+      --badge-plumbing-text: #755000;
+      --badge-electrical-bg: var(--brand-blue-soft);
+      --badge-electrical-text: var(--brand-navy);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: #0b1120;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 16px;
+    }
+
+    /* Container Smartphone Frame */
+    .app-container {
+      width: 100%;
+      max-width: 412px;
+      height: min(840px, calc(100dvh - 32px));
+      min-height: 480px;
+      background: var(--bg-light);
+      border-radius: 28px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .app-container[hidden],
+    .login-screen[hidden] {
+      display: none !important;
+    }
+
+    .login-screen {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 460px;
+      height: min(840px, calc(100dvh - 32px));
+      min-height: 480px;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 226, 138, 0.28);
+      border-radius: 24px;
+      background: var(--bg-light);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+    }
+
+    @keyframes screenFadeIn {
+      from { opacity: 0; transform: translateY(7px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes screenFadeOut {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-5px); }
+    }
+
+    .login-screen:not([hidden]),
+    .app-container:not([hidden]) {
+      animation: screenFadeIn 0.22s ease-out;
+    }
+
+    .screen-fade-out {
+      pointer-events: none;
+      animation: screenFadeOut 0.14s ease-in forwards;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .login-screen:not([hidden]),
+      .app-container:not([hidden]),
+      .screen-fade-out {
+        animation: none;
+      }
+    }
+
+    .login-brand {
+      position: relative;
+      overflow: hidden;
+      padding: 28px 24px 24px;
+      border-bottom: 3px solid var(--brand-gold);
+      background: linear-gradient(135deg, #33428f 0%, var(--brand-navy-deep) 100%);
+      color: #ffffff;
+      isolation: isolate;
+    }
+
+    .login-brand::after {
+      position: absolute;
+      top: 15px;
+      right: 14px;
+      z-index: -1;
+      width: 125px;
+      height: 110px;
+      background: url("victory-watermark.svg") center / contain no-repeat;
+      content: "";
+      opacity: 0.2;
+      pointer-events: none;
+    }
+
+    .login-brand-lockup {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .login-brand h1 {
+      max-width: 310px;
+      font-size: 1.35rem;
+      line-height: 1.2;
+      color: #ffffff;
+    }
+
+    .login-brand p {
+      max-width: 330px;
+      margin-top: 7px;
+      color: #e1e7f7;
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .login-form-body {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      padding: 22px 22px 18px;
+    }
+
+    .login-form-body .form-row {
+      margin-bottom: 14px;
+    }
+
+    .login-form-body .form-row label {
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 0.76rem;
+    }
+
+    .login-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: auto;
+      padding-top: 12px;
+    }
+
+    .login-actions .btn-save,
+    .login-actions .btn-cancel {
+      width: 100%;
+      flex: initial;
+    }
+
+    .login-footnote {
+      margin-top: 12px;
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    body.theme-dark .login-screen {
+      border-color: var(--border-subtle);
+      background: var(--bg-light);
+    }
+
+    body.theme-dark .login-form-body {
+      color: var(--text-dark);
+    }
+
+    .app-header {
+      background: linear-gradient(135deg, #33428f 0%, var(--brand-navy-deep) 100%);
+      color: white;
+      padding: 24px 20px 34px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      position: relative;
+      border-bottom: 3px solid var(--brand-gold);
+      isolation: isolate;
+    }
+
+    .app-header::before {
+      position: absolute;
+      top: -8px;
+      right: 42px;
+      width: 150px;
+      height: 118px;
+      background: url("victory-watermark.svg") center / contain no-repeat;
+      content: "";
+      opacity: 0.2;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .project-info {
+      min-width: 0;
+      flex: 1;
+      position: relative;
+      z-index: 1;
+    }
+
+    .app-header > .btn-settings {
+      position: relative;
+      z-index: 1;
+    }
+
+    .project-info h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.3px;
+    }
+
+    .project-switcher {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .project-switcher-title {
+      min-width: 0;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .header-brand-box {
+      display: flex;
+      flex: 0 0 68px;
+      width: 68px;
+      height: 68px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      padding: 4px;
+      border-radius: 10px;
+      background: #ffffff;
+      box-shadow: 0 2px 8px rgba(10, 16, 44, 0.2);
+    }
+
+    .header-brand-symbol {
+      display: block;
+      width: 40px;
+      height: 31px;
+      flex: 0 0 auto;
+    }
+
+    .header-brand-victory {
+      padding-bottom: 1px;
+      border-bottom: 1px solid #29377d;
+      color: #29377d;
+      font-size: 9px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .header-brand-construction {
+      color: #29377d;
+      font-size: 5px;
+      font-weight: 600;
+      line-height: 1;
+    }
+
+    .project-switcher-chevron {
+      flex: 0 0 auto;
+      font-size: 0.8rem;
+      opacity: 0.8;
+    }
+
+    .project-list {
+      max-height: 240px;
+      overflow-y: auto;
+      margin-bottom: 14px;
+    }
+
+    .project-option {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      gap: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      background: #ffffff;
+      color: var(--text-dark);
+      text-align: left;
+      font-size: 0.86rem;
+      cursor: pointer;
+    }
+
+    .project-option.active {
+      border-color: #4f46e5;
+      background: #eef2ff;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: #e0e7ff;
+      margin-top: 4px;
+    }
+
+    .dot-pulse {
+      width: 7px;
+      height: 7px;
+      background-color: #34d399;
+      border-radius: 50%;
+    }
+
+    .btn-settings {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 50%;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: white;
+      transition: background 0.2s;
+    }
+
+    /* 3 Metrik Ringkasan Melayang */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      padding: 0 16px;
+      margin-top: -18px;
+      z-index: 10;
+    }
+
+    .file-search-panel,
+    .material-search-panel {
+      position: relative;
+      z-index: 30;
+      padding: 0 16px;
+      margin-top: -18px;
+    }
+
+    .material-search-summary {
+      padding: 7px 3px 0;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+    }
+
+    .material-search-empty {
+      margin: 12px 0;
+    }
+
+    .material-search-empty[hidden] {
+      display: none;
+    }
+
+    .global-file-search {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 52px;
+      padding: 0 13px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: 0 4px 8px rgba(15, 23, 42, 0.08);
+    }
+
+    .global-file-search svg {
+      width: 19px;
+      height: 19px;
+      flex: 0 0 auto;
+      fill: var(--brand-navy);
+    }
+
+    .global-file-search input {
+      flex: 1;
+      width: 100%;
+      min-width: 0;
+      padding: 11px 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--text-dark);
+      font-size: 0.86rem;
+    }
+
+    .global-file-search button {
+      width: 28px;
+      height: 28px;
+      flex: 0 0 auto;
+      border: 0;
+      border-radius: 50%;
+      background: var(--brand-blue-soft);
+      color: var(--brand-navy);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .global-file-results {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 16px;
+      left: 16px;
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 6px;
+      border: 1px solid #dbe2ee;
+      border-radius: 10px;
+      background: #ffffff;
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18);
+    }
+
+    .global-file-result {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 9px;
+      border-bottom: 1px solid #edf0f5;
+    }
+
+    .global-file-result:last-child {
+      border-bottom: 0;
+    }
+
+    .global-file-result-info {
+      min-width: 0;
+    }
+
+    .global-file-result-name {
+      display: block;
+      overflow-wrap: anywhere;
+      color: var(--text-dark);
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    .global-file-result-meta {
+      display: block;
+      margin-top: 3px;
+      color: var(--text-muted);
+      font-size: 0.67rem;
+    }
+
+    .global-file-result button {
+      flex: 0 0 auto;
+      padding: 7px 9px;
+      border: 0;
+      border-radius: 7px;
+      background: var(--brand-navy);
+      color: #ffffff;
+      font-size: 0.68rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .metric-box {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 12px 6px;
+      text-align: center;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .metric-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .metric-val {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .color-purple { color: #4f46e5; }
+    .color-green { color: #10b981; }
+    .color-red { color: #ef4444; }
+
+    /* Area Konten Scroll */
+    .scroll-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 16px calc(85px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Sub-header Bar */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-action-primary {
+      background: #4f46e5;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 4px rgba(79, 70, 229, 0.25);
+    }
+
+    .btn-action-primary:active {
+      transform: scale(0.98);
+      background: #4338ca;
+    }
+
+    /* Kartu Item */
+    .item-card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      border: 1px solid #eef2f6;
+    }
+
+    .item-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .badge-category {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-plumbing { background: var(--badge-plumbing-bg); color: var(--badge-plumbing-text); }
+    .badge-electrical { background: var(--badge-electrical-bg); color: var(--badge-electrical-text); }
+
+    .status-text {
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .stock-warning-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 5px;
+      border-radius: 50%;
+      background: #ef4444;
+      vertical-align: middle;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.14);
+    }
+
+    .text-kurang { color: var(--warning-orange); }
+    .text-komplit { color: var(--success-green); }
+    .text-danger { color: var(--danger-red); }
+
+    .item-card-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 12px;
+    }
+
+    .item-card-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .item-card-meta b {
+      color: var(--text-dark);
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 7px;
+      background: #e2e8f0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 10px;
+      background: #4f46e5;
+      transition: width 0.3s ease;
+    }
+
+    .bar-fill.green {
+      background: #10b981;
+    }
+
+    /* Bottom Navigation Bar */
+    .bottom-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: calc(64px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      background: white;
+      border-top: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 20;
+    }
+
+    .nav-button {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: none;
+      color: #94a3b8;
+      font-size: 0.7rem;
+      font-weight: 500;
+      cursor: pointer;
+      gap: 4px;
+    }
+
+    .nav-button.active {
+      color: #4f46e5;
+      font-weight: 700;
+    }
+
+    .nav-button svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
+    }
+
+    /* Modal Form Input Pop-up */
+    .modal-backdrop {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6);
+      display: none;
+      justify-content: center;
+      align-items: flex-end;
+      z-index: 100;
+    }
+
+    .modal-sheet {
+      background: white;
+      width: 100%;
+      max-height: 85%;
+      overflow-y: auto;
+      position: relative;
+      border-radius: 20px 20px 0 0;
+      padding: 20px;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+      animation: modalSlide 0.25s ease-out;
+    }
+
+    @keyframes modalSlide {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-sheet h3 {
+      font-size: 1rem;
+      color: var(--text-dark);
+      margin-bottom: 12px;
+      padding-right: 42px;
+    }
+
+    .modal-close-button {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      margin: 0 0 -34px auto;
+      padding: 0;
+      border: 1px solid #dbe2ee;
+      border-radius: 50%;
+      background: #f8fafc;
+      color: var(--brand-navy);
+      font-size: 1.35rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .modal-close-button:hover {
+      border-color: var(--brand-gold);
+      background: var(--brand-gold-soft);
+    }
+
+    .app-notice-backdrop {
+      z-index: 160;
+      align-items: center;
+      padding: 16px;
+    }
+
+    .app-notice-sheet {
+      width: min(420px, 100%);
+      max-height: 70%;
+      border-radius: 14px;
+    }
+
+    .app-notice-message {
+      margin: 12px 0 4px;
+      color: var(--text-dark);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .scope-toggle {
+      display: flex;
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 3px;
+      margin-bottom: 12px;
+    }
+
+    .scope-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .scope-btn.active {
+      background: white;
+      color: #4f46e5;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .form-row {
+      margin-bottom: 10px;
+    }
+
+    .form-row label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .required-label::after {
+      content: " *";
+      color: #dc2626;
+    }
+
+    .form-hint {
+      display: block;
+      margin-top: 5px;
+      color: var(--text-muted);
+      font-size: 0.74rem;
+      line-height: 1.4;
+    }
+
+    .form-hint.is-error {
+      color: #b91c1c;
+      font-weight: 700;
+    }
+
+    .form-row input, .form-row select, .form-row textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 0.85rem;
+      outline: none;
+      background: white;
+    }
+
+    .form-row input.input-invalid {
+      border-color: #dc2626;
+      background: #fef2f2;
+      color: #991b1b;
+    }
+
+    .form-warning {
+      display: block;
+      margin-top: 5px;
+      color: #b91c1c;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .form-warning[hidden] {
+      display: none;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .btn-cancel {
+      flex: 1;
+      padding: 11px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: white;
+      color: var(--text-muted);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-save {
+      flex: 2;
+      padding: 11px;
+      border-radius: 8px;
+      border: none;
+      background: #4f46e5;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-save:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .inline-field {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn-inline {
+      flex-shrink: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: none;
+      background: #4f46e5;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .material-item {
+      cursor: pointer;
+    }
+
+    .detail-modal-sheet {
+      background: white;
+      width: 100%;
+      max-height: 85%;
+      overflow-y: auto;
+      position: relative;
+      border-radius: 20px 20px 0 0;
+      padding: 20px;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+      animation: modalSlide 0.25s ease-out;
+    }
+
+    .detail-modal-sheet > h3 {
+      padding-right: 42px;
+    }
+
+    .detail-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--text-dark);
+      margin: 8px 0 14px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .detail-stat {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .detail-stat span {
+      display: block;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .detail-stat strong {
+      font-size: 0.95rem;
+      line-height: 1.35;
+      color: var(--text-dark);
+    }
+
+    .checklist-detail-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .checklist-detail-grid .detail-stat:first-child {
+      grid-column: 1 / -1;
+    }
+
+    .checklist-detail-grid .detail-stat strong {
+      font-size: 0.88rem;
+      overflow-wrap: anywhere;
+    }
+
+    .detail-section {
+      margin-top: 10px;
+    }
+
+    .detail-section h4 {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .history-item {
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.75rem;
+      color: var(--text-dark);
+      font-weight: 700;
+    }
+
+    .history-photo {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      display: block;
+      margin-top: 8px;
+    }
+
+    .history-placeholder {
+      width: 100%;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 8px;
+    }
+
+    .detail-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .detail-actions .btn-primary-small {
+      flex: 1;
+    }
+
+    .history-usage {
+      margin-top: 8px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 12px;
+    }
+
+    .usage-tag {
+      display: inline-block;
+      background: #ddd6fe;
+      color: #5b21b6;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .usage-detail {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-top: 6px;
+    }
+
+    .btn-primary-small {
+      flex: 1;
+      padding: 11px;
+      border-radius: 8px;
+      border: none;
+      background: #4f46e5;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .checklist-filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .daily-report-title {
+      margin-bottom: 12px;
+      color: var(--text-dark);
+    }
+
+    .daily-report-title strong,
+    .daily-report-title span {
+      display: block;
+    }
+
+    .daily-report-title strong {
+      font-size: 0.95rem;
+      margin-bottom: 3px;
+    }
+
+    .daily-report-title span {
+      color: var(--text-muted);
+      font-size: 0.76rem;
+    }
+
+    .daily-report-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .daily-report-stat {
+      padding: 10px 6px;
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      background: #ffffff;
+      text-align: center;
+    }
+
+    .daily-report-stat strong,
+    .daily-report-stat span {
+      display: block;
+    }
+
+    .daily-report-stat strong {
+      color: #3730a3;
+      font-size: 1rem;
+    }
+
+    .daily-report-stat span {
+      margin-top: 3px;
+      color: var(--text-muted);
+      font-size: 0.65rem;
+    }
+
+    .daily-report-card {
+      cursor: pointer;
+    }
+
+    .daily-report-card:focus-visible {
+      outline: 2px solid #4f46e5;
+      outline-offset: 2px;
+    }
+
+    .daily-work-section {
+      margin-top: 16px;
+    }
+
+    .daily-work-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .daily-work-heading h3 {
+      color: var(--text-dark);
+      font-size: 0.86rem;
+    }
+
+    .daily-work-heading span {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+    }
+
+    .daily-work-area {
+      margin-top: 6px;
+      color: var(--text-muted);
+      font-size: 0.76rem;
+      line-height: 1.45;
+    }
+
+    .file-folder-list,
+    .project-file-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .file-folder-option,
+    .project-file-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      background: #ffffff;
+      color: var(--text-dark);
+      text-align: left;
+    }
+
+    .file-folder-option {
+      cursor: pointer;
+    }
+
+    .file-folder-main,
+    .project-file-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .project-file-row {
+      align-items: flex-start;
+    }
+
+    .project-file-main {
+      flex: 1 1 auto;
+    }
+
+    .project-file-main > span:not(.file-extension) {
+      display: block;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .file-folder-icon {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 auto;
+      border-radius: 8px;
+      background: var(--brand-gold-soft);
+      color: var(--brand-navy);
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .file-folder-name,
+    .project-file-name {
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .file-folder-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .project-file-name {
+      display: block;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      white-space: normal;
+    }
+
+    .file-folder-count,
+    .project-file-meta {
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      white-space: nowrap;
+    }
+
+    .file-folder-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .file-folder-toolbar .btn-cancel,
+    .file-folder-toolbar .btn-action-primary {
+      justify-content: center;
+      flex: 1;
+    }
+
+    .file-extension {
+      padding: 4px 7px;
+      border-radius: 6px;
+      background: var(--brand-blue-soft);
+      color: var(--brand-navy);
+      font-size: 0.66rem;
+      font-weight: 800;
+    }
+
+    .project-file-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .project-file-actions button {
+      padding: 6px 8px;
+      border: 0;
+      border-radius: 6px;
+      background: var(--brand-blue-soft);
+      color: var(--brand-navy);
+      font-size: 0.7rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .project-file-actions .file-delete-button {
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .checklist-filters input,
+    .checklist-filters select {
+      width: 100%;
+      min-width: 0;
+      padding: 9px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--text-dark);
+      font-size: 0.78rem;
+    }
+
+    .checklist-search {
+      grid-column: 1 / -1;
+    }
+
+    .checklist-photo-gallery {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .checklist-photo-selection {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      max-height: 150px;
+      margin-top: 8px;
+      overflow-y: auto;
+    }
+
+    .checklist-photo-file {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      min-width: 0;
+      padding: 6px 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 7px;
+      color: var(--text-muted);
+      font-size: 0.68rem;
+    }
+
+    .checklist-photo-file span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .checklist-photo-file button {
+      flex: 0 0 auto;
+      border: 0;
+      background: transparent;
+      color: #b91c1c;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .checklist-photo {
+      display: block;
+      width: 100%;
+      height: 140px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+
+    .checklist-note,
+    .checklist-followup,
+    .checklist-testing {
+      margin-top: 8px;
+      color: var(--text-muted);
+      font-size: 0.76rem;
+      line-height: 1.5;
+    }
+
+    .checklist-actions {
+      margin-top: 10px;
+    }
+
+    .checklist-card {
+      cursor: pointer;
+    }
+
+    .checklist-card:focus-visible {
+      outline: 2px solid #4f46e5;
+      outline-offset: 2px;
+    }
+
+    .checklist-status-history {
+      max-height: 130px;
+      overflow-y: auto;
+    }
+
+    .victory-mark {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      flex: 0 0 auto;
+      border: 1px solid rgba(255, 226, 138, 0.9);
+      border-radius: 7px;
+      background: linear-gradient(145deg, var(--brand-gold-light), var(--brand-gold));
+      color: var(--brand-navy-deep);
+      font-size: 1.05rem;
+      font-weight: 900;
+      box-shadow: 0 2px 8px rgba(10, 16, 44, 0.25);
+    }
+
+    body {
+      background-color: #101735;
+    }
+
+    .app-header {
+      background: linear-gradient(135deg, #33428f 0%, var(--brand-navy-deep) 100%);
+      border-bottom: 3px solid var(--brand-gold);
+    }
+
+    .status-indicator {
+      color: #f2f4fb;
+    }
+
+    .btn-settings {
+      border: 1px solid rgba(255, 226, 138, 0.5);
+      background: rgba(240, 181, 27, 0.2);
+    }
+
+    .btn-settings:hover {
+      background: rgba(240, 181, 27, 0.34);
+    }
+
+    .btn-action-primary,
+    .btn-save,
+    .btn-inline,
+    .btn-primary-small {
+      border-bottom: 2px solid var(--brand-gold);
+      background: var(--brand-navy);
+      box-shadow: 0 2px 5px rgba(41, 55, 125, 0.2);
+    }
+
+    .btn-action-primary:active {
+      background: var(--brand-navy-deep);
+    }
+
+    .btn-save:disabled {
+      border-bottom-color: transparent;
+    }
+
+    .color-purple,
+    .nav-button.active,
+    .scope-btn.active {
+      color: var(--brand-navy);
+    }
+
+    .project-option.active {
+      border-color: var(--brand-gold);
+      background: var(--brand-gold-soft);
+    }
+
+    .account-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      background: #f8fafc;
+    }
+
+    .account-avatar {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--brand-navy);
+      color: var(--brand-gold-light);
+      font-weight: 800;
+    }
+
+    .account-avatar-image {
+      width: 40px;
+      height: 40px;
+      flex: 0 0 auto;
+      border: 2px solid var(--brand-gold);
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .account-photo-actions {
+      display: flex;
+      gap: 8px;
+      margin: -6px 0 14px 52px;
+    }
+
+    .account-photo-actions button {
+      padding: 7px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      background: #ffffff;
+      color: var(--brand-navy);
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    body.theme-dark .account-photo-actions button {
+      border-color: #3a4962;
+      background: #1b2940;
+      color: #e1e9f8;
+    }
+
+    .account-info strong,
+    .account-info span {
+      display: block;
+    }
+
+    .account-info strong {
+      color: var(--text-dark);
+      font-size: 0.86rem;
+    }
+
+    .account-info span {
+      margin-top: 3px;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+    }
+
+    .logout-button {
+      flex: 1;
+      padding: 11px;
+      border: 1px solid #ef4444;
+      border-radius: 8px;
+      background: #fff;
+      color: #b91c1c;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .demo-logout-message {
+      margin: 8px 0 16px;
+      color: var(--text-muted);
+      font-size: 0.86rem;
+      line-height: 1.5;
+    }
+
+    .scope-btn.active {
+      border: 1px solid var(--brand-gold);
+    }
+
+    .usage-tag {
+      background: var(--brand-gold-soft);
+      color: var(--brand-navy-deep);
+    }
+
+    .detail-stat strong,
+    .daily-report-stat strong {
+      color: var(--brand-navy);
+    }
+
+    .bar-fill {
+      background: var(--brand-gold);
+    }
+
+    .nav-button {
+      position: relative;
+    }
+
+    .nav-button.active::after {
+      position: absolute;
+      right: calc(50% - 13px);
+      bottom: 0;
+      left: calc(50% - 13px);
+      height: 3px;
+      border-radius: 3px 3px 0 0;
+      background: var(--brand-gold);
+      content: "";
+    }
+
+    .form-row input:focus,
+    .form-row select:focus,
+    .form-row textarea:focus {
+      border-color: var(--brand-navy);
+      box-shadow: 0 0 0 2px rgba(240, 181, 27, 0.2);
+    }
+
+    #valProgres {
+      color: var(--brand-navy) !important;
+    }
+
+    body.theme-dark {
+      color-scheme: dark;
+      --bg-light: #0d1422;
+      --card-bg: #172235;
+      --text-dark: #edf2f7;
+      --text-muted: #aab6c9;
+      --border-subtle: #2c3a50;
+      --brand-gold-soft: #3d3218;
+      --brand-blue-soft: #253452;
+      --badge-plumbing-bg: #3d3218;
+      --badge-plumbing-text: #ffe08a;
+      --badge-electrical-bg: #253452;
+      --badge-electrical-text: #d3def8;
+      --warning-orange: #f4c66f;
+      --success-green: #4ade80;
+      background-color: #070b14;
+    }
+
+    body.theme-dark .app-container {
+      background: var(--bg-light);
+    }
+
+    body.theme-dark .account-card {
+      border-color: #3a4962;
+      background: #111c2e;
+    }
+
+    body.theme-dark .account-info strong {
+      color: #f1f5f9;
+    }
+
+    body.theme-dark .account-info span {
+      color: #c2ccdc;
+    }
+
+    body.theme-dark .account-avatar {
+      background: var(--brand-gold);
+      color: var(--brand-navy-deep);
+    }
+
+    body.theme-dark .metric-box,
+    body.theme-dark .item-card,
+    body.theme-dark .modal-sheet,
+    body.theme-dark .detail-modal-sheet,
+    body.theme-dark .bottom-bar,
+    body.theme-dark .history-item,
+    body.theme-dark .project-option,
+    body.theme-dark .file-folder-option,
+    body.theme-dark .project-file-row,
+    body.theme-dark .daily-report-stat,
+    body.theme-dark .global-file-search,
+    body.theme-dark .global-file-results,
+    body.theme-dark .detail-stat {
+      border-color: var(--border-subtle);
+      background: var(--card-bg);
+      color: var(--text-dark);
+    }
+
+    body.theme-dark .bar-track,
+    body.theme-dark .scope-toggle {
+      background: #27344a;
+    }
+
+    body.theme-dark .history-placeholder {
+      border-color: #43516a;
+      background: #111c2e;
+      color: var(--text-muted);
+    }
+
+    body.theme-dark .form-row input,
+    body.theme-dark .form-row select,
+    body.theme-dark .form-row textarea,
+    body.theme-dark .checklist-filters input,
+    body.theme-dark .checklist-filters select,
+    body.theme-dark .delivery-report-filters input {
+      border-color: #3a4962;
+      background: #111c2e;
+      color: var(--text-dark);
+    }
+
+    body.theme-dark .global-file-search input {
+      color: var(--text-dark);
+    }
+
+    body.theme-dark .form-row input::placeholder,
+    body.theme-dark .form-row textarea::placeholder,
+    body.theme-dark .checklist-filters input::placeholder,
+    body.theme-dark .global-file-search input::placeholder {
+      color: #9aa8bd;
+      opacity: 1;
+    }
+
+    body.theme-dark .btn-cancel {
+      border-color: #3a4962;
+      background: #1b2940;
+      color: #d7dfeb;
+    }
+
+    body.theme-dark .scope-btn.active {
+      border-color: var(--brand-gold);
+      background: #34405a;
+      color: var(--brand-gold-light);
+    }
+
+    body.theme-dark .project-option.active {
+      border-color: var(--brand-gold);
+      background: #39321e;
+    }
+
+    body.theme-dark .checklist-photo-file {
+      border-color: var(--border-subtle);
+      background: #111c2e;
+      color: var(--text-muted);
+    }
+
+    body.theme-dark .file-extension {
+      background: var(--brand-blue-soft);
+      color: var(--badge-electrical-text);
+    }
+
+    body.theme-dark .project-file-actions button {
+      background: var(--brand-blue-soft);
+      color: #e1e9f8;
+    }
+
+    body.theme-dark .project-file-actions .file-delete-button {
+      background: #44262b;
+      color: #ffb4b4;
+    }
+
+    body.theme-dark .daily-work-heading {
+      border-color: var(--border-subtle);
+    }
+
+    body.theme-dark .color-purple,
+    body.theme-dark .nav-button.active {
+      color: var(--brand-gold-light);
+    }
+
+    body.theme-dark .form-row input:focus,
+    body.theme-dark .form-row select:focus,
+    body.theme-dark .form-row textarea:focus {
+      border-color: var(--brand-gold);
+      box-shadow: 0 0 0 2px rgba(240, 181, 27, 0.18);
+    }
+
+    @media (max-width: 639px) {
+      .form-row input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]),
+      .form-row select,
+      .form-row textarea {
+        font-size: 16px;
+      }
+    }
+
+    @media (min-width: 640px) {
+      .app-container {
+        max-width: 760px;
+        height: min(920px, calc(100dvh - 32px));
+        border-radius: 22px;
+      }
+
+      .app-header {
+        padding: 28px 28px 38px;
+      }
+
+      .metrics-row {
+        gap: 14px;
+        padding: 0 24px;
+      }
+
+      .scroll-content {
+        padding: 24px 24px calc(92px + env(safe-area-inset-bottom, 0px));
+      }
+
+      #materialCardList,
+      #checklistCardList {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      #materialCardList .item-card,
+      #checklistCardList .item-card {
+        margin-bottom: 0;
+      }
+
+      #dailyWorkReportList {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      #dailyWorkReportList .daily-report-card {
+        margin-bottom: 0;
+      }
+
+      .file-folder-list,
+      .project-file-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .modal-backdrop {
+        align-items: center;
+        padding: 16px;
+      }
+
+      .modal-sheet,
+      .detail-modal-sheet {
+        width: min(680px, 100%);
+        max-height: calc(100dvh - 32px);
+        border-radius: 18px;
+        animation: modalFade 0.18s ease-out;
+      }
+
+      @keyframes modalFade {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    }
+
+    @media (min-width: 1100px) {
+      .app-container {
+        max-width: 1360px;
+        height: min(960px, calc(100dvh - 32px));
+        border-radius: 18px;
+      }
+
+      .app-header {
+        padding: 30px 36px 40px;
+      }
+
+      .metrics-row {
+        padding: 0 36px;
+      }
+
+      .scroll-content {
+        padding: 28px 36px calc(96px + env(safe-area-inset-bottom, 0px));
+      }
+
+      #materialCardList,
+      #checklistCardList {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      #dailyWorkReportList,
+      .file-folder-list,
+      .project-file-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .bottom-bar {
+        height: calc(72px + env(safe-area-inset-bottom, 0px));
+        justify-content: center;
+        gap: 28px;
+      }
+
+      .nav-button {
+        flex: 0 0 110px;
+      }
+
+      .modal-sheet {
+        width: min(700px, 100%);
+      }
+
+      .detail-modal-sheet {
+        width: min(860px, 100%);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="login-screen" id="loginScreen" hidden>
+    <section class="login-brand">
+      <div class="login-brand-lockup">
+        <span class="header-brand-box" aria-hidden="true">
+          <svg class="header-brand-symbol" viewBox="0 0 420 330" fill="none">
+            <path d="M52 28h76l116 238-38 64L52 28Z" fill="#29377D"/>
+            <path d="M242 28h78L244 222l-39 65-44-91L242 28Z" fill="#F0B51B"/>
+            <path d="m161 196 44 91 39-65-29-60-54 34Z" fill="#FFD85D"/>
+          </svg>
+          <span class="header-brand-victory">VICTORY</span>
+          <span class="header-brand-construction">CONSTRUCTION</span>
+        </span>
+      </div>
+      <h1>Project Monitor MEP</h1>
+      <p>Sistem Monitoring Material &amp; Checklist Proyek</p>
+    </section>
+    <div class="login-form-body">
+      <form id="loginForm" onsubmit="event.preventDefault(); loginToProject()">
+        <div class="form-row">
+          <label class="required-label" for="loginUserName">Nama Lengkap / ID Karyawan</label>
+          <input type="text" id="loginUserName" placeholder="Nama atau ID karyawan" autocomplete="username" required>
+        </div>
+        <div class="form-row">
+          <label class="required-label" for="loginUserRole">Peran / Jabatan</label>
+          <select id="loginUserRole" required>
+            <option value="" selected disabled>Pilih peran</option>
+            <option value="Site Engineer">Site Engineer</option>
+            <option value="Pelaksana Lapangan">Pelaksana Lapangan</option>
+            <option value="Logistik">Logistik</option>
+            <option value="Estimator/MEP">Estimator/MEP</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="required-label" for="loginProjectSelect">Nama Proyek</label>
+          <select id="loginProjectSelect" onchange="updateLoginProjectSelection()" required></select>
+        </div>
+        <div class="form-row" id="loginNewProjectRow" hidden>
+          <label class="required-label" for="loginNewProjectName">Nama Proyek Baru</label>
+          <input type="text" id="loginNewProjectName" placeholder="Masukkan nama proyek baru">
+        </div>
+        <div class="login-actions">
+          <button class="btn-save" type="submit">Masuk ke Proyek</button>
+          <button class="btn-cancel" id="loginAsGuestButton" type="button" onclick="loginAsGuest()">Masuk sebagai Mode Demo / Tamu</button>
+        </div>
+      </form>
+      <p class="login-footnote">Profil demo disimpan di browser ini dan belum diverifikasi sebagai akun kerja.</p>
+    </div>
+  </main>
+
+  <div class="app-container" id="dashboardApp" hidden>
+    <header class="app-header">
+      <div class="project-info">
+        <h1>
+          <button class="project-switcher" onclick="openProjectManager()" aria-label="Pilih proyek">
+            <span class="header-brand-box" aria-hidden="true">
+              <svg class="header-brand-symbol" viewBox="0 0 420 330" fill="none">
+                <path d="M52 28h76l116 238-38 64L52 28Z" fill="#29377D"/>
+                <path d="M242 28h78L244 222l-39 65-44-91L242 28Z" fill="#F0B51B"/>
+                <path d="m161 196 44 91 39-65-29-60-54 34Z" fill="#FFD85D"/>
+              </svg>
+              <span class="header-brand-victory">VICTORY</span>
+              <span class="header-brand-construction">CONSTRUCTION</span>
+            </span>
+            <span class="project-switcher-title" id="activeProjectName">Proyek Sentral Tower</span>
+            <span class="project-switcher-chevron" aria-hidden="true">⌄</span>
+          </button>
+        </h1>
+        <div class="status-indicator">
+          <div class="dot-pulse"></div>
+          <span id="headerSessionLabel">Victory Construction · Mode Demo Lokal</span>
+        </div>
+      </div>
+      <button class="btn-settings" onclick="openSettingsModal()" aria-label="Pengaturan tampilan" title="Pengaturan tampilan">
+        <svg style="width: 18px; height: 18px; fill: white;" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </header>
+
+    <section class="metrics-row" id="metricsRow">
+      <div class="metric-box">
+        <div class="metric-label">Total Material</div>
+        <div class="metric-value color-purple" id="metricTotalMaterials">3 Item</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Ceklist Lolos</div>
+        <div class="metric-value color-green" id="metricLolos">3</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Kendala/Reject</div>
+        <div class="metric-value color-red" id="metricReject">0</div>
+      </div>
+    </section>
+
+    <section class="file-search-panel" id="globalFileSearchPanel" aria-label="Pencarian file proyek" style="display: none;">
+      <div class="global-file-search">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M8.5 3a5.5 5.5 0 103.477 9.763l3.63 3.63a.75.75 0 101.06-1.061l-3.63-3.63A5.5 5.5 0 008.5 3zM4.5 8.5a4 4 0 118 0 4 4 0 01-8 0z" clip-rule="evenodd"/></svg>
+        <input id="globalFileSearchInput" type="search" placeholder="Cari file proyek aktif..." oninput="searchProjectFiles()" onkeydown="if(event.key === 'Escape') clearGlobalFileSearch()" aria-label="Cari file di proyek aktif">
+        <button id="globalFileSearchClear" type="button" onclick="clearGlobalFileSearch()" aria-label="Bersihkan pencarian" hidden>×</button>
+      </div>
+      <div class="global-file-results" id="globalFileSearchResults" hidden></div>
+    </section>
+
+    <section class="material-search-panel" id="materialSearchPanel" aria-label="Pencarian material" style="display: none;">
+      <div class="global-file-search">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M8.5 3a5.5 5.5 0 103.477 9.763l3.63 3.63a.75.75 0 101.06-1.061l-3.63-3.63A5.5 5.5 0 008.5 3zM4.5 8.5a4 4 0 118 0 4 4 0 01-8 0z" clip-rule="evenodd"/></svg>
+        <input id="materialSearchInput" type="search" placeholder="Cari nama material..." oninput="filterMaterialCards()" onkeydown="if(event.key === 'Escape') clearMaterialSearch()" aria-label="Cari material">
+        <button id="materialSearchClear" type="button" onclick="clearMaterialSearch()" aria-label="Bersihkan pencarian material" hidden>×</button>
+      </div>
+      <div class="material-search-summary" id="materialSearchSummary"></div>
+    </section>
+
+    <main class="scroll-content" id="tabViewMaterial">
+      <div class="section-header">
+        <div class="section-title">
+          <span>📦</span> Stok & Kedatangan
+        </div>
+        <button class="btn-action-primary" onclick="openInputModal()">
+          <span>🚚</span> + Catat Masuk
+        </button>
+      </div>
+
+      <div id="materialCardList"></div>
+      <div class="history-placeholder material-search-empty" id="materialSearchEmpty" hidden>Material tidak ditemukan.</div>
+    </main>
+
+    <main class="scroll-content" id="tabViewCeklist" style="display: none;">
+      <div class="section-header">
+        <div class="section-title">
+          <span>📋</span> Ceklist MEP Lapangan
+        </div>
+        <button class="btn-action-primary" onclick="openChecklistModal()">
+          + Inspeksi Baru
+        </button>
+      </div>
+
+      <div class="checklist-filters">
+        <input class="checklist-search" id="checklistSearch" type="search" placeholder="Cari area, pekerjaan, atau SPV" oninput="renderChecklistCards()" aria-label="Cari ceklist">
+        <select id="checklistFloorFilter" onchange="renderChecklistCards()" aria-label="Filter lantai">
+          <option value="">Semua Lantai</option>
+        </select>
+        <select id="checklistStatusFilter" onchange="renderChecklistCards()" aria-label="Filter status">
+          <option value="">Semua Status</option>
+          <option value="Belum">Belum Mulai</option>
+          <option value="Proses">Dalam Proses</option>
+          <option value="Selesai">Selesai</option>
+          <option value="Defect">Defect</option>
+        </select>
+      </div>
+      <div id="checklistCardList"></div>
+    </main>
+
+    <main class="scroll-content" id="tabViewSuratJalan" style="display: none;">
+      <div class="section-header">
+        <div class="section-title">
+          <span>📋</span> Laporan Harian MEP
+        </div>
+        <button class="btn-action-primary" onclick="openDailyWorkReportForm()">+ Laporan Harian</button>
+      </div>
+      <div class="checklist-filters">
+        <input class="checklist-search" id="dailyWorkSearch" type="search" placeholder="Cari tanggal, nama laporan, atau SPV" oninput="renderDailyWorkReport()" aria-label="Cari laporan harian">
+      </div>
+      <div id="dailyWorkReportList"></div>
+    </main>
+
+    <main class="scroll-content" id="tabViewFiles" style="display: none;">
+      <div class="section-header">
+        <div class="section-title"><span>📁</span> File Proyek</div>
+        <button class="btn-action-primary" id="addProjectFolderButton" onclick="openProjectFolderModal()">+ Folder</button>
+      </div>
+      <div class="form-hint" id="projectFilesSummary"></div>
+      <div id="projectFolderList" class="file-folder-list"></div>
+      <section id="projectFolderContents" style="display: none;">
+        <div class="file-folder-toolbar">
+          <button class="btn-cancel" type="button" onclick="showProjectFolders()">← Folder</button>
+          <button class="btn-action-primary" type="button" onclick="document.getElementById('projectFileInput').click()">+ Unggah File</button>
+        </div>
+        <div class="section-title" id="activeFolderTitle" style="margin-bottom: 10px;"></div>
+        <input type="file" id="projectFileInput" accept=".pdf,.dxf,application/pdf,application/dxf" multiple hidden onchange="handleProjectFileUpload(this.files)">
+        <div id="projectFileList" class="project-file-list"></div>
+      </section>
+    </main>
+
+    <div class="modal-backdrop" id="modalProjectFolder">
+      <div class="modal-sheet">
+        <h3>Tambah Folder Proyek</h3>
+        <div class="form-row">
+          <label class="required-label">Nama Folder</label>
+          <input type="text" id="newProjectFolderName" placeholder="Contoh: Gambar Kerja Lantai 3">
+        </div>
+        <div class="btn-group">
+          <button class="btn-cancel" onclick="closeProjectFolderModal()">Batal</button>
+          <button class="btn-save" onclick="createProjectFolder()">Buat Folder</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalConfirmFileDelete">
+      <div class="modal-sheet">
+        <h3>Hapus File</h3>
+        <div class="item-card-name" id="confirmDeleteFileName"></div>
+        <div class="form-hint">File ini akan dihapus dari proyek aktif.</div>
+        <div class="btn-group">
+          <button class="btn-cancel" type="button" onclick="closeProjectFileDeleteDialog()">Batal</button>
+          <button class="btn-save file-delete-confirm" type="button" onclick="confirmProjectFileDelete()">Hapus File</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop app-notice-backdrop" id="modalAppNotice" role="alertdialog" aria-modal="true" aria-labelledby="appNoticeTitle">
+      <div class="modal-sheet app-notice-sheet">
+        <h3 id="appNoticeTitle">Pemberitahuan</h3>
+        <div class="app-notice-message" id="appNoticeMessage"></div>
+        <div class="btn-group">
+          <button class="btn-save" type="button" onclick="closeAppNotice()">Mengerti</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalDailyWorkForm">
+      <div class="modal-sheet">
+        <h3>Tambah Laporan Harian</h3>
+        <div class="form-row">
+          <label class="required-label">Nama / Jenis Laporan</label>
+          <input type="text" id="dailyReportTitle" placeholder="Contoh: Rencana Kerja MEP" required>
+        </div>
+        <div class="grid-2">
+          <div class="form-row">
+            <label class="required-label">Tanggal</label>
+            <input type="date" id="dailyReportDate" required>
+          </div>
+          <div class="form-row">
+            <label class="required-label">SPV</label>
+            <input type="text" id="dailyReportSupervisor" placeholder="Nama SPV" required>
+          </div>
+        </div>
+        <div class="detail-section history-usage">
+          <h4>Tambah Penugasan</h4>
+          <div class="form-row">
+            <label class="required-label">Bidang</label>
+            <input type="text" id="dailyTaskDiscipline" placeholder="Contoh: Plumbing, Sprinkler, Elektrikal">
+          </div>
+          <div class="form-row">
+            <label class="required-label">Jenis Pekerjaan</label>
+            <input type="text" id="dailyTaskTitle" placeholder="Contoh: Instalasi air hujan">
+          </div>
+          <div class="form-row">
+            <label class="required-label">Area Pekerjaan</label>
+            <input type="text" id="dailyTaskArea" placeholder="Contoh: Lantai 3 - Area parkir">
+          </div>
+          <div class="form-row">
+            <label class="required-label">Jumlah Orang</label>
+            <input type="number" id="dailyTaskWorkers" min="1" step="1" inputmode="numeric" placeholder="Jumlah pekerja">
+          </div>
+          <button class="btn-primary-small" type="button" onclick="addDailyWorkTask()">+ Tambah Penugasan</button>
+          <div class="checklist-photo-selection" id="dailyTaskDraftList"></div>
+        </div>
+        <div class="btn-group">
+          <button class="btn-cancel" onclick="closeDailyWorkReportForm()">Batal</button>
+          <button class="btn-save" onclick="saveDailyWorkReport()">Simpan Laporan</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalDailyWorkDetail">
+      <div class="detail-modal-sheet">
+        <h3>Detail Laporan Harian</h3>
+        <div id="dailyWorkDetailContent"></div>
+        <div class="btn-group">
+          <button class="btn-cancel" onclick="closeDailyWorkDetail()">Tutup</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalInput">
+      <div class="modal-sheet">
+        <h3>Input Surat Jalan / Kedatangan</h3>
+        <div class="form-row">
+          <label class="required-label">Nama Material</label>
+          <input type="text" id="modalMat" placeholder="Contoh: Pipa BSP Sch.40 4\" (Spindo)" oninput="validateNewMaterialInput()" aria-describedby="modalMatWarning" required>
+          <span class="form-warning" id="modalMatWarning" role="alert" hidden>⚠ !!! DATA SUDAH ADA SEBELUMNYA</span>
+        </div>
+        <div class="form-row">
+          <label class="required-label">Satuan Material</label>
+          <select id="modalUnit" onchange="updateIncomingUnitSettings()" required>
+            <option value="Pcs">Pcs</option>
+            <option value="Batang">Batang</option>
+            <option value="Meter" selected>Meter</option>
+            <option value="Roll">Roll</option>
+            <option value="Kotak">Kotak</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="required-label">Jumlah Masuk <span id="incomingUnitLabel">(Meter)</span></label>
+          <input type="number" id="modalQty" min="0.01" step="any" inputmode="decimal" placeholder="Masukkan angka Qty" required>
+        </div>
+        <div class="form-row">
+          <label class="required-label">Tanggal Kedatangan</label>
+          <input type="date" id="modalDate" required>
+        </div>
+        <div class="form-row">
+          <label class="required-label">Nomor Surat Jalan</label>
+          <input type="text" id="modalSJ" placeholder="Contoh: SJ-2026-091" required>
+        </div>
+        <div class="form-row">
+          <label>Foto Surat Jalan</label>
+          <input type="file" id="modalPhoto" accept="image/*">
+        </div>
+        <div class="btn-group">
+          <button class="btn-cancel" onclick="closeInputModal()">Batal</button>
+          <button class="btn-save" id="saveDeliveryButton" onclick="saveNewDelivery()">Simpan Data</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalDetail">
+      <div class="detail-modal-sheet">
+        <h3>Detail Kedatangan Material</h3>
+        <div class="detail-title" id="detailMaterialName">-</div>
+        <div class="detail-grid">
+          <div class="detail-stat">
+            <span>Sisa Stock</span>
+            <strong id="detailRemaining">0</strong>
+          </div>
+          <div class="detail-stat">
+            <span>Total Diterima</span>
+            <strong id="detailReceived">0</strong>
+          </div>
+          <div class="detail-stat">
+            <span>Total Keluar</span>
+            <strong id="detailIssued">0</strong>
+          </div>
+        </div>
+        <div class="detail-section">
+          <h4>Riwayat Kedatangan</h4>
+          <div id="detailHistoryList"></div>
+        </div>
+        <div class="detail-section history-usage">
+          <h4>Riwayat Pengeluaran</h4>
+          <div id="detailUsageList"></div>
+        </div>
+        <div class="detail-actions">
+          <button class="btn-primary-small" onclick="addNewDeliveryForSelectedMaterial()">+ Tambah Kedatangan</button>
+          <button class="btn-primary-small" onclick="openIssueModal(selectedMaterialForEntry || '')">+ Catat Keluar</button>
+        </div>
+        <div class="btn-group">
+          <button class="btn-cancel" onclick="closeDetailModal()">Tutup</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalIssue">
+      <div class="modal-sheet">
+        <h3>Catat Pengambilan Material</h3>
+        <div class="form-row">
+          <label class="required-label">Nama Material</label>
+          <input type="text" id="issueMaterial" placeholder="Contoh: Pipa PPR PN 10 Dia 50mm" required>
+        </div>
+        <div class="grid-2">
+          <div class="form-row">
+            <label class="required-label">Petugas Logistik</label>
+            <input type="text" id="issueLogistik" placeholder="Nama petugas" required>
+          </div>
+          <div class="form-row">
+            <label class="required-label">Yang Mengambil</label>
+            <input type="text" id="issuePenerima" placeholder="Nama pekerja" required>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-row">
+            <label class="required-label">Jumlah Keluar <span id="issueUnitLabel"></span></label>
+            <input type="number" id="issueQty" min="0.01" step="any" inputmode="decimal" placeholder="Masukkan Qty" oninput="validateIssueQuantity()" required>
+            <span class="form-hint" id="issueStockHint" aria-live="polite"></span>
+          </div>
+          <div class="form-row">
+            <label class="required-label">Area Penggunaan</label>
+            <input type="text" id="issueArea" placeholder="contoh: Lantai 3 - Kamar 1" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="required-label">Jenis Pekerjaan</label>
+          <input type="text" id="issuePekerjaan" placeholder="contoh: Instalasi Air Bersih / Pemasangan Lampu" required>
+        </div>
+        <div class="form-row">
+          <label class="required-label">Tanggal Pengambilan</label>
+          <input type="date" id="issueDate" required>
+        </div>
+        <div class="btn-group">
+          <button class="btn-cancel" onclick="closeIssueModal()">Batal</button>
+          <button class="btn-save" id="issueSaveButton" onclick="saveMaterialIssue()">Simpan Pengeluaran</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalChecklistDetail">
+      <div class="detail-modal-sheet">
+        <h3>Detail Inspeksi Ceklist</h3>
+        <div class="detail-title" id="checklistDetailWork">-</div>
+        <div class="detail-grid checklist-detail-grid">
+          <div class="detail-stat">
+            <span>Area</span>
+            <strong id="checklistDetailArea">-</strong>
+          </div>
+          <div class="detail-stat">
+            <span>Tanggal</span>
+            <strong id="checklistDetailDate">-</strong>
+          </div>
+          <div class="detail-stat">
+            <span>SPV</span>
+            <strong id="checklistDetailSupervisor">-</strong>
+          </div>
+        </div>
+        <div class="detail-section">
+          <h4>Dokumentasi Foto</h4>
+          <div class="checklist-photo-gallery" id="checklistDetailPhotos"></div>
+        </div>
+        <div class="detail-section">
+          <h4>Catatan dan Pengetesan</h4>
+          <div id="checklistDetailNotes"></div>
+        </div>
+        <div class="detail-section">
+          <h4>Riwayat Perubahan Status</h4>
+          <div class="checklist-status-history" id="checklistStatusHistory"></div>
+        </div>
+        <div class="detail-section history-usage">
+          <h4>Perbarui Status</h4>
+          <div class="grid-2">
+            <div class="form-row">
+              <label class="required-label">Status</label>
+              <select id="checklistDetailStatus" onchange="updateChecklistDetailStatusControls()">
+                <option value="Belum">Belum Mulai</option>
+                <option value="Proses">Dalam Proses</option>
+                <option value="Selesai">Selesai</option>
+                <option id="detailStatusDefectOption" value="Defect">Defect</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Progres: <b id="checklistDetailProgressLabel">0%</b></label>
+              <input type="range" id="checklistDetailProgress" min="0" max="99" value="0" oninput="updateChecklistDetailProgressLabel()">
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-row">
+              <label class="required-label">Peran Pengubah</label>
+              <select id="checklistDetailActorRole" onchange="updateChecklistDetailActorName()">
+                <option value="SPV">SPV Pemeriksa</option>
+                <option value="PIC">PIC Tindak Lanjut</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="required-label">Nama Pengubah</label>
+              <input type="text" id="checklistDetailActorName" placeholder="Nama PIC atau SPV" required>
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn-save" onclick="saveChecklistStatusUpdate()">Simpan Perubahan Status</button>
+          </div>
+        </div>
+        <div class="btn-group">
+          <button class="btn-cancel" onclick="closeChecklistDetail()">Tutup</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalProjectManager">
+      <div class="modal-sheet">
+        <h3>Pilih Proyek</h3>
+        <div class="project-list" id="projectList"></div>
+        <div class="form-row">
+          <label class="required-label">Tambah Proyek</label>
+          <input type="text" id="newProjectName" placeholder="Contoh: Proyek Tower B">
+        </div>
+        <div class="btn-group">
+          <button class="btn-cancel" onclick="closeProjectManager()">Tutup</button>
+          <button class="btn-save" onclick="createProject()">+ Buat Proyek</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalSettings">
+      <div class="modal-sheet">
+        <h3>Pengaturan Tampilan</h3>
+        <div class="account-card">
+          <span class="account-avatar" id="accountAvatarFallback" aria-hidden="true">?</span>
+          <img class="account-avatar-image" id="accountAvatarImage" alt="Foto akun" hidden>
+          <span class="account-info">
+            <strong id="settingsAccountName">Belum masuk</strong>
+            <span id="settingsAccountStatus">Sesi belum aktif</span>
+          </span>
+        </div>
+        <div class="account-photo-actions">
+          <button type="button" onclick="document.getElementById('accountPhotoInput').click()">Unggah Foto</button>
+          <button type="button" onclick="clearAccountPhoto()">Hapus Foto</button>
+          <input type="file" id="accountPhotoInput" accept="image/*" capture="user" hidden onchange="saveAccountPhoto(this.files[0])">
+        </div>
+        <div class="form-row">
+          <label>Tema Aplikasi</label>
+          <div class="scope-toggle">
+            <button class="scope-btn" id="themeLightButton" type="button" onclick="setAppTheme('light')" aria-pressed="false">Terang</button>
+            <button class="scope-btn" id="themeDarkButton" type="button" onclick="setAppTheme('dark')" aria-pressed="false">Gelap</button>
+          </div>
+        </div>
+        <div class="btn-group">
+          <button class="logout-button" onclick="logoutAppSession()">Keluar</button>
+          <button class="btn-cancel" onclick="closeSettingsModal()">Tutup</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalChecklist">
+      <div class="modal-sheet">
+        <h3>Form Inspeksi Ceklist MEP</h3>
+
+        <div class="scope-toggle">
+          <button class="scope-btn active" id="btnScopeUnit" onclick="setScope('unit')">Area</button>
+          <button class="scope-btn" id="btnScopeShaft" onclick="setScope('shaft')">Area SHAFT Riser</button>
+        </div>
+
+        <div class="form-row">
+          <label class="required-label">Area / Lantai Proyek</label>
+          <input type="text" id="formLantai" placeholder="Contoh: Lantai 3, Basement, Rooftop" required>
+        </div>
+
+        <div class="form-row">
+          <label class="required-label">Tanggal Inspeksi</label>
+          <input type="date" id="formDate" required>
+        </div>
+
+        <div id="areaUnit">
+          <div class="grid-2">
+            <div class="form-row">
+              <label id="formTipeLabel">Tipe Ruangan</label>
+              <input type="text" id="formTipe" placeholder="Contoh: Standard, 2BR, Koridor" oninput="updateChecklistLocationControls()">
+            </div>
+            <div class="form-row">
+              <label id="formKamarLabel">Nomor Kamar</label>
+              <input type="text" id="formKamar" placeholder="Nomor kamar / area">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label id="formKategoriLabel">Jenis Pekerjaan MEP</label>
+            <input type="text" id="formKategoriMEP" placeholder="Contoh: Instalasi Penerangan, Fire Alarm">
+          </div>
+        </div>
+
+        <div id="areaShaft" style="display: none;">
+          <div class="grid-2">
+            <div class="form-row">
+              <label id="formShaftLabel">Nomor Shaft</label>
+              <input type="text" id="formShaftNo" placeholder="Contoh: Shaft 1, Shaft Utama">
+            </div>
+            <div class="form-row">
+              <label id="formShaftItemLabel">Item Riser / Pekerjaan</label>
+              <input type="text" id="formShaftItem" placeholder="Contoh: Riser Air Bersih, Tes Glontor">
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-row">
+            <label>Status Pemeriksaan</label>
+            <select id="formStatus" onchange="updateChecklistStatusControls()">
+              <option value="Belum">Belum Mulai</option>
+              <option value="Proses">Dalam Proses</option>
+              <option value="Selesai">Selesai</option>
+              <option value="Defect">Defect (Temuan)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="required-label">Nama SPV</label>
+            <input type="text" id="formSPV" placeholder="contoh: WIWI" required>
+          </div>
+        </div>
+
+        <div class="grid-2" id="defectFollowUpFields" style="display: none;">
+          <div class="form-row">
+            <label id="formPICLabel">PIC Tindak Lanjut</label>
+            <input type="text" id="formPIC" placeholder="Nama penanggung jawab">
+          </div>
+          <div class="form-row">
+            <label id="formDueDateLabel">Target Penyelesaian</label>
+            <input type="date" id="formDueDate">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>Progres Fisik: <b id="valProgres" style="color: #4f46e5;">100%</b></label>
+          <input type="range" id="formProgres" min="0" max="99" value="0" oninput="updateProgressLabel()">
+        </div>
+
+        <div class="form-row">
+          <label id="formPhotoLabel">Foto Dokumentasi</label>
+          <input type="file" id="formPhoto" accept="image/*" multiple onchange="addChecklistPhotos(this.files)">
+          <span class="form-hint" id="checklistPhotoCount" aria-live="polite"></span>
+          <div class="checklist-photo-selection" id="checklistPhotoSelection"></div>
+        </div>
+
+        <div class="form-row">
+          <label>Pengetesan / Hasil Uji</label>
+          <textarea id="formPengetesan" rows="2" placeholder="Contoh: Tes tekanan 6 bar - Lulus"></textarea>
+        </div>
+
+        <div class="form-row">
+          <label id="formCatatanLabel">Catatan Lapangan</label>
+          <textarea id="formCatatan" rows="2" placeholder="Catatan kendala atau penanganan by VUK..."></textarea>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn-cancel" onclick="closeChecklistModal()">Batal</button>
+          <button class="btn-save" onclick="saveNewChecklist()">Simpan Ceklist</button>
+        </div>
+      </div>
+    </div>
+
+    <nav class="bottom-bar">
+      <button class="nav-button active" id="navMat" onclick="switchTab('material')">
+        <svg viewBox="0 0 20 20"><path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/><path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+        Material
+      </button>
+      <button class="nav-button" id="navChk" onclick="switchTab('ceklist')">
+        <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+        Ceklist
+      </button>
+      <button class="nav-button" id="navSJ" onclick="switchTab('suratjalan')">
+        <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
+        Laporan
+      </button>
+      <button class="nav-button" id="navFiles" onclick="switchTab('files')">
+        <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.5 5A1.5 1.5 0 014 3.5h4l1.5 1.75H16A1.5 1.5 0 0117.5 6.75v8.25A1.5 1.5 0 0116 16.5H4A1.5 1.5 0 012.5 15V5zm3.25 4a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5zm0 3a.75.75 0 000 1.5h5.5a.75.75 0 000-1.5h-5.5z" clip-rule="evenodd"/></svg>
+        File
+      </button>
+    </nav>
+
+  </div>
+
+  <script>
+    let currentScope = 'unit';
+    let selectedMaterialForEntry = '';
+    let selectedChecklistDetailId = '';
+    let selectedChecklistPhotoFiles = [];
+    const CHECKLIST_STORAGE_KEY = 'project-monitor-checklists';
+    const PROJECT_REGISTRY_KEY = 'project-monitor-projects';
+    const ACTIVE_PROJECT_KEY = 'project-monitor-active-project';
+    const PROJECT_DATA_PREFIX = 'project-monitor-project-data:';
+    const THEME_STORAGE_KEY = 'project-monitor-theme';
+    const AUTH_STATE_KEY = 'isLoggedIn';
+    const AUTH_PROFILE_KEY = 'project-monitor-user-profile';
+    const PROJECT_FOLDER_PREFIX = 'project-monitor-project-folders:';
+    const PROJECT_FILES_DATABASE = 'project-monitor-file-storage';
+    const DEFAULT_PROJECT_ID = 'sentral-tower';
+
+    function readLocalStorage(key) {
+      try {
+        return localStorage.getItem(key);
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function writeLocalStorage(key, value) {
+      try {
+        localStorage.setItem(key, value);
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function removeLocalStorage(key) {
+      try {
+        localStorage.removeItem(key);
+      } catch (error) {}
+    }
+
+    let projectRegistry = [];
+    let activeProjectId = DEFAULT_PROJECT_ID;
+    let projectFolders = [];
+    let activeFileFolderId = null;
+    let pendingProjectFileDeleteId = null;
+    let accountPhotoObjectUrl = null;
+    let globalFileSearchRequestId = 0;
+    const defaultChecklistItems = [
+      {
+        id: 'seed-defect-1',
+        scope: 'unit',
+        floor: 'Lantai 3',
+        roomType: '2BR',
+        room: '1',
+        work: 'Instalasi Stop Kontak',
+        status: 'Defect',
+        supervisor: 'Wiwi',
+        progress: 50,
+        date: '2026-09-30',
+        note: 'Ada temuan pada instalasi stop kontak.',
+        photo: null,
+        assignee: 'Belum ditentukan',
+        dueDate: ''
+      },
+      {
+        id: 'seed-complete-2',
+        scope: 'shaft',
+        floor: 'Lantai 3',
+        shaft: 'Shaft 1',
+        work: 'Riser Pipa Air Kotor (AK)',
+        status: 'Selesai',
+        supervisor: 'Wiwi',
+        progress: 100,
+        date: '2026-09-30',
+        note: '',
+        photo: null,
+        assignee: '',
+        dueDate: ''
+      }
+    ];
+
+    function loadChecklistItems() {
+      try {
+        const savedItems = JSON.parse(localStorage.getItem(CHECKLIST_STORAGE_KEY));
+        return Array.isArray(savedItems) ? savedItems : [...defaultChecklistItems];
+      } catch (error) {
+        return [...defaultChecklistItems];
+      }
+    }
+
+    let checklistItems = loadChecklistItems();
+
+    function persistChecklistItems() {
+      return persistActiveProjectData();
+    }
+
+    const deliveryHistory = {
+      'Pipa PPR PN 10 Dia 50mm': [
+        { date: '29/09/2026', qty: 320, sj: 'SJ-2026-089', photo: null }
+      ],
+      'Kabel NYY 4x16mm': [
+        { date: '28/09/2026', qty: 600, sj: 'SJ-2026-088', photo: null }
+      ],
+      'Fitting Elbow 90 PPR 50mm': [
+        { date: '27/09/2026', qty: 150, sj: 'SJ-2026-087', photo: null }
+      ]
+    };
+
+    const usageHistory = {
+      'Pipa PPR PN 10 Dia 50mm': [
+        {
+          date: '29/09/2026',
+          qty: 25,
+          petugasLogistik: 'Arif',
+          penerima: 'Budi',
+          area: 'Lantai 3 - Kamar 1',
+          pekerjaan: 'Instalasi Air Bersih'
+        }
+      ],
+      'Kabel NYY 4x16mm': [
+        {
+          date: '28/09/2026',
+          qty: 120,
+          petugasLogistik: 'Deni',
+          penerima: 'Rafli',
+          area: 'Lantai 5 - Koridor Utama',
+          pekerjaan: 'Instalasi Penerangan'
+        }
+      ]
+    };
+
+    let materialItems = [
+      { category: 'PLUMBING', name: 'Pipa PPR PN 10 Dia 50mm', received: 320, issued: 25, target: 450, unit: 'Meter' },
+      { category: 'ELECTRICAL', name: 'Kabel NYY 4x16mm', received: 600, issued: 120, target: 1200, unit: 'Meter' },
+      { category: 'PLUMBING', name: 'Fitting Elbow 90 PPR 50mm', received: 150, issued: 0, target: 150, unit: 'Pcs' }
+    ];
+
+    function parseNonNegativeNumber(value) {
+      if (value === '' || value === null || value === undefined) return null;
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && parsed >= 0 && parsed <= Number.MAX_SAFE_INTEGER ? parsed : null;
+    }
+
+    function parsePositiveNumber(value) {
+      const parsed = parseNonNegativeNumber(value);
+      return parsed !== null && parsed > 0 ? parsed : null;
+    }
+
+    function getMaterialStock(item) {
+      const received = parseNonNegativeNumber(item.received) ?? 0;
+      const issued = parseNonNegativeNumber(item.issued) ?? 0;
+      return Math.max(received - issued, 0);
+    }
+
+    function normalizeMaterialName(name) {
+      return name.normalize('NFKC').toLocaleLowerCase('id-ID')
+        .replace(/\bdia\s*\.?\s*(\d+(?:[.,]\d+)?)\s*(mm)?\b/g, (_, size) => `dia${size.replace(',', '.')}mm`)
+        .replace(/\bpn\s*(\d+(?:[.,]\d+)?)/g, (_, pressure) => `pn${pressure.replace(',', '.')}`)
+        .replace(/(\d)\s*mm\b/g, '$1')
+        .replace(/[.,]/g, ' ')
+        .trim()
+        .replace(/\s+/g, ' ');
+    }
+
+    function getTrailingMaterialSize(name) {
+      const match = normalizeMaterialName(name).match(/^(.*\S)\s+(\d+(?:x\d+)?(?:\s+\d+)?)$/);
+      return match ? { base: match[1], size: match[2] } : null;
+    }
+
+    function materialNamesMatch(firstName, secondName) {
+      const first = normalizeMaterialName(firstName);
+      const second = normalizeMaterialName(secondName);
+      if (first === second) return true;
+
+      const firstSize = getTrailingMaterialSize(firstName);
+      const secondSize = getTrailingMaterialSize(secondName);
+      return Boolean(
+        (firstSize && firstSize.base === second) ||
+        (secondSize && secondSize.base === first)
+      );
+    }
+
+    function mergeDuplicateMaterials() {
+      const groups = [];
+      materialItems.forEach((item) => {
+        const group = groups.find((candidate) => candidate.every((member) => materialNamesMatch(item.name, member.name)));
+        if (group) group.push(item);
+        else groups.push([item]);
+      });
+
+      const mergedItems = [];
+      groups.forEach((group) => {
+        const canonicalItem = group.find((item) => getTrailingMaterialSize(item.name)) || group[0];
+        const names = [...new Set(group.map((item) => item.name))];
+        canonicalItem.received = group.reduce((total, item) => total + (parseNonNegativeNumber(item.received) ?? 0), 0);
+        canonicalItem.issued = group.reduce((total, item) => total + (parseNonNegativeNumber(item.issued) ?? 0), 0);
+        canonicalItem.target = group.reduce((total, item) => total + (parseNonNegativeNumber(item.target) ?? 0), 0);
+        deliveryHistory[canonicalItem.name] = names.flatMap((name) => deliveryHistory[name] || []);
+        usageHistory[canonicalItem.name] = names.flatMap((name) => usageHistory[name] || []);
+
+        names.forEach((name) => {
+          if (name !== canonicalItem.name) {
+            delete deliveryHistory[name];
+            delete usageHistory[name];
+          }
+        });
+        mergedItems.push(canonicalItem);
+      });
+
+      materialItems = mergedItems;
+    }
+
+    function validateNewMaterialInput() {
+      const input = document.getElementById('modalMat');
+      const warning = document.getElementById('modalMatWarning');
+      const saveButton = document.getElementById('saveDeliveryButton');
+      const isDuplicate = !input.readOnly && input.value.trim() !== '' && materialItems.some((item) => materialNamesMatch(input.value, item.name));
+
+      input.classList.toggle('input-invalid', isDuplicate);
+      input.setAttribute('aria-invalid', String(isDuplicate));
+      warning.hidden = !isDuplicate;
+      saveButton.disabled = isDuplicate;
+      return !isDuplicate;
+    }
+
+    function detectCategory(name) {
+      const text = name.toLowerCase();
+      if (text.includes('kabel') || text.includes('elektr') || text.includes('listrik') || text.includes('nny') || text.includes('wire')) {
+        return 'ELECTRICAL';
+      }
+      return 'PLUMBING';
+    }
+
+    function filterMaterialCards() {
+      const input = document.getElementById('materialSearchInput');
+      const cards = [...document.querySelectorAll('#materialCardList .material-item')];
+      const query = input.value.trim().toLocaleLowerCase('id-ID');
+      let visibleCount = 0;
+
+      cards.forEach((card) => {
+        const matches = !query || card.textContent.toLocaleLowerCase('id-ID').includes(query);
+        card.hidden = !matches;
+        if (matches) visibleCount++;
+      });
+
+      document.getElementById('materialSearchClear').hidden = !query;
+      document.getElementById('materialSearchSummary').textContent = query
+        ? `${visibleCount} dari ${cards.length} material ditemukan.`
+        : `${cards.length} material tersedia di proyek ini.`;
+      document.getElementById('materialSearchEmpty').hidden = !query || visibleCount > 0;
+    }
+
+    function clearMaterialSearch() {
+      document.getElementById('materialSearchInput').value = '';
+      filterMaterialCards();
+    }
+
+    function renderMaterialCards() {
+      const list = document.getElementById('materialCardList');
+      if (!list) return;
+
+      mergeDuplicateMaterials();
+
+      list.innerHTML = materialItems.map((item) => {
+        const stock = getMaterialStock(item);
+        const target = parseNonNegativeNumber(item.target) ?? 0;
+        const unit = escapeHtml(item.unit || '');
+        const percentage = target > 0 ? Math.min(100, (stock / target) * 100) : 0;
+        const isLowStock = target > 0 && stock / target < 0.1;
+        const isComplete = stock >= target;
+        const statusText = isComplete ? '✓ Komplit' : `Sisa ${stock} ${unit}`;
+        const statusClass = isComplete ? 'text-komplit' : 'text-kurang';
+        const barClass = isComplete ? 'bar-fill green' : 'bar-fill';
+
+        return `
+          <article class="item-card material-item" data-name="${escapeHtml(item.name)}" tabindex="0">
+            <div class="item-card-top">
+              <span class="badge-category ${item.category === 'ELECTRICAL' ? 'badge-electrical' : 'badge-plumbing'}">${escapeHtml(item.category)}</span>
+              <span class="status-text ${statusClass}">${isLowStock ? '<span class="stock-warning-dot" title="Stok kurang dari 10% target" aria-label="Stok kurang dari 10% target"></span>' : ''}${statusText}</span>
+            </div>
+            <div class="item-card-name">${escapeHtml(item.name)}</div>
+            <div class="item-card-meta">
+              <span>Sisa: <b>${stock}</b> / ${target} ${unit}</span>
+              <b>${Math.round(percentage)}%</b>
+            </div>
+            <div class="bar-track">
+              <div class="${barClass}" style="width: ${percentage}%;"></div>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      list.querySelectorAll('.material-item').forEach((card) => {
+        card.addEventListener('click', () => openMaterialDetail(card.dataset.name));
+        card.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openMaterialDetail(card.dataset.name);
+          }
+        });
+      });
+
+      const totalLabel = document.getElementById('metricTotalMaterials');
+      if (totalLabel) {
+        totalLabel.textContent = `${materialItems.length} Item`;
+      }
+      filterMaterialCards();
+    }
+
+    function getDeliveryDateKey(dateValue) {
+      const dateText = String(dateValue || '').trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateText)) return dateText;
+      const parts = dateText.split('/');
+      if (parts.length === 3 && parts[0].length === 2 && parts[2].length === 4) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+      return '';
+    }
+
+    function getDeliveryUnit(materialName) {
+      const item = materialItems.find((entry) => normalizeMaterialName(entry.name) === normalizeMaterialName(materialName));
+      return item?.unit || 'Unit';
+    }
+
+    function summarizeDeliveryQuantities(entries) {
+      const totals = new Map();
+      entries.forEach(({ materialName, record }) => {
+        const unit = getDeliveryUnit(materialName);
+        totals.set(unit, (totals.get(unit) || 0) + (Number(record.qty) || 0));
+      });
+      return [...totals.entries()].map(([unit, qty]) => `${new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 }).format(qty)} ${unit}`).join(' · ');
+    }
+
+    function renderDailyDeliveryReport() {
+      const report = document.getElementById('deliveryDailyReport');
+      if (!report) return;
+
+      const query = document.getElementById('deliverySearch').value.trim().toLocaleLowerCase('id-ID');
+      const selectedDate = document.getElementById('deliveryDateFilter').value;
+      const entries = Object.entries(deliveryHistory).flatMap(([materialName, history]) =>
+        history.map((record) => ({ materialName, record }))
+      ).filter(({ materialName, record }) => {
+        if (selectedDate && getDeliveryDateKey(record.date) !== selectedDate) return false;
+        const searchable = `${materialName} ${record.sj || ''}`.toLocaleLowerCase('id-ID');
+        return !query || searchable.includes(query);
+      }).sort((first, second) => getDeliveryDateKey(second.record.date).localeCompare(getDeliveryDateKey(first.record.date)));
+
+      const groups = new Map();
+      entries.forEach((entry) => {
+        const dateKey = getDeliveryDateKey(entry.record.date) || entry.record.date || 'Tanggal tidak diketahui';
+        if (!groups.has(dateKey)) groups.set(dateKey, []);
+        groups.get(dateKey).push(entry);
+      });
+
+      const totals = summarizeDeliveryQuantities(entries);
+      document.getElementById('deliveryReportSummary').textContent = `${entries.length} kedatangan${totals ? ` · Total ${totals}` : ''}`;
+      report.innerHTML = [...groups.entries()].map(([dateKey, dayEntries]) => {
+        const dateLabel = getDeliveryDateKey(dateKey) ? formatDateForDisplay(dateKey) : dateKey;
+        return `
+          <section class="delivery-day">
+            <div class="delivery-day-heading">
+              <strong>${escapeHtml(dateLabel)}</strong>
+              <span class="delivery-day-total">${dayEntries.length} kedatangan · ${escapeHtml(summarizeDeliveryQuantities(dayEntries))}</span>
+            </div>
+            ${dayEntries.map(({ materialName, record }) => `
+              <article class="history-item">
+                <div class="history-header">
+                  <span>${escapeHtml(materialName)}</span>
+                  <span>${escapeHtml(record.qty)} ${escapeHtml(getDeliveryUnit(materialName))}</span>
+                </div>
+                <div class="item-card-meta">
+                  <span>SJ: <strong>${escapeHtml(record.sj || '-')}</strong></span>
+                  <span>${escapeHtml(dateLabel)}</span>
+                </div>
+                ${record.photo
+                  ? `<img class="history-photo" src="${escapeHtml(record.photo)}" alt="Foto surat jalan ${escapeHtml(record.sj || '')}">`
+                  : '<div class="history-placeholder">Foto surat jalan belum tersedia</div>'}
+              </article>
+            `).join('')}
+          </section>
+        `;
+      }).join('') || '<div class="history-placeholder">Tidak ada kedatangan yang cocok dengan filter.</div>';
+    }
+
+    function clearDeliveryReportFilters() {
+      document.getElementById('deliverySearch').value = '';
+      document.getElementById('deliveryDateFilter').value = '';
+      renderDailyDeliveryReport();
+    }
+
+    const DAILY_WORK_STORAGE_KEY = 'project-monitor-daily-work-reports';
+    const defaultDailyWorkPlans = [{
+      id: 'whatsapp-work-plan-2026-09-29',
+      title: 'Rencana Kerja MEP VUK · Lembur',
+      date: '2026-09-29',
+      supervisor: 'Maman SPV',
+      tasks: [
+        { discipline: 'Plumbing', title: 'Test rendam dan glontor pipa AK/ABK/ABKK', area: 'Lantai 10, 11, 12, 13, 14, dan 15 · Unit 15–33; termasuk tes glontor pipa bekas dapur Lantai 18', workers: 4 },
+        { discipline: 'Plumbing', title: 'Instalasi air hujan', area: 'Lantai 3 · Area parkir', workers: 4 },
+        { discipline: 'Plumbing', title: 'Instal pipa air hujan', area: 'Lantai LG · Sisi utara', workers: 6 },
+        { discipline: 'Sprinkler', title: 'Pasang head sprinkler', area: 'Lantai 13', workers: 2 },
+        { discipline: 'Sprinkler', title: 'Instal titik dropper koridor', area: 'Lantai 18', workers: 2 },
+        { discipline: 'Elektrikal', title: 'Pasang armature stop kontak dan saklar area', area: 'Lantai 10', workers: 5 },
+        { discipline: 'Elektrikal', title: 'Pasang armature stop kontak dan saklar area', area: 'Lantai 11', workers: 5 },
+        { discipline: 'Elektrikal', title: 'Pasang armature stop kontak dan saklar area', area: 'Lantai 12', workers: 5 },
+        { discipline: 'Elektrikal', title: 'Perbaikan instalasi grounding', area: 'Lantai LG · Area eksternal', workers: 4 }
+      ]
+    }];
+
+    function loadDailyWorkPlans() {
+      try {
+        const savedPlans = JSON.parse(localStorage.getItem(DAILY_WORK_STORAGE_KEY));
+        return Array.isArray(savedPlans) ? savedPlans : defaultDailyWorkPlans.map((plan) => ({ ...plan, tasks: plan.tasks.map((task) => ({ ...task })) }));
+      } catch (error) {
+        return defaultDailyWorkPlans.map((plan) => ({ ...plan, tasks: plan.tasks.map((task) => ({ ...task })) }));
+      }
+    }
+
+    let dailyWorkPlans = loadDailyWorkPlans();
+    let dailyWorkDraftTasks = [];
+
+    function persistDailyWorkPlans() {
+      return persistActiveProjectData();
+    }
+
+    function cloneProjectData(data) {
+      return JSON.parse(JSON.stringify(data));
+    }
+
+    const initialProjectData = cloneProjectData({
+      materialItems,
+      deliveryHistory,
+      usageHistory,
+      checklistItems,
+      dailyWorkPlans
+    });
+
+    function getProjectDataKey(projectId) {
+      return `${PROJECT_DATA_PREFIX}${projectId}`;
+    }
+
+    function getEmptyProjectData() {
+      return { materialItems: [], deliveryHistory: {}, usageHistory: {}, checklistItems: [], dailyWorkPlans: [] };
+    }
+
+    function replaceProjectMap(target, source) {
+      Object.keys(target).forEach((key) => delete target[key]);
+      Object.assign(target, source && typeof source === 'object' ? source : {});
+    }
+
+    function applyProjectData(data) {
+      const safeData = data && typeof data === 'object' ? data : getEmptyProjectData();
+      materialItems = Array.isArray(safeData.materialItems) ? safeData.materialItems : [];
+      replaceProjectMap(deliveryHistory, safeData.deliveryHistory);
+      replaceProjectMap(usageHistory, safeData.usageHistory);
+      checklistItems = Array.isArray(safeData.checklistItems) ? safeData.checklistItems : [];
+      dailyWorkPlans = Array.isArray(safeData.dailyWorkPlans) ? safeData.dailyWorkPlans : [];
+    }
+
+    function persistActiveProjectData() {
+      if (!activeProjectId) return false;
+      try {
+        localStorage.setItem(getProjectDataKey(activeProjectId), JSON.stringify({
+          materialItems,
+          deliveryHistory,
+          usageHistory,
+          checklistItems,
+          dailyWorkPlans
+        }));
+        return true;
+      } catch (error) {
+        alert('Penyimpanan proyek penuh. Hapus sebagian data atau foto lalu coba kembali.');
+        return false;
+      }
+    }
+
+    function loadProjectRegistry() {
+      let savedProjects = [];
+      try {
+        const parsedProjects = JSON.parse(localStorage.getItem(PROJECT_REGISTRY_KEY));
+        if (Array.isArray(parsedProjects)) {
+          savedProjects = parsedProjects.filter((project) => project && project.id && project.name);
+        }
+      } catch (error) {
+        savedProjects = [];
+      }
+
+      if (!savedProjects.some((project) => project.id === DEFAULT_PROJECT_ID)) {
+        savedProjects.unshift({ id: DEFAULT_PROJECT_ID, name: 'Proyek Sentral Tower' });
+      }
+      return savedProjects;
+    }
+
+    function persistProjectRegistry() {
+      try {
+        localStorage.setItem(PROJECT_REGISTRY_KEY, JSON.stringify(projectRegistry));
+        return true;
+      } catch (error) {
+        alert('Daftar proyek tidak dapat disimpan. Penyimpanan browser mungkin penuh.');
+        return false;
+      }
+    }
+
+    function loadProjectData(projectId) {
+      const dataKey = getProjectDataKey(projectId);
+      const storedData = readLocalStorage(dataKey);
+      if (storedData) {
+        try {
+          applyProjectData(JSON.parse(storedData));
+          return;
+        } catch (error) {
+          removeLocalStorage(dataKey);
+        }
+      }
+      applyProjectData(projectId === DEFAULT_PROJECT_ID ? initialProjectData : getEmptyProjectData());
+    }
+
+    function initializeProjectManager() {
+      projectRegistry = loadProjectRegistry();
+      const savedActiveProject = readLocalStorage(ACTIVE_PROJECT_KEY);
+      activeProjectId = projectRegistry.some((project) => project.id === savedActiveProject)
+        ? savedActiveProject
+        : DEFAULT_PROJECT_ID;
+      loadProjectData(activeProjectId);
+      projectFolders = loadProjectFolders(activeProjectId);
+      activeFileFolderId = null;
+      persistProjectRegistry();
+      writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
+      persistActiveProjectData();
+      updateActiveProjectTitle();
+    }
+
+    function updateActiveProjectTitle() {
+      const activeProject = projectRegistry.find((project) => project.id === activeProjectId);
+  writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
+    }
+
+    function renderProjectList() {
+      const list = document.getElementById('projectList');
+      if (!list) return;
+      list.innerHTML = projectRegistry.map((project) => `
+        <button class="project-option ${project.id === activeProjectId ? 'active' : ''}" type="button" onclick="switchProject('${escapeHtml(project.id)}')">
+          <span>${escapeHtml(project.name)}</span>
+          <strong>${project.id === activeProjectId ? 'Aktif' : 'Pilih'}</strong>
+        </button>
+      `).join('');
+    }
+
+    function openProjectManager() {
+      document.getElementById('newProjectName').value = '';
+      renderProjectList();
+      document.getElementById('modalProjectManager').style.display = 'flex';
+    }
+
+    function closeProjectManager() {
+      document.getElementById('modalProjectManager').style.display = 'none';
+    }
+
+    function renderProjectData() {
+      renderMaterialCards();
+      renderChecklistCards();
+      renderDailyWorkReport();
+      renderProjectFiles();
+    }
+
+    function switchProject(projectId) {
+      if (projectId === activeProjectId || !projectRegistry.some((project) => project.id === projectId)) {
+        closeProjectManager();
+        return;
+      }
+      if (!persistActiveProjectData()) return;
+
+      activeProjectId = projectId;
+      writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
+      loadProjectData(activeProjectId);
+      projectFolders = loadProjectFolders(activeProjectId);
+      activeFileFolderId = null;
+      updateActiveProjectTitle();
+      closeProjectManager();
+      renderProjectData();
+      switchTab('material');
+    }
+
+    function createProject() {
+      const name = document.getElementById('newProjectName').value.trim();
+      if (!name) {
+        alert('Nama proyek wajib diisi.');
+        return;
+      }
+      if (projectRegistry.some((project) => project.name.trim().toLocaleLowerCase('id-ID') === name.toLocaleLowerCase('id-ID'))) {
+        alert('Nama proyek tersebut sudah digunakan.');
+        return;
+      }
+      if (!persistActiveProjectData()) return;
+
+      const project = {
+        id: `project-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`}`,
+        name
+      };
+      projectRegistry.push(project);
+      if (!persistProjectRegistry()) {
+        projectRegistry.pop();
+        return;
+      }
+
+      activeProjectId = project.id;
+      writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
+      applyProjectData(getEmptyProjectData());
+      projectFolders = [];
+      activeFileFolderId = null;
+      persistProjectFolders();
+      persistActiveProjectData();
+      updateActiveProjectTitle();
+      closeProjectManager();
+      renderProjectData();
+      switchTab('material');
+    }
+
+    function getProjectFoldersKey(projectId = activeProjectId) {
+      return `${PROJECT_FOLDER_PREFIX}${projectId}`;
+    }
+
+    function loadProjectFolders(projectId = activeProjectId) {
+      try {
+        const folders = JSON.parse(localStorage.getItem(getProjectFoldersKey(projectId)));
+        return Array.isArray(folders) ? folders : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function persistProjectFolders() {
+      try {
+        localStorage.setItem(getProjectFoldersKey(), JSON.stringify(projectFolders));
+        return true;
+      } catch (error) {
+        alert('Daftar folder tidak dapat disimpan. Penyimpanan browser mungkin penuh.');
+        return false;
+      }
+    }
+
+    function openProjectFilesDatabase() {
+      return new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+          reject(new Error('Penyimpanan file tidak tersedia di browser ini.'));
+          return;
+        }
+        const request = indexedDB.open(PROJECT_FILES_DATABASE, 2);
+        request.onupgradeneeded = () => {
+          const database = request.result;
+          if (!database.objectStoreNames.contains('files')) {
+            database.createObjectStore('files', { keyPath: 'id' });
+          }
+          if (!database.objectStoreNames.contains('account')) {
+            database.createObjectStore('account', { keyPath: 'id' });
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error('Gagal membuka penyimpanan file.'));
+      });
+    }
+
+    async function getProjectFiles(projectId = activeProjectId) {
+      const database = await openProjectFilesDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction('files', 'readonly');
+        const request = transaction.objectStore('files').getAll();
+        request.onsuccess = () => resolve(request.result.filter((file) => file.projectId === projectId));
+        request.onerror = () => reject(request.error || new Error('Gagal membaca file proyek.'));
+        transaction.oncomplete = () => database.close();
+        transaction.onerror = () => {
+          database.close();
+          reject(transaction.error || new Error('Gagal membaca file proyek.'));
+        };
+      });
+    }
+
+    async function storeProjectFile(fileRecord) {
+      const database = await openProjectFilesDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction('files', 'readwrite');
+        transaction.objectStore('files').put(fileRecord);
+        transaction.oncomplete = () => {
+          database.close();
+          resolve();
+        };
+        transaction.onerror = () => {
+          database.close();
+          reject(transaction.error || new Error(`Gagal menyimpan ${fileRecord.name}.`));
+        };
+        transaction.onabort = () => {
+          database.close();
+          reject(transaction.error || new Error(`Penyimpanan ${fileRecord.name} dibatalkan.`));
+        };
+      });
+    }
+
+    async function getAccountPhotoRecord() {
+      const database = await openProjectFilesDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction('account', 'readonly');
+        const request = transaction.objectStore('account').get('demo-profile-photo');
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error || new Error('Gagal membaca foto akun.'));
+        transaction.oncomplete = () => database.close();
+        transaction.onerror = () => {
+          database.close();
+          reject(transaction.error || new Error('Gagal membaca foto akun.'));
+        };
+      });
+    }
+
+    async function saveAccountPhotoRecord(blob) {
+      const database = await openProjectFilesDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction('account', 'readwrite');
+        transaction.objectStore('account').put({ id: 'demo-profile-photo', blob, updatedAt: new Date().toISOString() });
+        transaction.oncomplete = () => {
+          database.close();
+          resolve();
+        };
+        transaction.onerror = () => {
+          database.close();
+          reject(transaction.error || new Error('Gagal menyimpan foto akun.'));
+        };
+      });
+    }
+
+    async function deleteAccountPhotoRecord() {
+      const database = await openProjectFilesDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction('account', 'readwrite');
+        transaction.objectStore('account').delete('demo-profile-photo');
+        transaction.oncomplete = () => {
+          database.close();
+          resolve();
+        };
+        transaction.onerror = () => {
+          database.close();
+          reject(transaction.error || new Error('Gagal menghapus foto akun.'));
+        };
+      });
+    }
+
+    function renderAccountPhoto(blob) {
+      const image = document.getElementById('accountAvatarImage');
+      const fallback = document.getElementById('accountAvatarFallback');
+      if (accountPhotoObjectUrl) URL.revokeObjectURL(accountPhotoObjectUrl);
+      accountPhotoObjectUrl = null;
+
+      if (!blob) {
+        image.removeAttribute('src');
+        image.hidden = true;
+        fallback.hidden = false;
+        return;
+      }
+
+      accountPhotoObjectUrl = URL.createObjectURL(blob);
+      image.src = accountPhotoObjectUrl;
+      image.hidden = false;
+      fallback.hidden = true;
+    }
+
+    function compressAccountPhoto(file) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        image.onload = () => {
+          const scale = Math.min(1, 512 / Math.max(image.width, image.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(image.width * scale));
+          canvas.height = Math.max(1, Math.round(image.height * scale));
+          canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(objectUrl);
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error('Foto tidak dapat dikompres.'));
+          }, 'image/jpeg', 0.82);
+        };
+        image.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error('Foto tidak dapat dibaca. Pilih gambar lain.'));
+        };
+        image.src = objectUrl;
+      });
+    }
+
+    async function loadAccountPhoto() {
+      try {
+        const record = await getAccountPhotoRecord();
+        renderAccountPhoto(record?.blob || null);
+      } catch (error) {
+        renderAccountPhoto(null);
+      }
+    }
+
+    async function saveAccountPhoto(file) {
+      if (!file) return;
+      try {
+        const photo = await compressAccountPhoto(file);
+        await saveAccountPhotoRecord(photo);
+        renderAccountPhoto(photo);
+      } catch (error) {
+        alert(`Gagal menyimpan foto akun: ${error.message}`);
+      } finally {
+        document.getElementById('accountPhotoInput').value = '';
+      }
+    }
+
+    async function clearAccountPhoto() {
+      try {
+        await deleteAccountPhotoRecord();
+        renderAccountPhoto(null);
+      } catch (error) {
+        alert(`Gagal menghapus foto akun: ${error.message}`);
+      }
+    }
+
+    async function getProjectFile(fileId) {
+      const database = await openProjectFilesDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction('files', 'readonly');
+        const request = transaction.objectStore('files').get(fileId);
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error || new Error('Gagal membaca file.'));
+        transaction.oncomplete = () => database.close();
+        transaction.onerror = () => {
+          database.close();
+          reject(transaction.error || new Error('Gagal membaca file.'));
+        };
+      });
+    }
+
+    async function removeProjectFile(fileId) {
+      const database = await openProjectFilesDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction('files', 'readwrite');
+        transaction.objectStore('files').delete(fileId);
+        transaction.oncomplete = () => {
+          database.close();
+          resolve();
+        };
+        transaction.onerror = () => {
+          database.close();
+          reject(transaction.error || new Error('Gagal menghapus file.'));
+        };
+      });
+    }
+
+    function openProjectFolderModal() {
+      document.getElementById('newProjectFolderName').value = '';
+      document.getElementById('modalProjectFolder').style.display = 'flex';
+    }
+
+    function closeProjectFolderModal() {
+      document.getElementById('modalProjectFolder').style.display = 'none';
+    }
+
+    function createProjectFolder() {
+      const name = document.getElementById('newProjectFolderName').value.trim();
+      if (!name) {
+        alert('Nama folder wajib diisi.');
+        return;
+      }
+      if (projectFolders.some((folder) => folder.name.toLocaleLowerCase('id-ID') === name.toLocaleLowerCase('id-ID'))) {
+        alert('Nama folder tersebut sudah ada di proyek ini.');
+        return;
+      }
+
+      const folder = {
+        id: globalThis.crypto?.randomUUID?.() || `folder-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        name,
+        createdAt: new Date().toISOString()
+      };
+      projectFolders.unshift(folder);
+      if (!persistProjectFolders()) {
+        projectFolders.shift();
+        return;
+      }
+      activeFileFolderId = folder.id;
+      closeProjectFolderModal();
+      renderProjectFiles();
+    }
+
+    function showProjectFolders() {
+      activeFileFolderId = null;
+      renderProjectFiles();
+    }
+
+    function openProjectFolder(folderId) {
+      if (!projectFolders.some((folder) => folder.id === folderId)) return;
+      activeFileFolderId = folderId;
+      renderProjectFiles();
+    }
+
+    function formatProjectFileSize(bytes) {
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    async function renderProjectFiles() {
+      const folderList = document.getElementById('projectFolderList');
+      if (!folderList) return;
+      const folderContents = document.getElementById('projectFolderContents');
+      const folders = projectFolders;
+      const folder = folders.find((entry) => entry.id === activeFileFolderId);
+      const projectName = projectRegistry.find((project) => project.id === activeProjectId)?.name || 'Proyek';
+      document.getElementById('projectFilesSummary').textContent = `${projectName} · ${folders.length} folder`;
+      folderList.style.display = folder ? 'none' : 'grid';
+      folderContents.style.display = folder ? 'block' : 'none';
+
+      let files = [];
+      try {
+        files = await getProjectFiles();
+      } catch (error) {
+        document.getElementById('projectFileList').innerHTML = `<div class="history-placeholder">${escapeHtml(error.message)}</div>`;
+        folderList.innerHTML = folders.length ? '' : '<div class="history-placeholder">Belum ada folder di proyek ini.</div>';
+        return;
+      }
+
+      if (!folder) {
+        folderList.innerHTML = folders.length ? folders.map((entry) => {
+          const fileCount = files.filter((file) => file.folderId === entry.id).length;
+          return `
+            <button class="file-folder-option" type="button" onclick="openProjectFolder('${escapeHtml(entry.id)}')">
+              <span class="file-folder-main">
+                <span class="file-folder-icon">📁</span>
+                <span class="file-folder-name">${escapeHtml(entry.name)}</span>
+              </span>
+              <span class="file-folder-count">${fileCount} file →</span>
+            </button>
+          `;
+        }).join('') : '<div class="history-placeholder">Belum ada folder di proyek ini.</div>';
+        return;
+      }
+
+      document.getElementById('activeFolderTitle').textContent = folder.name;
+      const folderFiles = files.filter((file) => file.folderId === folder.id).sort((first, second) => second.addedAt.localeCompare(first.addedAt));
+      document.getElementById('projectFileList').innerHTML = folderFiles.length ? folderFiles.map((file) => {
+        const extension = file.name.split('.').pop().toUpperCase();
+        const dateLabel = formatChecklistDate(file.addedAt.slice(0, 10));
+        return `
+          <article class="project-file-row">
+            <span class="project-file-main">
+              <span class="file-extension">${escapeHtml(extension)}</span>
+              <span style="min-width: 0;">
+                <span class="project-file-name">${escapeHtml(file.name)}</span>
+                <span class="project-file-meta">${escapeHtml(formatProjectFileSize(file.size))} · ${escapeHtml(dateLabel)}</span>
+              </span>
+            </span>
+            <span class="project-file-actions">
+              <button type="button" onclick="openProjectFile('${escapeHtml(file.id)}')">${extension === 'PDF' ? 'Buka' : 'Unduh'}</button>
+              <button class="file-delete-button" type="button" onclick="deleteProjectFile('${escapeHtml(file.id)}')" aria-label="Hapus ${escapeHtml(file.name)}">Hapus</button>
+            </span>
+          </article>
+        `;
+      }).join('') : '<div class="history-placeholder">Folder ini belum memiliki file.</div>';
+    }
+
+    async function handleProjectFileUpload(fileList) {
+      const selectedFiles = [...fileList];
+      const folder = projectFolders.find((entry) => entry.id === activeFileFolderId);
+      const input = document.getElementById('projectFileInput');
+      if (!folder || !selectedFiles.length) return;
+
+      const acceptedFiles = selectedFiles.filter((file) => /\.(pdf|dxf)$/i.test(file.name));
+      const rejectedFiles = selectedFiles.length - acceptedFiles.length;
+      input.value = '';
+      if (rejectedFiles) alert(`${rejectedFiles} file dilewati. Hanya PDF dan DXF yang dapat diunggah.`);
+      if (!acceptedFiles.length) return;
+
+      try {
+        for (const file of acceptedFiles) {
+          await storeProjectFile({
+            id: globalThis.crypto?.randomUUID?.() || `file-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            projectId: activeProjectId,
+            folderId: folder.id,
+            name: file.name,
+            type: file.type || (file.name.toLocaleLowerCase('id-ID').endsWith('.pdf') ? 'application/pdf' : 'application/dxf'),
+            size: file.size,
+            addedAt: new Date().toISOString(),
+            blob: file
+          });
+        }
+      } catch (error) {
+        alert(`Gagal menyimpan file: ${error.message}`);
+      }
+      renderProjectFiles();
+    }
+
+    async function searchProjectFiles() {
+      const input = document.getElementById('globalFileSearchInput');
+      const results = document.getElementById('globalFileSearchResults');
+      const clearButton = document.getElementById('globalFileSearchClear');
+      const query = input.value.trim().toLocaleLowerCase('id-ID');
+      const requestId = ++globalFileSearchRequestId;
+      const searchedProjectId = activeProjectId;
+      clearButton.hidden = !query;
+
+      if (!query) {
+        results.hidden = true;
+        results.innerHTML = '';
+        return;
+      }
+
+      results.hidden = false;
+      results.innerHTML = '<div class="history-placeholder">Mencari file...</div>';
+      try {
+        const [files, folders] = await Promise.all([getProjectFiles(searchedProjectId), Promise.resolve(projectFolders)]);
+        if (requestId !== globalFileSearchRequestId || searchedProjectId !== activeProjectId) return;
+
+        const folderNames = new Map(folders.map((folder) => [folder.id, folder.name]));
+        const matches = files.filter((file) => `${file.name} ${folderNames.get(file.folderId) || ''}`.toLocaleLowerCase('id-ID').includes(query));
+        results.innerHTML = matches.length ? matches.slice(0, 30).map((file) => {
+          const extension = file.name.split('.').pop().toUpperCase();
+          const folderName = folderNames.get(file.folderId) || 'Folder dihapus';
+          return `
+            <div class="global-file-result">
+              <span class="global-file-result-info">
+                <span class="global-file-result-name">${escapeHtml(file.name)}</span>
+                <span class="global-file-result-meta">${escapeHtml(folderName)} · ${escapeHtml(extension)} · ${escapeHtml(formatProjectFileSize(file.size))}</span>
+              </span>
+              <button type="button" onclick="openProjectFile('${escapeHtml(file.id)}')">${extension === 'PDF' ? 'Buka' : 'Unduh'}</button>
+            </div>
+          `;
+        }).join('') : '<div class="history-placeholder">File tidak ditemukan di proyek aktif.</div>';
+      } catch (error) {
+        if (requestId !== globalFileSearchRequestId) return;
+        results.innerHTML = `<div class="history-placeholder">${escapeHtml(error.message)}</div>`;
+      }
+    }
+
+    function clearGlobalFileSearch() {
+      globalFileSearchRequestId++;
+      document.getElementById('globalFileSearchInput').value = '';
+      document.getElementById('globalFileSearchClear').hidden = true;
+      document.getElementById('globalFileSearchResults').hidden = true;
+      document.getElementById('globalFileSearchResults').innerHTML = '';
+    }
+
+    async function openProjectFile(fileId) {
+      const previewWindow = window.open('', '_blank');
+      try {
+        const file = await getProjectFile(fileId);
+        if (!file || file.projectId !== activeProjectId) {
+          previewWindow?.close();
+          return;
+        }
+        const objectUrl = URL.createObjectURL(file.blob);
+        if (file.name.toLocaleLowerCase('id-ID').endsWith('.pdf')) {
+          if (previewWindow) previewWindow.location.href = objectUrl;
+          else {
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = file.name;
+            link.click();
+          }
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+        } else {
+          previewWindow?.close();
+          const link = document.createElement('a');
+          link.href = objectUrl;
+          link.download = file.name;
+          link.click();
+          URL.revokeObjectURL(objectUrl);
+        }
+      } catch (error) {
+        previewWindow?.close();
+        alert(`Gagal membuka file: ${error.message}`);
+      }
+    }
+
+    async function deleteProjectFile(fileId) {
+      try {
+        const file = await getProjectFile(fileId);
+        if (!file || file.projectId !== activeProjectId) return;
+        pendingProjectFileDeleteId = file.id;
+        document.getElementById('confirmDeleteFileName').textContent = file.name;
+        document.getElementById('modalConfirmFileDelete').style.display = 'flex';
+      } catch (error) {
+        alert(`Gagal memuat konfirmasi file: ${error.message}`);
+      }
+    }
+
+    function closeProjectFileDeleteDialog() {
+      document.getElementById('modalConfirmFileDelete').style.display = 'none';
+      pendingProjectFileDeleteId = null;
+    }
+
+    async function confirmProjectFileDelete() {
+      const fileId = pendingProjectFileDeleteId;
+      if (!fileId) return;
+      try {
+        const file = await getProjectFile(fileId);
+        if (!file || file.projectId !== activeProjectId) {
+          closeProjectFileDeleteDialog();
+          return;
+        }
+        await removeProjectFile(fileId);
+        closeProjectFileDeleteDialog();
+        renderProjectFiles();
+      } catch (error) {
+        alert(`Gagal menghapus file: ${error.message}`);
+      }
+    }
+
+    function getDailyWorkStats(plan) {
+      return {
+        tasks: plan.tasks.length,
+        workers: plan.tasks.reduce((total, task) => total + (Number(task.workers) || 0), 0),
+        disciplines: new Set(plan.tasks.map((task) => task.discipline.trim().toLocaleLowerCase('id-ID'))).size
+      };
+    }
+
+    function renderDailyWorkReport() {
+      const report = document.getElementById('dailyWorkReportList');
+      if (!report) return;
+
+      const query = (document.getElementById('dailyWorkSearch')?.value || '').trim().toLocaleLowerCase('id-ID');
+      const plans = [...dailyWorkPlans].filter((plan) => {
+        const searchable = `${formatChecklistDate(plan.date)} ${plan.title} ${plan.supervisor}`.toLocaleLowerCase('id-ID');
+        return !query || searchable.includes(query);
+      }).sort((first, second) => second.date.localeCompare(first.date));
+      report.innerHTML = plans.map((plan) => {
+        const stats = getDailyWorkStats(plan);
+        return `
+          <article class="item-card daily-report-card" data-report-id="${escapeHtml(plan.id)}" tabindex="0" role="button" aria-label="Buka laporan ${escapeHtml(formatChecklistDate(plan.date))}">
+            <div class="item-card-top">
+              <span class="badge-category badge-electrical">${escapeHtml(formatChecklistDate(plan.date))}</span>
+              <span class="status-text text-komplit">${stats.workers} orang</span>
+            </div>
+            <div class="item-card-name">${escapeHtml(plan.title)}</div>
+            <div class="item-card-meta">
+              <span>SPV: ${escapeHtml(plan.supervisor)}</span>
+              <b>${stats.tasks} penugasan · ${stats.disciplines} bidang</b>
+            </div>
+          </article>
+        `;
+      }).join('') || `<div class="history-placeholder">${query ? 'Tidak ada laporan yang cocok dengan pencarian.' : 'Belum ada laporan harian.'}</div>`;
+
+      report.querySelectorAll('.daily-report-card').forEach((card) => {
+        card.addEventListener('click', () => openDailyWorkDetail(card.dataset.reportId));
+        card.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openDailyWorkDetail(card.dataset.reportId);
+          }
+        });
+      });
+    }
+
+    function openDailyWorkReportForm() {
+      dailyWorkDraftTasks = [];
+      document.getElementById('dailyReportTitle').value = 'Rencana Kerja MEP';
+      document.getElementById('dailyReportDate').value = getTodayISO();
+      document.getElementById('dailyReportSupervisor').value = '';
+      document.getElementById('dailyTaskDiscipline').value = '';
+      document.getElementById('dailyTaskTitle').value = '';
+      document.getElementById('dailyTaskArea').value = '';
+      document.getElementById('dailyTaskWorkers').value = '';
+      renderDailyWorkTaskDrafts();
+      document.getElementById('modalDailyWorkForm').style.display = 'flex';
+    }
+
+    function closeDailyWorkReportForm() {
+      document.getElementById('modalDailyWorkForm').style.display = 'none';
+      dailyWorkDraftTasks = [];
+      renderDailyWorkTaskDrafts();
+    }
+
+    function addDailyWorkTask() {
+      const discipline = document.getElementById('dailyTaskDiscipline').value.trim();
+      const title = document.getElementById('dailyTaskTitle').value.trim();
+      const area = document.getElementById('dailyTaskArea').value.trim();
+      const workers = parsePositiveNumber(document.getElementById('dailyTaskWorkers').value);
+      if (!discipline || !title || !area || !Number.isSafeInteger(workers)) {
+        alert('Lengkapi bidang, jenis pekerjaan, area, dan jumlah orang.');
+        return;
+      }
+
+      dailyWorkDraftTasks.push({ discipline, title, area, workers });
+      document.getElementById('dailyTaskTitle').value = '';
+      document.getElementById('dailyTaskArea').value = '';
+      document.getElementById('dailyTaskWorkers').value = '';
+      renderDailyWorkTaskDrafts();
+    }
+
+    function removeDailyWorkTask(index) {
+      dailyWorkDraftTasks.splice(index, 1);
+      renderDailyWorkTaskDrafts();
+    }
+
+    function renderDailyWorkTaskDrafts() {
+      const list = document.getElementById('dailyTaskDraftList');
+      if (!list) return;
+      list.innerHTML = dailyWorkDraftTasks.map((task, index) => `
+        <div class="checklist-photo-file">
+          <span title="${escapeHtml(task.title)}">${escapeHtml(task.discipline)} · ${escapeHtml(task.title)} · ${escapeHtml(task.workers)} org</span>
+          <button type="button" onclick="removeDailyWorkTask(${index})" aria-label="Hapus penugasan ${index + 1}" title="Hapus penugasan">×</button>
+        </div>
+      `).join('');
+    }
+
+    function saveDailyWorkReport() {
+      const title = document.getElementById('dailyReportTitle').value.trim();
+      const date = document.getElementById('dailyReportDate').value;
+      const supervisor = document.getElementById('dailyReportSupervisor').value.trim();
+      if (!title || !date || !supervisor || dailyWorkDraftTasks.length === 0) {
+        alert('Isi nama laporan, tanggal, SPV, dan minimal satu penugasan.');
+        return;
+      }
+      if (dailyWorkPlans.some((plan) => plan.date === date)) {
+        alert('Laporan untuk tanggal ini sudah ada. Pilih tanggal lain untuk membuat laporan baru.');
+        return;
+      }
+
+      const report = {
+        id: globalThis.crypto?.randomUUID?.() || `daily-report-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        title,
+        date,
+        supervisor,
+        tasks: dailyWorkDraftTasks.map((task) => ({ ...task }))
+      };
+      dailyWorkPlans.unshift(report);
+      if (!persistDailyWorkPlans()) {
+        dailyWorkPlans.shift();
+        return;
+      }
+
+      closeDailyWorkReportForm();
+      renderDailyWorkReport();
+    }
+
+    function openDailyWorkDetail(reportId) {
+      const report = dailyWorkPlans.find((plan) => plan.id === reportId);
+      if (!report) return;
+
+      const groups = new Map();
+      report.tasks.forEach((task) => {
+        if (!groups.has(task.discipline)) groups.set(task.discipline, []);
+        groups.get(task.discipline).push(task);
+      });
+      const stats = getDailyWorkStats(report);
+      document.getElementById('dailyWorkDetailContent').innerHTML = `
+        <div class="daily-report-title">
+          <strong>${escapeHtml(report.title)}</strong>
+          <span>${escapeHtml(formatChecklistDate(report.date))} · SPV: ${escapeHtml(report.supervisor)}</span>
+        </div>
+        <div class="daily-report-summary">
+          <div class="daily-report-stat"><strong>${stats.workers}</strong><span>Total Orang</span></div>
+          <div class="daily-report-stat"><strong>${stats.tasks}</strong><span>Penugasan</span></div>
+          <div class="daily-report-stat"><strong>${stats.disciplines}</strong><span>Bidang</span></div>
+        </div>
+        ${[...groups.entries()].map(([discipline, tasks]) => {
+          const workers = tasks.reduce((total, task) => total + task.workers, 0);
+          return `
+            <section class="daily-work-section">
+              <div class="daily-work-heading"><h3>${escapeHtml(discipline)}</h3><span>${workers} orang · ${tasks.length} tugas</span></div>
+              ${tasks.map((task) => `
+                <article class="item-card daily-work-item">
+                  <div class="item-card-top">
+                    <span class="badge-category ${/elektrik|electrical/i.test(discipline) ? 'badge-electrical' : 'badge-plumbing'}">${escapeHtml(discipline)}</span>
+                    <span class="status-text text-kurang">${escapeHtml(task.workers)} orang</span>
+                  </div>
+                  <div class="item-card-name">${escapeHtml(task.title)}</div>
+                  <div class="daily-work-area">Area: ${escapeHtml(task.area)}</div>
+                </article>
+              `).join('')}
+            </section>
+          `;
+        }).join('')}
+      `;
+      document.getElementById('modalDailyWorkDetail').style.display = 'flex';
+    }
+
+    function closeDailyWorkDetail() {
+      document.getElementById('modalDailyWorkDetail').style.display = 'none';
+    }
+
+    function openMaterialDetail(materialName) {
+      const item = materialItems.find((entry) => entry.name === materialName);
+      if (!item) return;
+
+      selectedMaterialForEntry = materialName;
+
+      const nameEl = document.getElementById('detailMaterialName');
+      const remainingEl = document.getElementById('detailRemaining');
+      const totalEl = document.getElementById('detailReceived');
+      const issuedEl = document.getElementById('detailIssued');
+      const historyEl = document.getElementById('detailHistoryList');
+      const usageEl = document.getElementById('detailUsageList');
+
+      const remaining = getMaterialStock(item);
+      const history = deliveryHistory[materialName] || [];
+      const usage = usageHistory[materialName] || [];
+
+      nameEl.textContent = materialName;
+      remainingEl.textContent = `${remaining} ${item.unit}`;
+      totalEl.textContent = `${item.received} ${item.unit}`;
+      issuedEl.textContent = `${item.issued || 0} ${item.unit}`;
+
+      historyEl.innerHTML = history.map((entry) => `
+        <div class="history-item">
+          <div class="history-header">
+            <span>${escapeHtml(entry.date)}</span>
+            <span>${escapeHtml(entry.qty)} ${escapeHtml(item.unit)}</span>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px;">SJ: ${escapeHtml(entry.sj)}</div>
+          ${entry.photo
+            ? `<img class="history-photo" src="${escapeHtml(entry.photo)}" alt="Foto surat jalan ${escapeHtml(entry.sj)}">`
+            : '<div class="history-placeholder">Foto surat jalan belum tersedia</div>'}
+        </div>
+      `).join('');
+
+      usageEl.innerHTML = usage.length ? usage.map((entry) => `
+        <div class="history-item">
+          <div class="history-header">
+            <span>${escapeHtml(entry.date)}</span>
+            <span>${escapeHtml(entry.qty)} ${escapeHtml(item.unit)}</span>
+          </div>
+          <span class="usage-tag">Pengambilan</span>
+          <div class="usage-detail">
+            Petugas Logistik: <strong>${escapeHtml(entry.petugasLogistik || '-')}</strong><br>
+            Yang Mengambil: <strong>${escapeHtml(entry.penerima || '-')}</strong><br>
+            Area: <strong>${escapeHtml(entry.area || '-')}</strong><br>
+            Jenis Pekerjaan: <strong>${escapeHtml(entry.pekerjaan || '-')}</strong>
+          </div>
+        </div>
+      `).join('') : '<div class="history-placeholder">Belum ada catatan pengeluaran material</div>';
+
+      document.getElementById('modalDetail').style.display = 'flex';
+    }
+
+    function addNewDeliveryForSelectedMaterial() {
+      closeDetailModal();
+      openInputModal(selectedMaterialForEntry || '');
+    }
+
+    function openIssueModal(materialName = '') {
+      const input = document.getElementById('issueMaterial');
+      const dateInput = document.getElementById('issueDate');
+      const selectedName = materialName || selectedMaterialForEntry || '';
+      const item = materialItems.find((entry) => normalizeMaterialName(entry.name) === normalizeMaterialName(selectedName));
+      input.value = selectedName;
+      input.readOnly = Boolean(selectedName);
+      dateInput.value = getTodayISO();
+      document.getElementById('issueQty').value = '';
+      document.getElementById('issueUnitLabel').textContent = item ? `(${item.unit})` : '';
+      document.getElementById('issueQty').step = item?.unit === 'Meter' ? 'any' : '1';
+      document.getElementById('issueQty').max = item ? getMaterialStock(item) : 0;
+      document.getElementById('modalIssue').style.display = 'flex';
+      validateIssueQuantity();
+    }
+
+    function validateIssueQuantity() {
+      const itemName = document.getElementById('issueMaterial').value.trim();
+      const item = materialItems.find((entry) => normalizeMaterialName(entry.name) === normalizeMaterialName(itemName));
+      const input = document.getElementById('issueQty');
+      const hint = document.getElementById('issueStockHint');
+      const saveButton = document.getElementById('issueSaveButton');
+      const value = parsePositiveNumber(input.value);
+      const available = item ? getMaterialStock(item) : 0;
+      const isDiscreteUnit = item && item.unit !== 'Meter';
+      const exceedsStock = Number.isFinite(value) && value > available;
+      const invalid = !item || !Number.isFinite(value) || value <= 0 || exceedsStock || (isDiscreteUnit && !Number.isInteger(value));
+
+      hint.textContent = !item
+        ? 'Material tidak ditemukan.'
+        : exceedsStock
+          ? `Jumlah melebihi sisa stok ${available} ${item.unit}.`
+          : isDiscreteUnit && Number.isFinite(value) && !Number.isInteger(value)
+            ? 'Satuan ini harus menggunakan jumlah bilangan bulat.'
+            : `Sisa stok tersedia: ${available} ${item.unit}.`;
+      hint.classList.toggle('is-error', invalid && Number.isFinite(value));
+      input.classList.toggle('input-invalid', invalid && Number.isFinite(value));
+      saveButton.disabled = invalid;
+      return !invalid;
+    }
+
+    function closeIssueModal() {
+      document.getElementById('modalIssue').style.display = 'none';
+      document.getElementById('issueMaterial').value = '';
+      document.getElementById('issueMaterial').readOnly = false;
+      document.getElementById('issueLogistik').value = '';
+      document.getElementById('issuePenerima').value = '';
+      document.getElementById('issueQty').value = '';
+      document.getElementById('issueQty').classList.remove('input-invalid');
+      document.getElementById('issueStockHint').textContent = '';
+      document.getElementById('issueStockHint').classList.remove('is-error');
+      document.getElementById('issueSaveButton').disabled = true;
+      document.getElementById('issueArea').value = '';
+      document.getElementById('issuePekerjaan').value = '';
+      document.getElementById('issueDate').value = '';
+    }
+
+    function formatDateForDisplay(dateValue) {
+      const [year, month, day] = String(dateValue || '').split('-').map(Number);
+      const date = year && month && day ? new Date(year, month - 1, day) : new Date(dateValue);
+      if (Number.isNaN(date.getTime())) {
+        return new Date().toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      }
+      return date.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function saveMaterialIssue() {
+      const materialName = document.getElementById('issueMaterial').value.trim();
+      const petugasLogistik = document.getElementById('issueLogistik').value.trim();
+      const penerima = document.getElementById('issuePenerima').value.trim();
+      const qty = parsePositiveNumber(document.getElementById('issueQty').value);
+      const area = document.getElementById('issueArea').value.trim();
+      const pekerjaan = document.getElementById('issuePekerjaan').value.trim();
+      const dateValue = document.getElementById('issueDate').value || new Date().toISOString().split('T')[0];
+
+      if (!materialName || !petugasLogistik || !penerima || !Number.isFinite(qty) || qty <= 0 || !area || !pekerjaan) {
+        alert('Lengkapi semua data pengambilan: Petugas Logistik, Yang Mengambil, Jumlah, Area, dan Jenis Pekerjaan!');
+        return;
+      }
+
+      const itemIndex = materialItems.findIndex((item) => item.name.toLowerCase() === materialName.toLowerCase());
+      if (itemIndex === -1) {
+        alert('Material tidak ditemukan. Pastikan nama material sudah ada di daftar stok.');
+        return;
+      }
+
+      const stockNow = getMaterialStock(materialItems[itemIndex]);
+      if (qty > stockNow) {
+        alert(`Jumlah pengambilan melebihi sisa stock saat ini. Sisa stock: ${stockNow} ${materialItems[itemIndex].unit}`);
+        return;
+      }
+      if (materialItems[itemIndex].unit !== 'Meter' && !Number.isInteger(qty)) {
+        alert('Untuk satuan selain Meter, jumlah harus berupa bilangan bulat.');
+        return;
+      }
+
+      materialItems[itemIndex].issued = (parseNonNegativeNumber(materialItems[itemIndex].issued) ?? 0) + qty;
+
+      if (!usageHistory[materialName]) {
+        usageHistory[materialName] = [];
+      }
+
+      usageHistory[materialName].unshift({
+        date: formatDateForDisplay(dateValue),
+        qty,
+        petugasLogistik,
+        penerima,
+        area,
+        pekerjaan
+      });
+
+      if (!persistActiveProjectData()) return;
+      renderMaterialCards();
+      openMaterialDetail(materialName);
+      closeIssueModal();
+
+      alert(`Catatan Pengeluaran Berhasil!\n\nMaterial: ${materialName}\nQty Keluar: ${qty}\nArea: ${area}\nPekerjaan: ${pekerjaan}`);
+    }
+
+    function closeDetailModal() {
+      document.getElementById('modalDetail').style.display = 'none';
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('tabViewMaterial').style.display = 'none';
+      document.getElementById('tabViewCeklist').style.display = 'none';
+      document.getElementById('tabViewSuratJalan').style.display = 'none';
+      document.getElementById('tabViewFiles').style.display = 'none';
+      const isFileTab = tab === 'files';
+      const isMaterialTab = tab === 'material';
+      document.getElementById('metricsRow').style.display = isFileTab || isMaterialTab ? 'none' : 'grid';
+      document.getElementById('globalFileSearchPanel').style.display = isFileTab ? 'block' : 'none';
+      document.getElementById('materialSearchPanel').style.display = isMaterialTab ? 'block' : 'none';
+      if (!isFileTab) clearGlobalFileSearch();
+      if (!isMaterialTab) clearMaterialSearch();
+
+      if (tab === 'material') {
+        document.getElementById('navMat').classList.add('active');
+        document.getElementById('tabViewMaterial').style.display = 'block';
+      } else if (tab === 'ceklist') {
+        document.getElementById('navChk').classList.add('active');
+        document.getElementById('tabViewCeklist').style.display = 'block';
+      } else if (tab === 'suratjalan') {
+        document.getElementById('navSJ').classList.add('active');
+        document.getElementById('tabViewSuratJalan').style.display = 'block';
+        renderDailyWorkReport();
+      } else if (tab === 'files') {
+        document.getElementById('navFiles').classList.add('active');
+        document.getElementById('tabViewFiles').style.display = 'block';
+        renderProjectFiles();
+      }
+    }
+
+    function openInputModal(materialName = '') {
+      const materialInput = document.getElementById('modalMat');
+      const unitInput = document.getElementById('modalUnit');
+      const material = materialItems.find((item) => materialNamesMatch(materialName, item.name));
+      materialInput.value = materialName || '';
+      materialInput.readOnly = Boolean(materialName);
+      unitInput.value = material?.unit || 'Meter';
+      unitInput.disabled = Boolean(material);
+      document.getElementById('modalDate').value = getTodayISO();
+      updateIncomingUnitSettings();
+      document.getElementById('modalInput').style.display = 'flex';
+    }
+
+    function updateIncomingUnitSettings() {
+      const unit = document.getElementById('modalUnit').value;
+      document.getElementById('incomingUnitLabel').textContent = `(${unit})`;
+      document.getElementById('modalQty').step = unit === 'Meter' ? 'any' : '1';
+    }
+
+    function closeInputModal() {
+      document.getElementById('modalInput').style.display = 'none';
+      document.getElementById('modalMat').value = '';
+      document.getElementById('modalMat').readOnly = false;
+      document.getElementById('modalUnit').value = 'Meter';
+      document.getElementById('modalUnit').disabled = false;
+      document.getElementById('modalDate').value = '';
+      document.getElementById('modalQty').value = '';
+      document.getElementById('modalSJ').value = '';
+      document.getElementById('modalPhoto').value = '';
+      selectedMaterialForEntry = '';
+    }
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        if (!file) {
+          resolve(null);
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Gagal membaca foto surat jalan'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function saveNewDelivery() {
+      const mat = document.getElementById('modalMat').value.trim();
+      const unit = document.getElementById('modalUnit').value;
+      const qty = parsePositiveNumber(document.getElementById('modalQty').value);
+      const arrivalDate = document.getElementById('modalDate').value;
+      const sj = document.getElementById('modalSJ').value.trim();
+      const photoFile = document.getElementById('modalPhoto').files[0];
+
+      if (!validateNewMaterialInput()) {
+        return;
+      }
+
+      if (!mat || !Number.isFinite(qty) || qty <= 0 || !arrivalDate || !sj) {
+        alert('Mohon lengkapi Nama Material, Jumlah Masuk, Tanggal Kedatangan, dan Nomor Surat Jalan!');
+        return;
+      }
+      if (unit !== 'Meter' && !Number.isInteger(qty)) {
+        alert('Untuk satuan selain Meter, jumlah harus berupa bilangan bulat.');
+        return;
+      }
+
+      const photo = await readFileAsDataUrl(photoFile);
+      const existingIndex = materialItems.findIndex((item) => normalizeMaterialName(item.name) === normalizeMaterialName(mat));
+      const canonicalName = existingIndex >= 0 ? materialItems[existingIndex].name : mat;
+      const currentReceived = existingIndex >= 0 ? parseNonNegativeNumber(materialItems[existingIndex].received) ?? 0 : 0;
+      const updatedReceived = currentReceived + qty;
+      if (!Number.isFinite(updatedReceived) || updatedReceived > Number.MAX_SAFE_INTEGER) {
+        alert('Jumlah stok melewati batas angka yang dapat disimpan.');
+        return;
+      }
+      const record = {
+        date: formatDateForDisplay(arrivalDate),
+        qty,
+        sj,
+        photo
+      };
+
+      if (!deliveryHistory[canonicalName]) {
+        deliveryHistory[canonicalName] = [];
+      }
+      deliveryHistory[canonicalName].unshift(record);
+
+      if (existingIndex >= 0) {
+        materialItems[existingIndex].issued = parseNonNegativeNumber(materialItems[existingIndex].issued) ?? 0;
+        materialItems[existingIndex].received = updatedReceived;
+      } else {
+        materialItems.unshift({
+          category: detectCategory(mat),
+          name: mat,
+          received: qty,
+          issued: 0,
+          target: Math.max(qty, 1),
+          unit
+        });
+      }
+
+      if (!persistActiveProjectData()) return;
+      renderMaterialCards();
+  alert(`Pencatatan Berhasil!\n\nMaterial: ${canonicalName}\nQty: ${qty}\nNo. SJ: ${sj}`);
+      closeInputModal();
+    }
+
+    function openChecklistModal() {
+      document.getElementById('formDate').value = getTodayISO();
+      document.getElementById('formStatus').value = 'Belum';
+      document.getElementById('formSPV').value = '';
+      document.getElementById('formKategoriMEP').value = '';
+      document.getElementById('formShaftItem').value = '';
+      document.getElementById('formKamar').value = '';
+      document.getElementById('formCatatan').value = '';
+      document.getElementById('formPengetesan').value = '';
+      document.getElementById('formPIC').value = '';
+      document.getElementById('formDueDate').value = '';
+      document.getElementById('formPhoto').value = '';
+      selectedChecklistPhotoFiles = [];
+      renderChecklistPhotoSelection();
+      setScope('unit');
+      updateChecklistStatusControls();
+      document.getElementById('modalChecklist').style.display = 'flex';
+    }
+
+    function closeChecklistModal() {
+      document.getElementById('modalChecklist').style.display = 'none';
+      selectedChecklistPhotoFiles = [];
+      document.getElementById('formPhoto').value = '';
+      renderChecklistPhotoSelection();
+    }
+
+    function addChecklistPhotos(files) {
+      const selectedKeys = new Set(selectedChecklistPhotoFiles.map((file) => `${file.name}|${file.size}|${file.lastModified}`));
+      [...files].forEach((file) => {
+        const key = `${file.name}|${file.size}|${file.lastModified}`;
+        if (!selectedKeys.has(key)) {
+          selectedChecklistPhotoFiles.push(file);
+          selectedKeys.add(key);
+        }
+      });
+      document.getElementById('formPhoto').value = '';
+      renderChecklistPhotoSelection();
+    }
+
+    function removeChecklistPhoto(index) {
+      selectedChecklistPhotoFiles.splice(index, 1);
+      renderChecklistPhotoSelection();
+    }
+
+    function renderChecklistPhotoSelection() {
+      const selection = document.getElementById('checklistPhotoSelection');
+      const counter = document.getElementById('checklistPhotoCount');
+      if (!selection || !counter) return;
+
+      counter.textContent = selectedChecklistPhotoFiles.length
+        ? `${selectedChecklistPhotoFiles.length} foto dipilih.`
+        : 'Belum ada foto dipilih.';
+      selection.innerHTML = selectedChecklistPhotoFiles.map((file, index) => `
+        <div class="checklist-photo-file">
+          <span title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
+          <button type="button" onclick="removeChecklistPhoto(${index})" aria-label="Hapus foto ${escapeHtml(file.name)}" title="Hapus foto">×</button>
+        </div>
+      `).join('');
+    }
+
+    function getTodayISO() {
+      const today = new Date();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return `${today.getFullYear()}-${month}-${day}`;
+    }
+
+    function updateChecklistStatusControls() {
+      const status = document.getElementById('formStatus').value;
+      const progressInput = document.getElementById('formProgres');
+      const previousProgress = Number(progressInput.value);
+      const defectFields = document.getElementById('defectFollowUpFields');
+      const isDefect = status === 'Defect';
+
+      defectFields.style.display = isDefect ? 'grid' : 'none';
+      setChecklistFieldRequired('formPIC', 'formPICLabel', isDefect);
+      setChecklistFieldRequired('formDueDate', 'formDueDateLabel', isDefect);
+      setChecklistFieldRequired('formCatatan', 'formCatatanLabel', isDefect);
+      setChecklistFieldRequired('formPhoto', 'formPhotoLabel', isDefect);
+
+      if (status === 'Selesai') {
+        progressInput.max = 100;
+        progressInput.value = 100;
+        progressInput.disabled = true;
+      } else if (status === 'Belum') {
+        progressInput.max = 99;
+        progressInput.value = 0;
+        progressInput.disabled = true;
+      } else {
+        progressInput.disabled = false;
+        if (previousProgress >= 100) {
+          progressInput.value = 50;
+        }
+        progressInput.max = 99;
+        if (Number(progressInput.value) === 0 && status === 'Proses') {
+          progressInput.value = 50;
+        }
+      }
+
+      updateProgressLabel();
+    }
+
+    function setChecklistFieldRequired(inputId, labelId, required) {
+      document.getElementById(inputId).required = required;
+      document.getElementById(labelId).classList.toggle('required-label', required);
+    }
+
+    function updateChecklistLocationControls() {
+      const isUnit = currentScope === 'unit';
+      const roomType = document.getElementById('formTipe').value;
+      setChecklistFieldRequired('formTipe', 'formTipeLabel', isUnit);
+      setChecklistFieldRequired('formKamar', 'formKamarLabel', isUnit && !isCorridorRoomType(roomType));
+      setChecklistFieldRequired('formKategoriMEP', 'formKategoriLabel', isUnit);
+      setChecklistFieldRequired('formShaftNo', 'formShaftLabel', !isUnit);
+      setChecklistFieldRequired('formShaftItem', 'formShaftItemLabel', !isUnit);
+    }
+
+    function updateProgressLabel() {
+      const progressInput = document.getElementById('formProgres');
+      document.getElementById('valProgres').innerText = `${progressInput.value}%`;
+    }
+
+    function setScope(scope) {
+      currentScope = scope;
+      const btnUnit = document.getElementById('btnScopeUnit');
+      const btnShaft = document.getElementById('btnScopeShaft');
+      const areaUnit = document.getElementById('areaUnit');
+      const areaShaft = document.getElementById('areaShaft');
+
+      if (scope === 'unit') {
+        btnUnit.classList.add('active');
+        btnShaft.classList.remove('active');
+        areaUnit.style.display = 'block';
+        areaShaft.style.display = 'none';
+      } else {
+        btnShaft.classList.add('active');
+        btnUnit.classList.remove('active');
+        areaUnit.style.display = 'none';
+        areaShaft.style.display = 'block';
+      }
+
+      updateChecklistLocationControls();
+    }
+
+    function checklistIdentity(item) {
+      const area = item.scope === 'shaft'
+        ? `shaft:${item.shaft}`
+        : `unit:${item.roomType}:${isCorridorRoomType(item.roomType) ? 'koridor' : item.room}`;
+      return [item.floor, area, item.work, item.date]
+        .map((value) => String(value || '').trim().toLocaleLowerCase('id-ID').replace(/\s+/g, ' '))
+        .join('|');
+    }
+
+    function isCorridorRoomType(roomType) {
+      return String(roomType || '').trim().toLocaleLowerCase('id-ID') === 'koridor';
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[character]);
+    }
+
+    function formatChecklistDate(dateValue) {
+      if (!dateValue) return '-';
+      const [year, month, day] = dateValue.split('-');
+      return `${day}/${month}/${year}`;
+    }
+
+    function getChecklistArea(item) {
+      if (item.scope === 'shaft') return `${item.floor} - ${item.shaft}`;
+      const room = isCorridorRoomType(item.roomType) ? '' : ` - Kamar ${item.room}`;
+      return `${item.floor} - ${item.roomType}${room}`;
+    }
+
+    function getChecklistStatusLabel(status) {
+      return {
+        Belum: 'Belum Mulai',
+        Proses: 'Dalam Proses',
+        Selesai: '✓ Selesai',
+        Defect: 'Defect (Temuan)'
+      }[status] || status;
+    }
+
+    function getChecklistStatusClass(status) {
+      if (status === 'Selesai') return 'text-komplit';
+      if (status === 'Defect') return 'text-danger';
+      return 'text-kurang';
+    }
+
+    function renderChecklistMetrics() {
+      const completedMetric = document.getElementById('metricLolos');
+      const defectMetric = document.getElementById('metricReject');
+      if (completedMetric) completedMetric.textContent = checklistItems.filter((item) => item.status === 'Selesai').length;
+      if (defectMetric) defectMetric.textContent = checklistItems.filter((item) => item.status === 'Defect').length;
+    }
+
+    function renderChecklistCards() {
+      const list = document.getElementById('checklistCardList');
+      if (!list) return;
+
+      const floorFilter = document.getElementById('checklistFloorFilter');
+      const selectedFloor = floorFilter.value;
+      const floors = [...new Set(checklistItems.map((item) => item.floor).filter(Boolean))].sort((first, second) => first.localeCompare(second, 'id-ID'));
+      floorFilter.replaceChildren(new Option('Semua Lantai', ''), ...floors.map((floor) => new Option(floor, floor)));
+      floorFilter.value = floors.includes(selectedFloor) ? selectedFloor : '';
+
+      const query = document.getElementById('checklistSearch').value.trim().toLocaleLowerCase('id-ID');
+      const status = document.getElementById('checklistStatusFilter').value;
+      const filteredItems = checklistItems.filter((item) => {
+        if (floorFilter.value && item.floor !== floorFilter.value) return false;
+        if (status && item.status !== status) return false;
+        const searchable = [item.floor, getChecklistArea(item), item.work, item.supervisor, item.note, item.testingNote, item.assignee]
+          .join(' ').toLocaleLowerCase('id-ID');
+        return !query || searchable.includes(query);
+      });
+
+      list.innerHTML = filteredItems.map((item) => {
+        const area = escapeHtml(getChecklistArea(item));
+        const work = escapeHtml(item.work);
+        const statusClass = getChecklistStatusClass(item.status);
+        const progress = Math.max(0, Math.min(100, Number(item.progress) || 0));
+        const isComplete = item.status === 'Selesai';
+        const badgeClass = /penerangan|stop kontak|mcb|electrical|feeder/i.test(item.work) ? 'badge-electrical' : 'badge-plumbing';
+        const note = item.note ? `<div class="checklist-note">Catatan: ${escapeHtml(item.note)}</div>` : '';
+        const testing = item.testingNote ? `<div class="checklist-testing"><strong>Pengetesan:</strong> ${escapeHtml(item.testingNote)}</div>` : '';
+        const followup = item.assignee || item.dueDate
+          ? `<div class="checklist-followup">PIC: <strong>${escapeHtml(item.assignee || 'Belum ditentukan')}</strong> · Target: <strong>${escapeHtml(item.dueDate ? formatChecklistDate(item.dueDate) : 'Belum diatur')}</strong>${item.resolvedDate ? ` · Selesai: <strong>${escapeHtml(formatChecklistDate(item.resolvedDate))}</strong>` : ''}</div>`
+          : '';
+        const photos = Array.isArray(item.photos) ? item.photos : (item.photo ? [item.photo] : []);
+        const photo = photos.length
+          ? `<div class="checklist-photo-gallery">${photos.map((source, index) => `<img class="checklist-photo" src="${escapeHtml(source)}" alt="Foto ${index + 1} inspeksi ${work}">`).join('')}</div>`
+          : '';
+
+        return `
+          <article class="item-card checklist-card" data-checklist-id="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="Buka detail ${work}">
+            <div class="item-card-top">
+              <span class="badge-category ${badgeClass}">${area}</span>
+              <span class="status-text ${statusClass}">${escapeHtml(getChecklistStatusLabel(item.status))}</span>
+            </div>
+            <div class="item-card-name">${work}</div>
+            <div class="item-card-meta">
+              <span>${escapeHtml(formatChecklistDate(item.date))} · SPV: ${escapeHtml(item.supervisor)}</span>
+              <b>Progres: ${progress}%</b>
+            </div>
+            <div class="bar-track"><div class="${isComplete ? 'bar-fill green' : 'bar-fill'}" style="width: ${progress}%;"></div></div>
+            ${followup}${note}${testing}${photo}
+          </article>
+        `;
+      }).join('') || '<div class="history-placeholder">Tidak ada ceklist yang cocok dengan filter.</div>';
+
+      list.querySelectorAll('.checklist-card').forEach((card) => {
+        card.addEventListener('click', () => openChecklistDetail(card.dataset.checklistId));
+        card.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openChecklistDetail(card.dataset.checklistId);
+          }
+        });
+      });
+
+      renderChecklistMetrics();
+    }
+
+    function openChecklistDetail(checklistId) {
+      const item = checklistItems.find((entry) => entry.id === checklistId);
+      if (!item) return;
+
+      selectedChecklistDetailId = checklistId;
+      document.getElementById('checklistDetailWork').textContent = item.work;
+      document.getElementById('checklistDetailArea').textContent = getChecklistArea(item);
+      document.getElementById('checklistDetailDate').textContent = formatChecklistDate(item.date);
+      document.getElementById('checklistDetailSupervisor').textContent = item.supervisor || '-';
+      document.getElementById('checklistDetailStatus').value = item.status;
+
+      const mayReopenDefect = item.status === 'Defect' || (item.statusHistory || []).some((entry) => entry.to === 'Defect');
+      document.getElementById('detailStatusDefectOption').hidden = !mayReopenDefect;
+
+      const photos = Array.isArray(item.photos) ? item.photos : (item.photo ? [item.photo] : []);
+      document.getElementById('checklistDetailPhotos').innerHTML = photos.length
+        ? photos.map((source, index) => `<img class="checklist-photo" src="${escapeHtml(source)}" alt="Foto ${index + 1} inspeksi ${escapeHtml(item.work)}">`).join('')
+        : '<div class="history-placeholder">Belum ada foto dokumentasi</div>';
+
+      const notes = [
+        item.note ? `<div class="checklist-note"><strong>Catatan:</strong> ${escapeHtml(item.note)}</div>` : '',
+        item.testingNote ? `<div class="checklist-testing"><strong>Pengetesan:</strong> ${escapeHtml(item.testingNote)}</div>` : '',
+        item.assignee || item.dueDate ? `<div class="checklist-followup">PIC: <strong>${escapeHtml(item.assignee || 'Belum ditentukan')}</strong> · Target: <strong>${escapeHtml(item.dueDate ? formatChecklistDate(item.dueDate) : 'Belum diatur')}</strong></div>` : ''
+      ].filter(Boolean).join('');
+      document.getElementById('checklistDetailNotes').innerHTML = notes || '<div class="history-placeholder">Tidak ada catatan tambahan</div>';
+
+      const history = item.statusHistory || [];
+      document.getElementById('checklistStatusHistory').innerHTML = history.length
+        ? history.map((entry) => `<div class="history-item"><div class="history-header"><span>${escapeHtml(formatChecklistDate(entry.date))}</span><span>${escapeHtml(entry.role)}: ${escapeHtml(entry.by)}</span></div><div>${escapeHtml(getChecklistStatusLabel(entry.from))} → <strong>${escapeHtml(getChecklistStatusLabel(entry.to))}</strong> · Progres ${escapeHtml(entry.progress)}%</div></div>`).join('')
+        : '<div class="history-placeholder">Belum ada perubahan status</div>';
+
+      document.getElementById('checklistDetailActorRole').value = item.status === 'Defect' ? 'PIC' : 'SPV';
+      updateChecklistDetailActorName();
+      document.getElementById('checklistDetailProgress').value = item.progress;
+      updateChecklistDetailStatusControls();
+      document.getElementById('modalChecklistDetail').style.display = 'flex';
+    }
+
+    function closeChecklistDetail() {
+      document.getElementById('modalChecklistDetail').style.display = 'none';
+      selectedChecklistDetailId = '';
+    }
+
+    function showAppNotice(message) {
+      document.getElementById('appNoticeMessage').textContent = String(message ?? '');
+      document.getElementById('modalAppNotice').style.display = 'flex';
+    }
+
+    function closeAppNotice() {
+      document.getElementById('modalAppNotice').style.display = 'none';
+    }
+
+    function applyAppTheme(theme) {
+      const selectedTheme = theme === 'dark' ? 'dark' : 'light';
+      document.body.classList.toggle('theme-dark', selectedTheme === 'dark');
+      document.getElementById('themeLightButton').classList.toggle('active', selectedTheme === 'light');
+      document.getElementById('themeDarkButton').classList.toggle('active', selectedTheme === 'dark');
+      document.getElementById('themeLightButton').setAttribute('aria-pressed', String(selectedTheme === 'light'));
+      document.getElementById('themeDarkButton').setAttribute('aria-pressed', String(selectedTheme === 'dark'));
+      let saved = false;
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, selectedTheme);
+        saved = true;
+      } catch (error) {}
+      if (!saved) {
+        try {
+          sessionStorage.setItem(THEME_STORAGE_KEY, selectedTheme);
+        } catch (error) {}
+      }
+    }
+
+    function initializeAppTheme() {
+      let savedTheme = 'light';
+      try {
+        savedTheme = sessionStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem(THEME_STORAGE_KEY) || 'light';
+      } catch (error) {}
+      applyAppTheme(savedTheme);
+    }
+
+    function openSettingsModal() {
+      const currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      document.getElementById('themeLightButton').classList.toggle('active', currentTheme === 'light');
+      document.getElementById('themeDarkButton').classList.toggle('active', currentTheme === 'dark');
+      document.getElementById('themeLightButton').setAttribute('aria-pressed', String(currentTheme === 'light'));
+      document.getElementById('themeDarkButton').setAttribute('aria-pressed', String(currentTheme === 'dark'));
+      document.getElementById('modalSettings').style.display = 'flex';
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('modalSettings').style.display = 'none';
+    }
+
+    function readAuthProfile() {
+      try {
+        const localProfile = JSON.parse(localStorage.getItem(AUTH_PROFILE_KEY) || 'null');
+        if (localProfile) return localProfile;
+      } catch (error) {}
+      try {
+        return JSON.parse(sessionStorage.getItem(AUTH_PROFILE_KEY) || 'null');
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function isUserLoggedIn() {
+      try {
+        const storedState = localStorage.getItem(AUTH_STATE_KEY);
+        if (storedState !== null) return storedState === 'true';
+        return sessionStorage.getItem(AUTH_STATE_KEY) === 'true';
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function updateAccountProfile(profile) {
+      const name = profile?.name || 'Belum masuk';
+      const role = profile?.role || '';
+      document.getElementById('settingsAccountName').textContent = name;
+      document.getElementById('settingsAccountStatus').textContent = profile
+        ? `${role}${profile.isGuest ? ' · Mode Demo / Tamu' : ' · Sesi lokal belum terverifikasi'}`
+        : 'Sesi belum aktif';
+      document.getElementById('accountAvatarFallback').textContent = name.trim().charAt(0).toLocaleUpperCase('id-ID') || '?';
+      document.getElementById('headerSessionLabel').textContent = profile
+        ? `Victory Construction · ${profile.isGuest ? 'Mode Demo / Tamu' : role}`
+        : 'Victory Construction · Mode Demo Lokal';
+    }
+
+    const NEW_PROJECT_OPTION = '__new_project__';
+
+    function populateLoginProjectOptions(selectedProjectId = activeProjectId) {
+      const select = document.getElementById('loginProjectSelect');
+      select.replaceChildren();
+
+      projectRegistry.forEach((project) => {
+        const option = document.createElement('option');
+        option.value = project.id;
+        option.textContent = project.name;
+        select.append(option);
+      });
+
+      const newProjectOption = document.createElement('option');
+      newProjectOption.value = NEW_PROJECT_OPTION;
+      newProjectOption.textContent = '+ Tambah proyek baru...';
+      select.append(newProjectOption);
+      select.value = projectRegistry.some((project) => project.id === selectedProjectId)
+        ? selectedProjectId
+        : NEW_PROJECT_OPTION;
+      updateLoginProjectSelection();
+    }
+
+    function updateLoginProjectSelection() {
+      const select = document.getElementById('loginProjectSelect');
+      const newProjectRow = document.getElementById('loginNewProjectRow');
+      const newProjectName = document.getElementById('loginNewProjectName');
+      const creatingProject = select.value === NEW_PROJECT_OPTION;
+      newProjectRow.hidden = !creatingProject;
+      newProjectName.required = creatingProject;
+    }
+
+    function getLoginProjectName() {
+      const select = document.getElementById('loginProjectSelect');
+      if (select.value === NEW_PROJECT_OPTION) {
+        return document.getElementById('loginNewProjectName').value.trim();
+      }
+      return projectRegistry.find((project) => project.id === select.value)?.name || '';
+    }
+
+    function fillLoginForm(profile) {
+      document.getElementById('loginUserName').value = profile?.name === 'Tamu' ? '' : (profile?.name || '');
+      document.getElementById('loginUserRole').value = profile?.isGuest ? '' : (profile?.role || '');
+      const matchedProject = projectRegistry.find((project) =>
+        project.id === profile?.projectId || project.name === profile?.projectName
+      );
+      populateLoginProjectOptions(matchedProject?.id || activeProjectId);
+      const newProjectName = document.getElementById('loginNewProjectName');
+      newProjectName.value = matchedProject ? '' : (profile?.projectName || '');
+      if (!matchedProject && profile?.projectName) {
+        document.getElementById('loginProjectSelect').value = NEW_PROJECT_OPTION;
+      }
+      updateLoginProjectSelection();
+    }
+
+    function transitionAppScreen(target) {
+      const loginScreen = document.getElementById('loginScreen');
+      const dashboard = document.getElementById('dashboardApp');
+      const incoming = target === 'dashboard' ? dashboard : loginScreen;
+      const outgoing = target === 'dashboard' ? loginScreen : dashboard;
+
+      if (outgoing.hidden) {
+        incoming.hidden = false;
+        return;
+      }
+
+      outgoing.classList.add('screen-fade-out');
+      window.setTimeout(() => {
+        outgoing.hidden = true;
+        outgoing.classList.remove('screen-fade-out');
+        incoming.hidden = false;
+      }, 140);
+    }
+
+    function showLoginScreen() {
+      transitionAppScreen('login');
+    }
+
+    function showDashboard() {
+      transitionAppScreen('dashboard');
+    }
+
+    function activateProjectForLogin(projectName) {
+      const name = projectName.trim();
+      let project = projectRegistry.find((entry) => entry.name.trim().toLocaleLowerCase('id-ID') === name.toLocaleLowerCase('id-ID'));
+      if (project) {
+        if (project.id !== activeProjectId) switchProject(project.id);
+        return projectRegistry.find((entry) => entry.id === activeProjectId) || project;
+      }
+
+      if (!persistActiveProjectData()) return null;
+      project = { id: `project-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`}`, name };
+      projectRegistry.push(project);
+      if (!persistProjectRegistry()) {
+        projectRegistry.pop();
+        return null;
+      }
+
+      activeProjectId = project.id;
+      writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
+      loadProjectData(activeProjectId);
+      projectFolders = loadProjectFolders(activeProjectId);
+      activeFileFolderId = null;
+      persistActiveProjectData();
+      updateActiveProjectTitle();
+      renderProjectData();
+      return project;
+    }
+
+    function persistAuthSession(profile) {
+      try {
+        localStorage.setItem(AUTH_STATE_KEY, 'true');
+        localStorage.setItem(AUTH_PROFILE_KEY, JSON.stringify(profile));
+        return true;
+      } catch (error) {
+        try {
+          sessionStorage.setItem(AUTH_STATE_KEY, 'true');
+          sessionStorage.setItem(AUTH_PROFILE_KEY, JSON.stringify(profile));
+          showAppNotice('Sesi hanya tersimpan selama tab browser ini terbuka.');
+          return true;
+        } catch (sessionError) {
+          showAppNotice('Sesi tidak dapat disimpan di browser ini. Periksa kapasitas penyimpanan.');
+          return false;
+        }
+      }
+    }
+
+    function enterProjectSession(name, role, projectName, isGuest = false) {
+      if (!name.trim() || !role.trim() || !projectName.trim()) {
+        showAppNotice('Nama/ID, peran, dan nama proyek wajib diisi.');
+        return;
+      }
+
+      const project = activateProjectForLogin(projectName);
+      if (!project) return;
+      const profile = { name: name.trim(), role: role.trim(), projectId: project.id, projectName: project.name, isGuest };
+      if (!persistAuthSession(profile)) return;
+      updateAccountProfile(profile);
+      showDashboard();
+      renderProjectData();
+      switchTab('material');
+    }
+
+    function loginToProject() {
+      enterProjectSession(
+        document.getElementById('loginUserName').value,
+        document.getElementById('loginUserRole').value,
+        getLoginProjectName(),
+        false
+      );
+    }
+
+    function loginAsGuest() {
+      const name = document.getElementById('loginUserName').value.trim() || 'Tamu';
+      const project = getLoginProjectName() || projectRegistry.find((entry) => entry.id === activeProjectId)?.name || 'Proyek Sentral Tower';
+      enterProjectSession(name, 'Tamu', project, true);
+    }
+
+    function logoutAppSession() {
+      const profile = readAuthProfile();
+      try {
+        localStorage.setItem(AUTH_STATE_KEY, 'false');
+        sessionStorage.removeItem(AUTH_STATE_KEY);
+      } catch (error) {}
+      closeSettingsModal();
+      fillLoginForm(profile);
+      showLoginScreen();
+    }
+
+    function initializeLoginState() {
+      const profile = readAuthProfile();
+      const loggedIn = isUserLoggedIn() && Boolean(profile?.name && profile?.role);
+      if (loggedIn) {
+        updateAccountProfile(profile);
+        showDashboard();
+      } else {
+        try {
+          localStorage.setItem(AUTH_STATE_KEY, 'false');
+        } catch (error) {
+          try {
+            sessionStorage.setItem(AUTH_STATE_KEY, 'false');
+          } catch (sessionError) {}
+        }
+        updateAccountProfile(null);
+        fillLoginForm(profile);
+        showLoginScreen();
+      }
+    }
+
+    function setAppTheme(theme) {
+      applyAppTheme(theme);
+    }
+
+    window.alert = showAppNotice;
+
+    function initializeModalCloseButtons() {
+      const closeActions = {
+        modalSettings: closeSettingsModal,
+        modalAppNotice: closeAppNotice,
+        modalProjectFolder: closeProjectFolderModal,
+        modalConfirmFileDelete: closeProjectFileDeleteDialog,
+        modalDailyWorkForm: closeDailyWorkReportForm,
+        modalDailyWorkDetail: closeDailyWorkDetail,
+        modalInput: closeInputModal,
+        modalDetail: closeDetailModal,
+        modalIssue: closeIssueModal,
+        modalChecklistDetail: closeChecklistDetail,
+        modalProjectManager: closeProjectManager,
+        modalChecklist: closeChecklistModal
+      };
+
+      document.querySelectorAll('.modal-backdrop').forEach((backdrop) => {
+        const panel = backdrop.firstElementChild;
+        const closeAction = closeActions[backdrop.id];
+        if (!panel || !closeAction || panel.querySelector('.modal-close-button')) return;
+
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'modal-close-button';
+        button.textContent = '×';
+        button.setAttribute('aria-label', 'Tutup panel');
+        button.title = 'Tutup';
+        button.addEventListener('click', closeAction);
+        panel.prepend(button);
+      });
+    }
+
+    function updateChecklistDetailActorName() {
+      const item = checklistItems.find((entry) => entry.id === selectedChecklistDetailId);
+      if (!item) return;
+      const role = document.getElementById('checklistDetailActorRole').value;
+      document.getElementById('checklistDetailActorName').value = role === 'PIC'
+        ? (item.assignee === 'Belum ditentukan' ? '' : item.assignee || '')
+        : item.supervisor || '';
+    }
+
+    function updateChecklistDetailStatusControls() {
+      const status = document.getElementById('checklistDetailStatus').value;
+      const progress = document.getElementById('checklistDetailProgress');
+      const previousProgress = Number(progress.value);
+      if (status === 'Selesai') {
+        progress.max = 100;
+        progress.value = 100;
+        progress.disabled = true;
+      } else if (status === 'Belum') {
+        progress.max = 99;
+        progress.value = 0;
+        progress.disabled = true;
+      } else {
+        if (previousProgress >= 100) progress.value = 50;
+        progress.max = 99;
+        progress.disabled = false;
+      }
+      updateChecklistDetailProgressLabel();
+    }
+
+    function updateChecklistDetailProgressLabel() {
+      document.getElementById('checklistDetailProgressLabel').textContent = `${document.getElementById('checklistDetailProgress').value}%`;
+    }
+
+    function saveChecklistStatusUpdate() {
+      const item = checklistItems.find((entry) => entry.id === selectedChecklistDetailId);
+      if (!item) return;
+
+      const status = document.getElementById('checklistDetailStatus').value;
+      const progress = Number(document.getElementById('checklistDetailProgress').value);
+      const role = document.getElementById('checklistDetailActorRole').value;
+      const by = document.getElementById('checklistDetailActorName').value.trim();
+      if (!by) {
+        alert('Isi nama PIC atau SPV yang mengubah status.');
+        return;
+      }
+      if ((status === 'Belum' && progress !== 0) || (status === 'Selesai' && progress !== 100) || ((status === 'Proses' || status === 'Defect') && progress >= 100)) {
+        alert('Sesuaikan progres dengan status pemeriksaan.');
+        return;
+      }
+      if (status === item.status && progress === Number(item.progress)) {
+        alert('Belum ada perubahan status atau progres.');
+        return;
+      }
+
+      const previousStatus = item.status;
+      const previousProgress = item.progress;
+      const previousResolvedDate = item.resolvedDate;
+      const previousResolvedBy = item.resolvedBy;
+      const previousResolvedRole = item.resolvedRole;
+      const previousHistory = item.statusHistory;
+      item.status = status;
+      item.progress = progress;
+      item.statusHistory = [{ date: getTodayISO(), from: previousStatus, to: status, progress, role, by }, ...(previousHistory || [])];
+      if (status === 'Selesai') {
+        item.resolvedDate = getTodayISO();
+        item.resolvedBy = by;
+        item.resolvedRole = role;
+      } else if (previousStatus === 'Selesai') {
+        delete item.resolvedDate;
+        delete item.resolvedBy;
+        delete item.resolvedRole;
+      }
+
+      if (!persistChecklistItems()) {
+        item.status = previousStatus;
+        item.progress = previousProgress;
+        item.statusHistory = previousHistory;
+        if (previousResolvedDate) item.resolvedDate = previousResolvedDate;
+        else delete item.resolvedDate;
+        if (previousResolvedBy) item.resolvedBy = previousResolvedBy;
+        else delete item.resolvedBy;
+        if (previousResolvedRole) item.resolvedRole = previousResolvedRole;
+        else delete item.resolvedRole;
+        return;
+      }
+
+      renderChecklistCards();
+      openChecklistDetail(item.id);
+    }
+
+    function readChecklistPhoto(file) {
+      return new Promise((resolve, reject) => {
+        if (!file) return resolve(null);
+        const image = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        image.onload = () => {
+          const scale = Math.min(1, 1280 / Math.max(image.width, image.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(image.width * scale);
+          canvas.height = Math.round(image.height * scale);
+          canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(objectUrl);
+          resolve(canvas.toDataURL('image/jpeg', 0.75));
+        };
+        image.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error('Foto tidak dapat dibaca. Pilih file gambar yang valid.'));
+        };
+        image.src = objectUrl;
+      });
+    }
+
+    async function readChecklistPhotos(files) {
+      const photos = [];
+      for (const file of files) {
+        photos.push(await readChecklistPhoto(file));
+      }
+      return photos;
+    }
+
+    async function saveNewChecklist() {
+      const floor = document.getElementById('formLantai').value.trim();
+      const status = document.getElementById('formStatus').value;
+      const progress = Number(document.getElementById('formProgres').value);
+      const supervisor = document.getElementById('formSPV').value.trim();
+      const date = document.getElementById('formDate').value;
+      const note = document.getElementById('formCatatan').value.trim();
+      const testingNote = document.getElementById('formPengetesan').value.trim();
+      const isDefect = status === 'Defect';
+      const roomType = document.getElementById('formTipe').value.trim();
+      const room = document.getElementById('formKamar').value.trim();
+      const work = (currentScope === 'unit'
+        ? document.getElementById('formKategoriMEP').value
+        : document.getElementById('formShaftItem').value).trim();
+      const photoFiles = [...selectedChecklistPhotoFiles];
+
+      if (!floor || !date || !supervisor) {
+        alert('Area/lantai, tanggal inspeksi, dan nama SPV wajib diisi.');
+        return;
+      }
+      if (currentScope === 'unit' && !roomType) {
+        alert('Tipe ruangan wajib diisi.');
+        return;
+      }
+      if (!work) {
+        alert('Jenis pekerjaan atau item riser wajib diisi.');
+        return;
+      }
+      if (currentScope === 'shaft' && !document.getElementById('formShaftNo').value.trim()) {
+        alert('Area atau nomor shaft wajib diisi.');
+        return;
+      }
+      if (currentScope === 'unit' && !isCorridorRoomType(roomType) && !room) {
+        alert('Nomor kamar wajib diisi untuk inspeksi unit.');
+        return;
+      }
+      if (isDefect && (!note || !document.getElementById('formPIC').value.trim() || !document.getElementById('formDueDate').value || photoFiles.length === 0)) {
+        alert('Untuk defect, isi catatan, PIC, target penyelesaian, dan foto dokumentasi.');
+        return;
+      }
+      if ((status === 'Belum' && progress !== 0) || (status === 'Selesai' && progress !== 100) || ((status === 'Proses' || isDefect) && progress >= 100)) {
+        alert('Sesuaikan progres dengan status pemeriksaan.');
+        return;
+      }
+
+      const item = {
+        id: globalThis.crypto?.randomUUID?.() || `checklist-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        scope: currentScope,
+        floor,
+        roomType: currentScope === 'unit' ? roomType : '',
+        room: currentScope === 'unit' ? room : '',
+        shaft: currentScope === 'shaft' ? document.getElementById('formShaftNo').value.trim() : '',
+        work,
+        status,
+        supervisor,
+        progress,
+        date,
+        note,
+        testingNote,
+        photos: [],
+        assignee: isDefect ? document.getElementById('formPIC').value.trim() : '',
+        dueDate: isDefect ? document.getElementById('formDueDate').value : ''
+      };
+
+      const duplicate = checklistItems.find((entry) => checklistIdentity(entry) === checklistIdentity(item));
+      if (duplicate) {
+        alert(`Ceklist untuk area dan pekerjaan ini sudah tercatat pada ${formatChecklistDate(date)}.`);
+        return;
+      }
+
+      try {
+        item.photos = await readChecklistPhotos(photoFiles);
+      } catch (error) {
+        alert(error.message);
+        return;
+      }
+
+      checklistItems.unshift(item);
+      if (!persistChecklistItems()) {
+        checklistItems.shift();
+        return;
+      }
+
+      renderChecklistCards();
+      closeChecklistModal();
+    }
+
+    initializeAppTheme();
+    initializeModalCloseButtons();
+    initializeProjectManager();
+    initializeLoginState();
+    if (isUserLoggedIn()) renderProjectData();
+    loadAccountPhoto();
+  </script>
+</body>
+</html>
