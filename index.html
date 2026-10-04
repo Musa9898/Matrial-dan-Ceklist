@@ -190,6 +190,31 @@
       text-align: center;
     }
 
+    .login-remember {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0 14px;
+      color: var(--text-muted);
+      font-size: 0.76rem;
+    }
+
+    .login-remember input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: var(--brand-navy);
+    }
+
+    .login-status {
+      min-height: 1.4em;
+      margin: 10px 0 0;
+      color: var(--text-muted);
+      font-size: 0.76rem;
+      line-height: 1.4;
+      text-align: center;
+    }
+
     body.theme-dark .login-screen {
       border-color: var(--border-subtle);
       background: var(--bg-light);
@@ -1907,33 +1932,39 @@
     <div class="login-form-body">
       <form id="loginForm" onsubmit="event.preventDefault(); loginToProject()">
         <div class="form-row">
-          <label class="required-label" for="loginUserName">Nama Lengkap / ID Karyawan</label>
-          <input type="text" id="loginUserName" placeholder="Nama atau ID karyawan" autocomplete="username" required>
+          <label class="required-label" for="loginEmail">Email kerja</label>
+          <input type="email" id="loginEmail" name="email" placeholder="nama@perusahaan.com" autocomplete="username" required>
         </div>
         <div class="form-row">
-          <label class="required-label" for="loginUserRole">Peran / Jabatan</label>
-          <select id="loginUserRole" required>
-            <option value="" selected disabled>Pilih peran</option>
-            <option value="Site Engineer">Site Engineer</option>
-            <option value="Pelaksana Lapangan">Pelaksana Lapangan</option>
-            <option value="Logistik">Logistik</option>
-            <option value="Estimator/MEP">Estimator/MEP</option>
-          </select>
+          <label class="required-label" for="loginPassword">Sandi</label>
+          <input type="password" id="loginPassword" name="password" autocomplete="current-password" required>
+        </div>
+        <label class="login-remember" for="rememberLoginEmail">
+          <input type="checkbox" id="rememberLoginEmail">
+          Ingat email di perangkat ini
+        </label>
+        <div class="login-actions">
+          <button class="btn-save" id="loginSubmitButton" type="submit">Masuk</button>
+        </div>
+        <button class="btn-cancel" type="button" onclick="sendPasswordReset()">Lupa / atur sandi</button>
+        <p class="login-status" id="loginStatusMessage" role="status" aria-live="polite"></p>
+      </form>
+      <form id="passwordSetupForm" onsubmit="event.preventDefault(); completePasswordSetup()" hidden>
+        <h3 id="passwordSetupHeading">Atur sandi akun</h3>
+        <div class="form-row">
+          <label class="required-label" for="newLoginPassword">Sandi baru</label>
+          <input type="password" id="newLoginPassword" autocomplete="new-password" minlength="12" required>
         </div>
         <div class="form-row">
-          <label class="required-label" for="loginProjectSelect">Nama Proyek</label>
-          <select id="loginProjectSelect" onchange="updateLoginProjectSelection()" required></select>
-        </div>
-        <div class="form-row" id="loginNewProjectRow" hidden>
-          <label class="required-label" for="loginNewProjectName">Nama Proyek Baru</label>
-          <input type="text" id="loginNewProjectName" placeholder="Masukkan nama proyek baru">
+          <label class="required-label" for="confirmLoginPassword">Ulangi sandi baru</label>
+          <input type="password" id="confirmLoginPassword" autocomplete="new-password" minlength="12" required>
         </div>
         <div class="login-actions">
-          <button class="btn-save" type="submit">Masuk ke Proyek</button>
-          <button class="btn-cancel" id="loginAsGuestButton" type="button" onclick="loginAsGuest()">Masuk sebagai Mode Demo / Tamu</button>
+          <button class="btn-save" id="savePasswordButton" type="submit">Simpan sandi</button>
         </div>
+        <p class="login-status" id="passwordSetupStatus" role="status" aria-live="polite"></p>
       </form>
-      <p class="login-footnote">Profil demo disimpan di browser ini dan belum diverifikasi sebagai akun kerja.</p>
+      <p class="login-footnote">Hanya akun email yang telah diundang yang dapat masuk. Peran dan proyek ditetapkan oleh administrator.</p>
     </div>
   </main>
 
@@ -1957,7 +1988,7 @@
         </h1>
         <div class="status-indicator">
           <div class="dot-pulse"></div>
-          <span id="headerSessionLabel">Victory Construction · Mode Demo Lokal</span>
+          <span id="headerSessionLabel">Victory Construction · Sesi belum aktif</span>
         </div>
       </div>
       <button class="btn-settings" onclick="openSettingsModal()" aria-label="Pengaturan tampilan" title="Pengaturan tampilan">
@@ -2524,6 +2555,8 @@
 
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <script>
     let currentScope = 'unit';
     let selectedMaterialForEntry = '';
@@ -2534,11 +2567,15 @@
     const ACTIVE_PROJECT_KEY = 'project-monitor-active-project';
     const PROJECT_DATA_PREFIX = 'project-monitor-project-data:';
     const THEME_STORAGE_KEY = 'project-monitor-theme';
-    const AUTH_STATE_KEY = 'isLoggedIn';
-    const AUTH_PROFILE_KEY = 'project-monitor-user-profile';
+    const REMEMBERED_LOGIN_EMAIL_KEY = 'project-monitor-remembered-email';
     const PROJECT_FOLDER_PREFIX = 'project-monitor-project-folders:';
     const PROJECT_FILES_DATABASE = 'project-monitor-file-storage';
     const DEFAULT_PROJECT_ID = 'sentral-tower';
+    let supabaseClient = null;
+    let currentAuthUser = null;
+    let currentAuthProfile = null;
+    let authorizedProjectId = null;
+    let pendingPasswordFlow = '';
 
     function readLocalStorage(key) {
       try {
@@ -3063,7 +3100,7 @@
     function renderProjectList() {
       const list = document.getElementById('projectList');
       if (!list) return;
-      list.innerHTML = projectRegistry.map((project) => `
+      list.innerHTML = projectRegistry.filter((project) => !authorizedProjectId || project.id === authorizedProjectId).map((project) => `
         <button class="project-option ${project.id === activeProjectId ? 'active' : ''}" type="button" onclick="switchProject('${escapeHtml(project.id)}')">
           <span>${escapeHtml(project.name)}</span>
           <strong>${project.id === activeProjectId ? 'Aktif' : 'Pilih'}</strong>
@@ -3073,6 +3110,8 @@
 
     function openProjectManager() {
       document.getElementById('newProjectName').value = '';
+      document.getElementById('newProjectName').closest('.form-row').hidden = Boolean(authorizedProjectId);
+      document.querySelector('#modalProjectManager .btn-save').hidden = Boolean(authorizedProjectId);
       renderProjectList();
       document.getElementById('modalProjectManager').style.display = 'flex';
     }
@@ -3089,6 +3128,10 @@
     }
 
     function switchProject(projectId) {
+      if (authorizedProjectId && projectId !== authorizedProjectId) {
+        showAppNotice('Akun ini tidak memiliki akses ke proyek tersebut. Hubungi administrator.');
+        return;
+      }
       if (projectId === activeProjectId || !projectRegistry.some((project) => project.id === projectId)) {
         closeProjectManager();
         return;
@@ -3107,6 +3150,10 @@
     }
 
     function createProject() {
+      if (authorizedProjectId) {
+        showAppNotice('Pembuatan proyek harus dilakukan oleh administrator.');
+        return;
+      }
       const name = document.getElementById('newProjectName').value.trim();
       if (!name) {
         alert('Nama proyek wajib diisi.');
@@ -4483,26 +4530,8 @@
       document.getElementById('modalSettings').style.display = 'none';
     }
 
-    function readAuthProfile() {
-      try {
-        const localProfile = JSON.parse(localStorage.getItem(AUTH_PROFILE_KEY) || 'null');
-        if (localProfile) return localProfile;
-      } catch (error) {}
-      try {
-        return JSON.parse(sessionStorage.getItem(AUTH_PROFILE_KEY) || 'null');
-      } catch (error) {
-        return null;
-      }
-    }
-
     function isUserLoggedIn() {
-      try {
-        const storedState = localStorage.getItem(AUTH_STATE_KEY);
-        if (storedState !== null) return storedState === 'true';
-        return sessionStorage.getItem(AUTH_STATE_KEY) === 'true';
-      } catch (error) {
-        return false;
-      }
+      return Boolean(currentAuthUser && currentAuthProfile);
     }
 
     function updateAccountProfile(profile) {
@@ -4510,67 +4539,12 @@
       const role = profile?.role || '';
       document.getElementById('settingsAccountName').textContent = name;
       document.getElementById('settingsAccountStatus').textContent = profile
-        ? `${role}${profile.isGuest ? ' · Mode Demo / Tamu' : ' · Sesi lokal belum terverifikasi'}`
+        ? `${role} · Akun terverifikasi`
         : 'Sesi belum aktif';
       document.getElementById('accountAvatarFallback').textContent = name.trim().charAt(0).toLocaleUpperCase('id-ID') || '?';
       document.getElementById('headerSessionLabel').textContent = profile
-        ? `Victory Construction · ${profile.isGuest ? 'Mode Demo / Tamu' : role}`
-        : 'Victory Construction · Mode Demo Lokal';
-    }
-
-    const NEW_PROJECT_OPTION = '__new_project__';
-
-    function populateLoginProjectOptions(selectedProjectId = activeProjectId) {
-      const select = document.getElementById('loginProjectSelect');
-      select.replaceChildren();
-
-      projectRegistry.forEach((project) => {
-        const option = document.createElement('option');
-        option.value = project.id;
-        option.textContent = project.name;
-        select.append(option);
-      });
-
-      const newProjectOption = document.createElement('option');
-      newProjectOption.value = NEW_PROJECT_OPTION;
-      newProjectOption.textContent = '+ Tambah proyek baru...';
-      select.append(newProjectOption);
-      select.value = projectRegistry.some((project) => project.id === selectedProjectId)
-        ? selectedProjectId
-        : NEW_PROJECT_OPTION;
-      updateLoginProjectSelection();
-    }
-
-    function updateLoginProjectSelection() {
-      const select = document.getElementById('loginProjectSelect');
-      const newProjectRow = document.getElementById('loginNewProjectRow');
-      const newProjectName = document.getElementById('loginNewProjectName');
-      const creatingProject = select.value === NEW_PROJECT_OPTION;
-      newProjectRow.hidden = !creatingProject;
-      newProjectName.required = creatingProject;
-    }
-
-    function getLoginProjectName() {
-      const select = document.getElementById('loginProjectSelect');
-      if (select.value === NEW_PROJECT_OPTION) {
-        return document.getElementById('loginNewProjectName').value.trim();
-      }
-      return projectRegistry.find((project) => project.id === select.value)?.name || '';
-    }
-
-    function fillLoginForm(profile) {
-      document.getElementById('loginUserName').value = profile?.name === 'Tamu' ? '' : (profile?.name || '');
-      document.getElementById('loginUserRole').value = profile?.isGuest ? '' : (profile?.role || '');
-      const matchedProject = projectRegistry.find((project) =>
-        project.id === profile?.projectId || project.name === profile?.projectName
-      );
-      populateLoginProjectOptions(matchedProject?.id || activeProjectId);
-      const newProjectName = document.getElementById('loginNewProjectName');
-      newProjectName.value = matchedProject ? '' : (profile?.projectName || '');
-      if (!matchedProject && profile?.projectName) {
-        document.getElementById('loginProjectSelect').value = NEW_PROJECT_OPTION;
-      }
-      updateLoginProjectSelection();
+        ? `Victory Construction · ${role}`
+        : 'Victory Construction · Sesi belum aktif';
     }
 
     function transitionAppScreen(target) {
@@ -4600,111 +4574,256 @@
       transitionAppScreen('dashboard');
     }
 
-    function activateProjectForLogin(projectName) {
-      const name = projectName.trim();
-      let project = projectRegistry.find((entry) => entry.name.trim().toLocaleLowerCase('id-ID') === name.toLocaleLowerCase('id-ID'));
-      if (project) {
-        if (project.id !== activeProjectId) switchProject(project.id);
-        return projectRegistry.find((entry) => entry.id === activeProjectId) || project;
-      }
-
-      if (!persistActiveProjectData()) return null;
-      project = { id: `project-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`}`, name };
-      projectRegistry.push(project);
-      if (!persistProjectRegistry()) {
-        projectRegistry.pop();
-        return null;
-      }
-
-      activeProjectId = project.id;
-      writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
-      loadProjectData(activeProjectId);
-      projectFolders = loadProjectFolders(activeProjectId);
-      activeFileFolderId = null;
-      persistActiveProjectData();
-      updateActiveProjectTitle();
-      renderProjectData();
-      return project;
+    function setLoginStatus(message) {
+      document.getElementById('loginStatusMessage').textContent = message;
     }
 
-    function persistAuthSession(profile) {
+    function initializeRememberedLoginEmail() {
+      const emailInput = document.getElementById('loginEmail');
+      const rememberCheckbox = document.getElementById('rememberLoginEmail');
       try {
-        localStorage.setItem(AUTH_STATE_KEY, 'true');
-        localStorage.setItem(AUTH_PROFILE_KEY, JSON.stringify(profile));
-        return true;
-      } catch (error) {
-        try {
-          sessionStorage.setItem(AUTH_STATE_KEY, 'true');
-          sessionStorage.setItem(AUTH_PROFILE_KEY, JSON.stringify(profile));
-          showAppNotice('Sesi hanya tersimpan selama tab browser ini terbuka.');
-          return true;
-        } catch (sessionError) {
-          showAppNotice('Sesi tidak dapat disimpan di browser ini. Periksa kapasitas penyimpanan.');
-          return false;
-        }
-      }
+        const rememberedEmail = localStorage.getItem(REMEMBERED_LOGIN_EMAIL_KEY) || '';
+        emailInput.value = rememberedEmail;
+        rememberCheckbox.checked = Boolean(rememberedEmail);
+      } catch (error) {}
     }
 
-    function enterProjectSession(name, role, projectName, isGuest = false) {
-      if (!name.trim() || !role.trim() || !projectName.trim()) {
-        showAppNotice('Nama/ID, peran, dan nama proyek wajib diisi.');
+    function saveRememberedLoginEmail(email) {
+      try {
+        if (document.getElementById('rememberLoginEmail').checked) {
+          localStorage.setItem(REMEMBERED_LOGIN_EMAIL_KEY, email);
+        } else {
+          localStorage.removeItem(REMEMBERED_LOGIN_EMAIL_KEY);
+        }
+      } catch (error) {}
+    }
+
+    function resetLoginForms() {
+      document.getElementById('loginForm').hidden = false;
+      document.getElementById('passwordSetupForm').hidden = true;
+      document.getElementById('loginPassword').value = '';
+      document.getElementById('newLoginPassword').value = '';
+      document.getElementById('confirmLoginPassword').value = '';
+      pendingPasswordFlow = '';
+    }
+
+    async function loginToProject() {
+      if (!supabaseClient) {
+        setLoginStatus('Login resmi belum dikonfigurasi. Hubungi administrator aplikasi.');
+        return;
+      }
+      if (!['http:', 'https:'].includes(window.location.protocol)) {
+        setLoginStatus('Buka aplikasi melalui alamat web HTTPS atau server lokal, bukan file langsung.');
         return;
       }
 
-      const project = activateProjectForLogin(projectName);
-      if (!project) return;
-      const profile = { name: name.trim(), role: role.trim(), projectId: project.id, projectName: project.name, isGuest };
-      if (!persistAuthSession(profile)) return;
-      updateAccountProfile(profile);
+      const email = document.getElementById('loginEmail').value.trim().toLocaleLowerCase('id-ID');
+      const password = document.getElementById('loginPassword').value;
+      const submitButton = document.getElementById('loginSubmitButton');
+      submitButton.disabled = true;
+      setLoginStatus('Memverifikasi akun...');
+      saveRememberedLoginEmail(email);
+
+      try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        document.getElementById('loginPassword').value = '';
+        await loadAuthorizedProject(data.user);
+      } catch (error) {
+        setLoginStatus('Email atau sandi tidak cocok, atau akun belum diundang. Periksa kembali atau atur ulang sandi.');
+      } finally {
+        submitButton.disabled = false;
+      }
+    }
+
+    async function sendPasswordReset() {
+      if (!supabaseClient) {
+        setLoginStatus('Login resmi belum dikonfigurasi. Hubungi administrator aplikasi.');
+        return;
+      }
+      const email = document.getElementById('loginEmail').value.trim().toLocaleLowerCase('id-ID');
+      if (!email) {
+        setLoginStatus('Masukkan email terlebih dahulu untuk menerima tautan atur sandi.');
+        document.getElementById('loginEmail').focus();
+        return;
+      }
+
+      saveRememberedLoginEmail(email);
+      try {
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}${window.location.pathname}`
+        });
+        if (error) throw error;
+        setLoginStatus('Jika email tersebut memiliki akun undangan, instruksi atur sandi akan dikirim.');
+      } catch (error) {
+        setLoginStatus('Tautan atur sandi belum dapat dikirim. Periksa koneksi dan konfigurasi email.');
+      }
+    }
+
+    function getAuthLinkType() {
+      const queryParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.slice(1));
+      return queryParams.get('type') || hashParams.get('type') || '';
+    }
+
+    async function completePasswordSetup() {
+      if (!supabaseClient || !currentAuthUser) {
+        document.getElementById('passwordSetupStatus').textContent = 'Tautan tidak valid atau sesi sudah berakhir. Minta tautan baru.';
+        return;
+      }
+
+      const password = document.getElementById('newLoginPassword').value;
+      const confirmation = document.getElementById('confirmLoginPassword').value;
+      const status = document.getElementById('passwordSetupStatus');
+      if (password.length < 12) {
+        status.textContent = 'Gunakan sandi minimal 12 karakter.';
+        return;
+      }
+      if (password !== confirmation) {
+        status.textContent = 'Konfirmasi sandi belum sama.';
+        return;
+      }
+
+      const submitButton = document.getElementById('savePasswordButton');
+      submitButton.disabled = true;
+      status.textContent = 'Menyimpan sandi...';
+      try {
+        const { error } = await supabaseClient.auth.updateUser({ password });
+        if (error) throw error;
+        window.history.replaceState({}, document.title, window.location.pathname);
+        document.getElementById('newLoginPassword').value = '';
+        document.getElementById('confirmLoginPassword').value = '';
+        const { data, error: userError } = await supabaseClient.auth.getUser();
+        if (userError || !data.user) throw userError || new Error('Sesi tidak ditemukan.');
+        await loadAuthorizedProject(data.user);
+      } catch (error) {
+        status.textContent = 'Sandi belum dapat disimpan. Tautan mungkin kedaluwarsa; minta tautan baru.';
+      } finally {
+        submitButton.disabled = false;
+      }
+    }
+
+    async function loadAuthorizedProject(user) {
+      const { data: profile, error } = await supabaseClient
+        .from('project_access')
+        .select('full_name, employee_id, role, project_id, project_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error || !profile) {
+        await supabaseClient.auth.signOut({ scope: 'local' });
+        currentAuthUser = null;
+        currentAuthProfile = null;
+        authorizedProjectId = null;
+        updateAccountProfile(null);
+        resetLoginForms();
+        showLoginScreen();
+        showAppNotice('Akun belum diberi akses proyek. Hubungi administrator untuk undangan dan penetapan proyek.');
+        return false;
+      }
+
+      currentAuthUser = user;
+      currentAuthProfile = {
+        name: profile.full_name,
+        role: profile.role,
+        employeeId: profile.employee_id,
+        projectId: profile.project_id,
+        projectName: profile.project_name
+      };
+      authorizedProjectId = profile.project_id;
+
+      let project = projectRegistry.find((entry) => entry.id === authorizedProjectId);
+      if (project) {
+        project.name = profile.project_name;
+      } else {
+        project = { id: authorizedProjectId, name: profile.project_name };
+        projectRegistry.push(project);
+      }
+
+      activeProjectId = authorizedProjectId;
+      writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
+      persistProjectRegistry();
+      loadProjectData(activeProjectId);
+      projectFolders = loadProjectFolders(activeProjectId);
+      activeFileFolderId = null;
+      updateActiveProjectTitle();
+      updateAccountProfile(currentAuthProfile);
       showDashboard();
       renderProjectData();
       switchTab('material');
+      return true;
     }
 
-    function loginToProject() {
-      enterProjectSession(
-        document.getElementById('loginUserName').value,
-        document.getElementById('loginUserRole').value,
-        getLoginProjectName(),
-        false
-      );
-    }
-
-    function loginAsGuest() {
-      const name = document.getElementById('loginUserName').value.trim() || 'Tamu';
-      const project = getLoginProjectName() || projectRegistry.find((entry) => entry.id === activeProjectId)?.name || 'Proyek Sentral Tower';
-      enterProjectSession(name, 'Tamu', project, true);
-    }
-
-    function logoutAppSession() {
-      const profile = readAuthProfile();
-      try {
-        localStorage.setItem(AUTH_STATE_KEY, 'false');
-        sessionStorage.removeItem(AUTH_STATE_KEY);
-      } catch (error) {}
-      closeSettingsModal();
-      fillLoginForm(profile);
+    async function initializeSupabaseAuth() {
       showLoginScreen();
+      resetLoginForms();
+      initializeRememberedLoginEmail();
+      removeLocalStorage('isLoggedIn');
+      removeLocalStorage('project-monitor-user-profile');
+      try {
+        sessionStorage.removeItem('isLoggedIn');
+        sessionStorage.removeItem('project-monitor-user-profile');
+      } catch (error) {}
+
+      const config = window.PROJECT_MONITOR_SUPABASE_CONFIG;
+      if (!window.supabase?.createClient || !config?.url || !config?.publishableKey) {
+        setLoginStatus('Login resmi belum dikonfigurasi. Hubungi administrator aplikasi.');
+        updateAccountProfile(null);
+        return;
+      }
+
+      try {
+        supabaseClient = window.supabase.createClient(config.url, config.publishableKey, {
+          auth: {
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+            flowType: 'pkce',
+            persistSession: true
+          }
+        });
+        const { data, error } = await supabaseClient.auth.getUser();
+        if (error || !data.user) {
+          currentAuthUser = null;
+          currentAuthProfile = null;
+          updateAccountProfile(null);
+          return;
+        }
+        const authLinkType = getAuthLinkType();
+        if (authLinkType === 'invite' || authLinkType === 'recovery') {
+          currentAuthUser = data.user;
+          pendingPasswordFlow = authLinkType;
+          document.getElementById('loginForm').hidden = true;
+          document.getElementById('passwordSetupForm').hidden = false;
+          document.getElementById('passwordSetupHeading').textContent = authLinkType === 'invite'
+            ? 'Buat sandi akun undangan'
+            : 'Atur ulang sandi';
+          document.getElementById('passwordSetupStatus').textContent = 'Buat sandi minimal 12 karakter untuk melanjutkan.';
+          return;
+        }
+        await loadAuthorizedProject(data.user);
+      } catch (error) {
+        currentAuthUser = null;
+        currentAuthProfile = null;
+        updateAccountProfile(null);
+        setLoginStatus('Layanan login tidak dapat dihubungi. Periksa konfigurasi dan koneksi internet.');
+      }
     }
 
-    function initializeLoginState() {
-      const profile = readAuthProfile();
-      const loggedIn = isUserLoggedIn() && Boolean(profile?.name && profile?.role);
-      if (loggedIn) {
-        updateAccountProfile(profile);
-        showDashboard();
-      } else {
-        try {
-          localStorage.setItem(AUTH_STATE_KEY, 'false');
-        } catch (error) {
-          try {
-            sessionStorage.setItem(AUTH_STATE_KEY, 'false');
-          } catch (sessionError) {}
+    async function logoutAppSession() {
+      if (supabaseClient) {
+        const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
+        if (error) {
+          showAppNotice('Sesi belum dapat diakhiri. Coba lagi setelah koneksi pulih.');
+          return;
         }
-        updateAccountProfile(null);
-        fillLoginForm(profile);
-        showLoginScreen();
       }
+      currentAuthUser = null;
+      currentAuthProfile = null;
+      authorizedProjectId = null;
+      closeSettingsModal();
+      updateAccountProfile(null);
+      resetLoginForms();
+      showLoginScreen();
     }
 
     function setAppTheme(theme) {
@@ -4955,8 +5074,7 @@
     initializeAppTheme();
     initializeModalCloseButtons();
     initializeProjectManager();
-    initializeLoginState();
-    if (isUserLoggedIn()) renderProjectData();
+    initializeSupabaseAuth();
     loadAccountPhoto();
   </script>
 </body>
