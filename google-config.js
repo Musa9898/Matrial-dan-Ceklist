@@ -1,6 +1,6 @@
 const GOOGLE_CONFIG = Object.freeze({
   CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
-  WEB_APP_URL: ''
+  WEB_APP_URL: 'ISI_DENGAN_URL_DEPLOY_APPS_SCRIPT'
 });
 
 window.GOOGLE_CONFIG = GOOGLE_CONFIG;

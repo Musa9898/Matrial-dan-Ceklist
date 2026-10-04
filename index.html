@@ -2561,6 +2561,10 @@
     let currentAuthUser = null;
     let currentAuthProfile = null;
     let authorizedProjectId = null;
+    let currentGoogleCredential = '';
+    let authorizedProjectIds = new Set();
+    let authorizedProjects = [];
+    let remoteProjectFiles = [];
 
     function readLocalStorage(key) {
       try {
@@ -3016,13 +3020,81 @@
       };
     }
 
-    function persistActiveProjectData() {
+    function getAppsScriptUrl() {
+      const url = window.GOOGLE_CONFIG?.WEB_APP_URL?.trim() || '';
+      return !url || url.startsWith('ISI_') ? '' : url;
+    }
+
+    async function appsScriptRequest(action, payload = {}, method = 'POST') {
+      const webAppUrl = getAppsScriptUrl();
+      if (!webAppUrl) throw new Error('URL Apps Script belum dikonfigurasi di google-config.js.');
+
+      let requestUrl = webAppUrl;
+      const options = { method };
+      if (method === 'GET') {
+        const query = new URLSearchParams({
+          action,
+          idToken: currentGoogleCredential,
+          projectId: String(payload.projectId || '')
+        });
+        requestUrl += `${requestUrl.includes('?') ? '&' : '?'}${query.toString()}`;
+      } else {
+        options.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+        options.body = JSON.stringify({
+          ...payload,
+          action,
+          idToken: currentGoogleCredential
+        });
+      }
+
+      const response = await fetch(requestUrl, options);
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.status !== 'success') {
+        throw new Error(result.message || `Apps Script merespons ${response.status}.`);
+      }
+      return result;
+    }
+
+    function setAppsScriptStatus(message) {
+      const userLabel = currentAuthProfile?.isPreview ? 'Preview Mode' : (currentAuthProfile?.email || 'Google');
+      document.getElementById('headerSessionLabel').textContent = `Victory Construction · ${userLabel} · ${message}`;
+    }
+
+    async function persistActiveProjectData() {
       if (!activeProjectId) return false;
+      const snapshot = JSON.parse(JSON.stringify(getActiveProjectSnapshot()));
+      let localSaved = false;
       try {
-        localStorage.setItem(getProjectDataKey(activeProjectId), JSON.stringify(getActiveProjectSnapshot()));
+        localStorage.setItem(getProjectDataKey(activeProjectId), JSON.stringify(snapshot));
+        localSaved = true;
+      } catch (error) {
+        if (!getAppsScriptUrl()) {
+          showAppNotice('Penyimpanan browser penuh. Hapus sebagian data atau file lalu coba kembali.');
+          return false;
+        }
+      }
+
+      if (!getAppsScriptUrl()) return localSaved;
+      if (!currentGoogleCredential || currentAuthProfile?.isPreview) {
+        setAppsScriptStatus('lokal saja · masuk Google untuk sync');
+        return Boolean(currentAuthProfile?.isPreview && localSaved);
+      }
+
+      try {
+        setAppsScriptStatus('menyimpan ke Sheets…');
+        const result = await appsScriptRequest('saveSnapshot', {
+          projectId: activeProjectId,
+          snapshot
+        });
+        if (result.snapshot) {
+          applyProjectData(result.snapshot);
+          localStorage.setItem(getProjectDataKey(activeProjectId), JSON.stringify(result.snapshot));
+        }
+        setAppsScriptStatus('tersimpan di Sheets');
         return true;
       } catch (error) {
-        showAppNotice('Penyimpanan browser penuh. Hapus sebagian data atau file lalu coba kembali.');
+        setAppsScriptStatus('gagal sync');
+        showAppNotice(error.message || 'Data gagal disimpan ke Google Sheets.');
         return false;
       }
     }
@@ -3117,14 +3189,28 @@
       renderProjectFiles();
     }
 
-    function switchProject(projectId) {
+    async function switchProject(projectId) {
+      if (authorizedProjectIds.size && !authorizedProjectIds.has(projectId)) {
+        showAppNotice('Akun ini tidak memiliki akses ke proyek tersebut.');
+        return;
+      }
       if (projectId === activeProjectId || !projectRegistry.some((project) => project.id === projectId)) {
         closeProjectManager();
         return;
       }
-      if (!persistActiveProjectData()) return;
+      if (!await persistActiveProjectData()) return;
       activeProjectId = projectId;
       writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
+      if (getAppsScriptUrl() && currentGoogleCredential) {
+        try {
+          await loadAppsScriptProjectData();
+        } catch (error) {
+          showAppNotice(error.message || 'Data proyek gagal dimuat.');
+          return;
+        }
+        closeProjectManager();
+        return;
+      }
       loadProjectData(activeProjectId);
       projectFolders = loadProjectFolders(activeProjectId);
       activeFileFolderId = null;
@@ -3218,6 +3304,9 @@
     }
 
     async function getProjectFiles(projectId = activeProjectId) {
+      if (getAppsScriptUrl() && currentGoogleCredential) {
+        return remoteProjectFiles.filter((file) => file.projectId === projectId);
+      }
       const database = await openProjectFilesDatabase();
       return new Promise((resolve, reject) => {
         const transaction = database.transaction('files', 'readonly');
@@ -3233,6 +3322,21 @@
     }
 
     async function storeProjectFile(fileRecord) {
+      if (getAppsScriptUrl() && currentGoogleCredential) {
+        const base64 = await readFileAsDataUrl(fileRecord.blob);
+        const result = await appsScriptRequest('uploadFile', {
+          projectId: fileRecord.projectId,
+          file: {
+            name: fileRecord.name,
+            type: fileRecord.type,
+            size: fileRecord.size,
+            folderId: fileRecord.folderId,
+            base64
+          }
+        });
+        remoteProjectFiles.push(result.file);
+        return result.file;
+      }
       const database = await openProjectFilesDatabase();
       return new Promise((resolve, reject) => {
         const transaction = database.transaction('files', 'readwrite');
@@ -3381,6 +3485,9 @@
     }
 
     async function getProjectFile(fileId) {
+      if (getAppsScriptUrl() && currentGoogleCredential) {
+        return remoteProjectFiles.find((file) => file.id === fileId) || null;
+      }
       const database = await openProjectFilesDatabase();
       return new Promise((resolve, reject) => {
         const transaction = database.transaction('files', 'readonly');
@@ -3396,6 +3503,11 @@
     }
 
     async function removeProjectFile(fileId) {
+      if (getAppsScriptUrl() && currentGoogleCredential) {
+        await appsScriptRequest('deleteFile', { projectId: activeProjectId, fileId });
+        remoteProjectFiles = remoteProjectFiles.filter((file) => file.id !== fileId);
+        return;
+      }
       const database = await openProjectFilesDatabase();
       return new Promise((resolve, reject) => {
         const transaction = database.transaction('files', 'readwrite');
@@ -3615,6 +3727,11 @@
         const file = await getProjectFile(fileId);
         if (!file || file.projectId !== activeProjectId) {
           previewWindow?.close();
+          return;
+        }
+        if (file.driveUrl) {
+          if (previewWindow) previewWindow.location.href = file.driveUrl;
+          else window.open(file.driveUrl, '_blank', 'noopener');
           return;
         }
         const objectUrl = URL.createObjectURL(file.blob);
@@ -4601,9 +4718,40 @@
       currentAuthProfile = user;
       authorizedProjectId = user.isPreview ? null : user.sub;
       updateAccountProfile(user);
+      if (!getAppsScriptUrl() || user.isPreview) setAppsScriptStatus('penyimpanan lokal');
       showDashboard();
       renderProjectData();
       switchTab('material');
+    }
+
+    async function loadAppsScriptProjectData() {
+      if (!getAppsScriptUrl() || !currentGoogleCredential) return false;
+      setAppsScriptStatus('memuat dari Sheets…');
+      const result = await appsScriptRequest('load', {}, 'GET');
+      authorizedProjects = Array.isArray(result.projects) ? result.projects : [];
+      authorizedProjectIds = new Set(authorizedProjects.map((project) => project.projectId));
+      remoteProjectFiles = (result.records || [])
+        .filter((record) => record.recordType === 'file' && record.payload)
+        .map((record) => record.payload);
+      if (!authorizedProjects.length) throw new Error('Akun ini belum diberi akses proyek pada tab Access.');
+      projectRegistry = authorizedProjects.map((project) => ({ id: project.projectId, name: project.projectName }));
+      if (!authorizedProjectIds.has(activeProjectId)) activeProjectId = authorizedProjects[0].projectId;
+      authorizedProjectId = activeProjectId;
+      writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
+      const snapshot = result.snapshots?.[activeProjectId];
+      if (snapshot) {
+        applyProjectData(snapshot);
+        try {
+          localStorage.setItem(getProjectDataKey(activeProjectId), JSON.stringify(snapshot));
+        } catch (error) {}
+      } else {
+        applyProjectData(getEmptyProjectData());
+      }
+      projectFolders = Array.isArray(snapshot?.projectFolders) ? snapshot.projectFolders : [];
+      updateActiveProjectTitle();
+      renderProjectData();
+      setAppsScriptStatus('tersinkron dari Sheets');
+      return true;
     }
 
     function decodeGoogleCredential(credential) {
@@ -4633,14 +4781,22 @@
     function handleGoogleCredential(response) {
       try {
         const user = decodeGoogleCredential(response.credential);
+        currentGoogleCredential = response.credential;
         localStorage.setItem('mep_user', JSON.stringify(user));
         openDashboardForUser(user);
+        if (getAppsScriptUrl()) {
+          loadAppsScriptProjectData().catch((error) => {
+            setAppsScriptStatus('gagal memuat');
+            showAppNotice(error.message || 'Data proyek gagal dimuat dari Apps Script.');
+          });
+        }
       } catch (error) {
         setLoginStatus(error.message || 'Login Google gagal. Coba kembali.');
       }
     }
 
     function enterPreviewMode() {
+      currentGoogleCredential = '';
       localStorage.removeItem('mep_user');
       if (window.google?.accounts?.id) window.google.accounts.id.disableAutoSelect();
       const previewUser = {
@@ -4664,6 +4820,7 @@
       if (savedUser?.sub && savedUser?.email) {
         openDashboardForUser(savedUser);
       } else {
+        currentGoogleCredential = '';
         showLoginScreen();
         updateAccountProfile(null);
       }
@@ -4697,6 +4854,7 @@
 
     function logoutAppSession() {
       localStorage.removeItem('mep_user');
+      currentGoogleCredential = '';
       currentAuthUser = null;
       currentAuthProfile = null;
       authorizedProjectId = null;

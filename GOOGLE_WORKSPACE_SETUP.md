@@ -1,18 +1,27 @@
-# Google Sign-In: Tahap Pertama
+# GitHub Pages + Apps Script
 
-Aplikasi tetap statis di GitHub Pages. Tombol resmi Google dibuat oleh Google Identity Services. Setelah callback, profil dasar disimpan di `localStorage` dengan key `mep_user`; ID token dan sandi tidak disimpan.
+Website tetap statis di GitHub Pages. `index.html` memakai Google Identity Services untuk login; saat URL Apps Script diisi, seluruh snapshot proyek dikirim ke Web App dan foto Base64 diubah menjadi file Drive.
 
-## Set Client ID
+## Konfigurasi
 
-1. Di Google Cloud Console, buat OAuth Client ID bertipe **Web application**.
-2. Tambahkan origin website GitHub Pages ke **Authorized JavaScript origins**. Tambahkan origin localhost untuk preview lokal.
-3. Ganti `YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com` di `google-config.js` dengan Client ID tersebut.
-4. Siapkan consent screen dan test user di Google Cloud sesuai akun yang akan dipakai.
+1. Buat OAuth Client ID bertipe **Web application**. Tambahkan origin GitHub Pages dan origin localhost ke **Authorized JavaScript origins**.
+2. Di `google-config.js`, isi `CLIENT_ID` dan `WEB_APP_URL` dengan ID klien dan URL deployment Apps Script yang berakhiran `/exec`.
+3. Buka **Extensions > Apps Script** dari spreadsheet, tempel `Code.gs`, lalu ganti `SPREADSHEET_ID`, `FOLDER_ID`, dan `GOOGLE_CLIENT_ID` di bagian atas file. Apps Script perlu izin Sheets, Drive, dan UrlFetchApp saat pertama dijalankan.
+4. Buat tab `Access` dengan header `email`, `project_id`, `project_name`, `role`, `active`. Tambahkan satu baris per user dan proyek; `active` harus `TRUE`. Nilai `project_id` harus cocok dengan ID proyek aplikasi, misalnya `sentral-tower`. Kode akan membuat tab `Monitoring` beserta header-nya otomatis.
+5. Deploy Apps Script sebagai Web App, **Execute as: Me**, akses **Anyone**, lalu salin URL `/exec` ke `google-config.js`. Endpoint publik tetap memverifikasi Google ID token dan daftar `Access`; jangan membagikan spreadsheet ke pengguna aplikasi.
 
-`WEB_APP_URL` masih kosong dan belum digunakan pada tahap login ini. Tanpa Client ID, tombol Google tidak dapat dirender; tombol **Preview Mode / Bypass** tetap membuka dashboard untuk uji tampilan.
+Contoh baris `Access`:
 
-## Batas Keamanan
+```text
+user@gmail.com | sentral-tower | Proyek Sentral Tower | Logistik | TRUE
+```
 
-Frontend hanya mendekode klaim credential untuk menampilkan nama, email, Google ID, dan foto. Ia tidak memverifikasi tanda tangan token atau mengecek daftar undangan di server. `localStorage('mep_user')` dapat diedit, dan Preview Mode terlihat oleh semua pengunjung website. Karena itu, login ini **belum boleh dianggap sebagai kontrol akses data produksi**.
+Tab `Monitoring` menyimpan snapshot proyek serta baris checklist/material untuk pencarian. Lampiran diubah menjadi URL Drive dan disimpan pada kolom `drive_url` serta payload.
 
-Data dashboard juga masih memakai penyimpanan lokal browser. Pada tahap integrasi Apps Script berikutnya, token dan email undangan harus diverifikasi sebelum Sheets/Drive dibaca atau diubah. Apps Script `TextOutput` tidak menyediakan API untuk menambahkan header CORS kustom; cara pemanggilan dari GitHub Pages harus dirancang sesuai batas tersebut sebelum `fetch()` lintas-origin digunakan.
+## Catatan Keamanan dan CORS
+
+Frontend mengirim ID token ke Apps Script; Apps Script memverifikasi token ke Google dan mengecek email/proyek aktif di tab `Access`. Token login tidak disimpan di `localStorage`; hanya profil tampilan `mep_user` yang disimpan. Jangan gunakan Preview Dashboard untuk akses data produksi karena Preview Mode memang melewati login.
+
+`ContentService.TextOutput` tidak menyediakan API untuk menetapkan header `Access-Control-Allow-Origin`. POST memakai `text/plain;charset=utf-8` agar tidak memicu preflight, tetapi ini tidak menjamin browser mengizinkan JavaScript membaca respons. Karena itu, uji URL deployment dari domain GitHub Pages sebelum mengandalkan integrasi ini; jika CORS ditolak oleh browser, Apps Script `fetch()` lintas-origin tidak dapat diperbaiki hanya dengan menambah header dari `Code.gs`. Jangan menambahkan `mode: 'no-cors'`: respons menjadi opaque dan frontend tidak dapat memastikan apakah penyimpanan berhasil. GET mengirim ID token sebagai parameter URL, jadi gunakan token berumur pendek dan jangan mencatat URL request.
+
+Script membagikan foto sebagai **Anyone with the link – Viewer**, sesuai permintaan tautan Drive yang dapat dibuka. Artinya siapa pun yang memperoleh URL foto dapat melihatnya; jangan unggah foto sensitif. Snapshot lama yang sudah tersimpan di browser tidak otomatis dimigrasikan sampai pengguna membuka proyek dan menyimpannya kembali.
