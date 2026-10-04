@@ -215,6 +215,25 @@
       text-align: center;
     }
 
+    .google-signin-container {
+      display: flex;
+      justify-content: center;
+      min-height: 44px;
+      margin: 8px 0 4px;
+    }
+
+    .preview-mode-button {
+      display: block;
+      margin: 8px auto 0;
+      padding: 6px 10px;
+      border: 0;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
     body.theme-dark .login-screen {
       border-color: var(--border-subtle);
       background: var(--bg-light);
@@ -1930,41 +1949,10 @@
       <p>Sistem Monitoring Material &amp; Checklist Proyek</p>
     </section>
     <div class="login-form-body">
-      <form id="loginForm" onsubmit="event.preventDefault(); loginToProject()">
-        <div class="form-row">
-          <label class="required-label" for="loginEmail">Email kerja</label>
-          <input type="email" id="loginEmail" name="email" placeholder="nama@perusahaan.com" autocomplete="username" required>
-        </div>
-        <div class="form-row">
-          <label class="required-label" for="loginPassword">Sandi</label>
-          <input type="password" id="loginPassword" name="password" autocomplete="current-password" required>
-        </div>
-        <label class="login-remember" for="rememberLoginEmail">
-          <input type="checkbox" id="rememberLoginEmail">
-          Ingat email di perangkat ini
-        </label>
-        <div class="login-actions">
-          <button class="btn-save" id="loginSubmitButton" type="submit">Masuk</button>
-        </div>
-        <button class="btn-cancel" type="button" onclick="sendPasswordReset()">Lupa / atur sandi</button>
-        <p class="login-status" id="loginStatusMessage" role="status" aria-live="polite"></p>
-      </form>
-      <form id="passwordSetupForm" onsubmit="event.preventDefault(); completePasswordSetup()" hidden>
-        <h3 id="passwordSetupHeading">Atur sandi akun</h3>
-        <div class="form-row">
-          <label class="required-label" for="newLoginPassword">Sandi baru</label>
-          <input type="password" id="newLoginPassword" autocomplete="new-password" minlength="12" required>
-        </div>
-        <div class="form-row">
-          <label class="required-label" for="confirmLoginPassword">Ulangi sandi baru</label>
-          <input type="password" id="confirmLoginPassword" autocomplete="new-password" minlength="12" required>
-        </div>
-        <div class="login-actions">
-          <button class="btn-save" id="savePasswordButton" type="submit">Simpan sandi</button>
-        </div>
-        <p class="login-status" id="passwordSetupStatus" role="status" aria-live="polite"></p>
-      </form>
-      <p class="login-footnote">Hanya akun email yang telah diundang yang dapat masuk. Peran dan proyek ditetapkan oleh administrator.</p>
+      <div class="google-signin-container" id="googleSignInButton"></div>
+      <button class="preview-mode-button" type="button" onclick="enterPreviewMode()">Preview Dashboard</button>
+      <p class="login-status" id="loginStatusMessage" role="status" aria-live="polite"></p>
+      <p class="login-footnote">Sesi Google di tahap ini hanya membuka antarmuka; akses undangan dan penyimpanan server-side menyusul lewat Apps Script.</p>
     </div>
   </main>
 
@@ -2555,8 +2543,8 @@
 
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js"></script>
+  <script src="google-config.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script>
     let currentScope = 'unit';
     let selectedMaterialForEntry = '';
@@ -2567,15 +2555,12 @@
     const ACTIVE_PROJECT_KEY = 'project-monitor-active-project';
     const PROJECT_DATA_PREFIX = 'project-monitor-project-data:';
     const THEME_STORAGE_KEY = 'project-monitor-theme';
-    const REMEMBERED_LOGIN_EMAIL_KEY = 'project-monitor-remembered-email';
     const PROJECT_FOLDER_PREFIX = 'project-monitor-project-folders:';
     const PROJECT_FILES_DATABASE = 'project-monitor-file-storage';
     const DEFAULT_PROJECT_ID = 'sentral-tower';
-    let supabaseClient = null;
     let currentAuthUser = null;
     let currentAuthProfile = null;
     let authorizedProjectId = null;
-    let pendingPasswordFlow = '';
 
     function readLocalStorage(key) {
       try {
@@ -2935,7 +2920,7 @@
                   <span>${escapeHtml(dateLabel)}</span>
                 </div>
                 ${record.photo
-                  ? `<img class="history-photo" src="${escapeHtml(record.photo)}" alt="Foto surat jalan ${escapeHtml(record.sj || '')}">`
+                  ? projectPhotoMarkup(record.photo, `Foto surat jalan ${record.sj || ''}`)
                   : '<div class="history-placeholder">Foto surat jalan belum tersedia</div>'}
               </article>
             `).join('')}
@@ -3002,7 +2987,7 @@
     }
 
     function getEmptyProjectData() {
-      return { materialItems: [], deliveryHistory: {}, usageHistory: {}, checklistItems: [], dailyWorkPlans: [] };
+      return { materialItems: [], deliveryHistory: {}, usageHistory: {}, checklistItems: [], dailyWorkPlans: [], projectFolders: [] };
     }
 
     function replaceProjectMap(target, source) {
@@ -3017,21 +3002,27 @@
       replaceProjectMap(usageHistory, safeData.usageHistory);
       checklistItems = Array.isArray(safeData.checklistItems) ? safeData.checklistItems : [];
       dailyWorkPlans = Array.isArray(safeData.dailyWorkPlans) ? safeData.dailyWorkPlans : [];
+      projectFolders = Array.isArray(safeData.projectFolders) ? safeData.projectFolders : [];
+    }
+
+    function getActiveProjectSnapshot() {
+      return {
+        materialItems,
+        deliveryHistory,
+        usageHistory,
+        checklistItems,
+        dailyWorkPlans,
+        projectFolders
+      };
     }
 
     function persistActiveProjectData() {
       if (!activeProjectId) return false;
       try {
-        localStorage.setItem(getProjectDataKey(activeProjectId), JSON.stringify({
-          materialItems,
-          deliveryHistory,
-          usageHistory,
-          checklistItems,
-          dailyWorkPlans
-        }));
+        localStorage.setItem(getProjectDataKey(activeProjectId), JSON.stringify(getActiveProjectSnapshot()));
         return true;
       } catch (error) {
-        alert('Penyimpanan proyek penuh. Hapus sebagian data atau foto lalu coba kembali.');
+        showAppNotice('Penyimpanan browser penuh. Hapus sebagian data atau file lalu coba kembali.');
         return false;
       }
     }
@@ -3088,7 +3079,6 @@
       activeFileFolderId = null;
       persistProjectRegistry();
       writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
-      persistActiveProjectData();
       updateActiveProjectTitle();
     }
 
@@ -3100,7 +3090,7 @@
     function renderProjectList() {
       const list = document.getElementById('projectList');
       if (!list) return;
-      list.innerHTML = projectRegistry.filter((project) => !authorizedProjectId || project.id === authorizedProjectId).map((project) => `
+      list.innerHTML = projectRegistry.map((project) => `
         <button class="project-option ${project.id === activeProjectId ? 'active' : ''}" type="button" onclick="switchProject('${escapeHtml(project.id)}')">
           <span>${escapeHtml(project.name)}</span>
           <strong>${project.id === activeProjectId ? 'Aktif' : 'Pilih'}</strong>
@@ -3128,16 +3118,11 @@
     }
 
     function switchProject(projectId) {
-      if (authorizedProjectId && projectId !== authorizedProjectId) {
-        showAppNotice('Akun ini tidak memiliki akses ke proyek tersebut. Hubungi administrator.');
-        return;
-      }
       if (projectId === activeProjectId || !projectRegistry.some((project) => project.id === projectId)) {
         closeProjectManager();
         return;
       }
       if (!persistActiveProjectData()) return;
-
       activeProjectId = projectId;
       writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
       loadProjectData(activeProjectId);
@@ -3254,7 +3239,7 @@
         transaction.objectStore('files').put(fileRecord);
         transaction.oncomplete = () => {
           database.close();
-          resolve();
+          resolve(fileRecord);
         };
         transaction.onerror = () => {
           database.close();
@@ -3319,6 +3304,13 @@
       const fallback = document.getElementById('accountAvatarFallback');
       if (accountPhotoObjectUrl) URL.revokeObjectURL(accountPhotoObjectUrl);
       accountPhotoObjectUrl = null;
+
+      if (currentAuthProfile?.picture) {
+        image.src = currentAuthProfile.picture;
+        image.hidden = false;
+        fallback.hidden = true;
+        return;
+      }
 
       if (!blob) {
         image.removeAttribute('src');
@@ -3428,7 +3420,7 @@
       document.getElementById('modalProjectFolder').style.display = 'none';
     }
 
-    function createProjectFolder() {
+    async function createProjectFolder() {
       const name = document.getElementById('newProjectFolderName').value.trim();
       if (!name) {
         alert('Nama folder wajib diisi.');
@@ -3445,7 +3437,7 @@
         createdAt: new Date().toISOString()
       };
       projectFolders.unshift(folder);
-      if (!persistProjectFolders()) {
+      if (!await persistProjectFolders()) {
         projectFolders.shift();
         return;
       }
@@ -3611,6 +3603,12 @@
       document.getElementById('globalFileSearchResults').innerHTML = '';
     }
 
+    function projectPhotoMarkup(photo, alt, className = 'history-photo') {
+      return photo
+        ? `<img class="${className}" src="${escapeHtml(photo)}" alt="${escapeHtml(alt)}">`
+        : '';
+    }
+
     async function openProjectFile(fileId) {
       const previewWindow = window.open('', '_blank');
       try {
@@ -3774,7 +3772,7 @@
       `).join('');
     }
 
-    function saveDailyWorkReport() {
+    async function saveDailyWorkReport() {
       const title = document.getElementById('dailyReportTitle').value.trim();
       const date = document.getElementById('dailyReportDate').value;
       const supervisor = document.getElementById('dailyReportSupervisor').value.trim();
@@ -3795,7 +3793,7 @@
         tasks: dailyWorkDraftTasks.map((task) => ({ ...task }))
       };
       dailyWorkPlans.unshift(report);
-      if (!persistDailyWorkPlans()) {
+      if (!await persistDailyWorkPlans()) {
         dailyWorkPlans.shift();
         return;
       }
@@ -3880,7 +3878,7 @@
           </div>
           <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px;">SJ: ${escapeHtml(entry.sj)}</div>
           ${entry.photo
-            ? `<img class="history-photo" src="${escapeHtml(entry.photo)}" alt="Foto surat jalan ${escapeHtml(entry.sj)}">`
+            ? projectPhotoMarkup(entry.photo, `Foto surat jalan ${entry.sj}`)
             : '<div class="history-placeholder">Foto surat jalan belum tersedia</div>'}
         </div>
       `).join('');
@@ -3975,7 +3973,7 @@
       return date.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
 
-    function saveMaterialIssue() {
+    async function saveMaterialIssue() {
       const materialName = document.getElementById('issueMaterial').value.trim();
       const petugasLogistik = document.getElementById('issueLogistik').value.trim();
       const penerima = document.getElementById('issuePenerima').value.trim();
@@ -4005,6 +4003,8 @@
         return;
       }
 
+      const previousMaterial = { ...materialItems[itemIndex] };
+      const previousUsage = [...(usageHistory[materialName] || [])];
       materialItems[itemIndex].issued = (parseNonNegativeNumber(materialItems[itemIndex].issued) ?? 0) + qty;
 
       if (!usageHistory[materialName]) {
@@ -4020,7 +4020,11 @@
         pekerjaan
       });
 
-      if (!persistActiveProjectData()) return;
+      if (!await persistActiveProjectData()) {
+        materialItems[itemIndex] = previousMaterial;
+        usageHistory[materialName] = previousUsage;
+        return;
+      }
       renderMaterialCards();
       openMaterialDetail(materialName);
       closeIssueModal();
@@ -4096,14 +4100,10 @@
     }
     function readFileAsDataUrl(file) {
       return new Promise((resolve, reject) => {
-        if (!file) {
-          resolve(null);
-          return;
-        }
-
+        if (!file) return resolve(null);
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(new Error('Gagal membaca foto surat jalan'));
+        reader.onerror = () => reject(new Error('Gagal membaca foto.'));
         reader.readAsDataURL(file);
       });
     }
@@ -4144,6 +4144,8 @@
         sj,
         photo
       };
+      const previousMaterial = existingIndex >= 0 ? { ...materialItems[existingIndex] } : null;
+      const previousHistory = [...(deliveryHistory[canonicalName] || [])];
 
       if (!deliveryHistory[canonicalName]) {
         deliveryHistory[canonicalName] = [];
@@ -4164,7 +4166,12 @@
         });
       }
 
-      if (!persistActiveProjectData()) return;
+      if (!await persistActiveProjectData()) {
+        deliveryHistory[canonicalName] = previousHistory;
+        if (existingIndex >= 0) materialItems[existingIndex] = previousMaterial;
+        else materialItems.shift();
+        return;
+      }
       renderMaterialCards();
   alert(`Pencatatan Berhasil!\n\nMaterial: ${canonicalName}\nQty: ${qty}\nNo. SJ: ${sj}`);
       closeInputModal();
@@ -4405,7 +4412,7 @@
           : '';
         const photos = Array.isArray(item.photos) ? item.photos : (item.photo ? [item.photo] : []);
         const photo = photos.length
-          ? `<div class="checklist-photo-gallery">${photos.map((source, index) => `<img class="checklist-photo" src="${escapeHtml(source)}" alt="Foto ${index + 1} inspeksi ${work}">`).join('')}</div>`
+          ? `<div class="checklist-photo-gallery">${photos.map((source, index) => projectPhotoMarkup(source, `Foto ${index + 1} inspeksi ${work}`, 'checklist-photo')).join('')}</div>`
           : '';
 
         return `
@@ -4454,7 +4461,7 @@
 
       const photos = Array.isArray(item.photos) ? item.photos : (item.photo ? [item.photo] : []);
       document.getElementById('checklistDetailPhotos').innerHTML = photos.length
-        ? photos.map((source, index) => `<img class="checklist-photo" src="${escapeHtml(source)}" alt="Foto ${index + 1} inspeksi ${escapeHtml(item.work)}">`).join('')
+        ? photos.map((source, index) => projectPhotoMarkup(source, `Foto ${index + 1} inspeksi ${item.work}`, 'checklist-photo')).join('')
         : '<div class="history-placeholder">Belum ada foto dokumentasi</div>';
 
       const notes = [
@@ -4535,15 +4542,26 @@
     }
 
     function updateAccountProfile(profile) {
-      const name = profile?.name || 'Belum masuk';
-      const role = profile?.role || '';
+      const name = profile?.name || profile?.email || 'Belum masuk';
+      const role = profile?.isPreview ? 'Preview Mode' : 'Google account';
       document.getElementById('settingsAccountName').textContent = name;
       document.getElementById('settingsAccountStatus').textContent = profile
-        ? `${role} · Akun terverifikasi`
+        ? (profile.isPreview ? 'Preview lokal · tidak terverifikasi' : `${role} · profil tersimpan di browser`)
         : 'Sesi belum aktif';
       document.getElementById('accountAvatarFallback').textContent = name.trim().charAt(0).toLocaleUpperCase('id-ID') || '?';
+      const accountImage = document.getElementById('accountAvatarImage');
+      if (accountPhotoObjectUrl) URL.revokeObjectURL(accountPhotoObjectUrl);
+      accountPhotoObjectUrl = null;
+      if (profile?.picture) {
+        accountImage.src = profile.picture;
+        accountImage.hidden = false;
+        document.getElementById('accountAvatarFallback').hidden = true;
+      } else {
+        accountImage.hidden = true;
+        document.getElementById('accountAvatarFallback').hidden = false;
+      }
       document.getElementById('headerSessionLabel').textContent = profile
-        ? `Victory Construction · ${role}`
+        ? (profile.isPreview ? 'Victory Construction · Preview Mode' : `Victory Construction · ${profile.email}`)
         : 'Victory Construction · Sesi belum aktif';
     }
 
@@ -4578,252 +4596,115 @@
       document.getElementById('loginStatusMessage').textContent = message;
     }
 
-    function initializeRememberedLoginEmail() {
-      const emailInput = document.getElementById('loginEmail');
-      const rememberCheckbox = document.getElementById('rememberLoginEmail');
-      try {
-        const rememberedEmail = localStorage.getItem(REMEMBERED_LOGIN_EMAIL_KEY) || '';
-        emailInput.value = rememberedEmail;
-        rememberCheckbox.checked = Boolean(rememberedEmail);
-      } catch (error) {}
-    }
-
-    function saveRememberedLoginEmail(email) {
-      try {
-        if (document.getElementById('rememberLoginEmail').checked) {
-          localStorage.setItem(REMEMBERED_LOGIN_EMAIL_KEY, email);
-        } else {
-          localStorage.removeItem(REMEMBERED_LOGIN_EMAIL_KEY);
-        }
-      } catch (error) {}
-    }
-
-    function resetLoginForms() {
-      document.getElementById('loginForm').hidden = false;
-      document.getElementById('passwordSetupForm').hidden = true;
-      document.getElementById('loginPassword').value = '';
-      document.getElementById('newLoginPassword').value = '';
-      document.getElementById('confirmLoginPassword').value = '';
-      pendingPasswordFlow = '';
-    }
-
-    async function loginToProject() {
-      if (!supabaseClient) {
-        setLoginStatus('Login resmi belum dikonfigurasi. Hubungi administrator aplikasi.');
-        return;
-      }
-      if (!['http:', 'https:'].includes(window.location.protocol)) {
-        setLoginStatus('Buka aplikasi melalui alamat web HTTPS atau server lokal, bukan file langsung.');
-        return;
-      }
-
-      const email = document.getElementById('loginEmail').value.trim().toLocaleLowerCase('id-ID');
-      const password = document.getElementById('loginPassword').value;
-      const submitButton = document.getElementById('loginSubmitButton');
-      submitButton.disabled = true;
-      setLoginStatus('Memverifikasi akun...');
-      saveRememberedLoginEmail(email);
-
-      try {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        document.getElementById('loginPassword').value = '';
-        await loadAuthorizedProject(data.user);
-      } catch (error) {
-        setLoginStatus('Email atau sandi tidak cocok, atau akun belum diundang. Periksa kembali atau atur ulang sandi.');
-      } finally {
-        submitButton.disabled = false;
-      }
-    }
-
-    async function sendPasswordReset() {
-      if (!supabaseClient) {
-        setLoginStatus('Login resmi belum dikonfigurasi. Hubungi administrator aplikasi.');
-        return;
-      }
-      const email = document.getElementById('loginEmail').value.trim().toLocaleLowerCase('id-ID');
-      if (!email) {
-        setLoginStatus('Masukkan email terlebih dahulu untuk menerima tautan atur sandi.');
-        document.getElementById('loginEmail').focus();
-        return;
-      }
-
-      saveRememberedLoginEmail(email);
-      try {
-        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}${window.location.pathname}`
-        });
-        if (error) throw error;
-        setLoginStatus('Jika email tersebut memiliki akun undangan, instruksi atur sandi akan dikirim.');
-      } catch (error) {
-        setLoginStatus('Tautan atur sandi belum dapat dikirim. Periksa koneksi dan konfigurasi email.');
-      }
-    }
-
-    function getAuthLinkType() {
-      const queryParams = new URLSearchParams(window.location.search);
-      const hashParams = new URLSearchParams(window.location.hash.slice(1));
-      return queryParams.get('type') || hashParams.get('type') || '';
-    }
-
-    async function completePasswordSetup() {
-      if (!supabaseClient || !currentAuthUser) {
-        document.getElementById('passwordSetupStatus').textContent = 'Tautan tidak valid atau sesi sudah berakhir. Minta tautan baru.';
-        return;
-      }
-
-      const password = document.getElementById('newLoginPassword').value;
-      const confirmation = document.getElementById('confirmLoginPassword').value;
-      const status = document.getElementById('passwordSetupStatus');
-      if (password.length < 12) {
-        status.textContent = 'Gunakan sandi minimal 12 karakter.';
-        return;
-      }
-      if (password !== confirmation) {
-        status.textContent = 'Konfirmasi sandi belum sama.';
-        return;
-      }
-
-      const submitButton = document.getElementById('savePasswordButton');
-      submitButton.disabled = true;
-      status.textContent = 'Menyimpan sandi...';
-      try {
-        const { error } = await supabaseClient.auth.updateUser({ password });
-        if (error) throw error;
-        window.history.replaceState({}, document.title, window.location.pathname);
-        document.getElementById('newLoginPassword').value = '';
-        document.getElementById('confirmLoginPassword').value = '';
-        const { data, error: userError } = await supabaseClient.auth.getUser();
-        if (userError || !data.user) throw userError || new Error('Sesi tidak ditemukan.');
-        await loadAuthorizedProject(data.user);
-      } catch (error) {
-        status.textContent = 'Sandi belum dapat disimpan. Tautan mungkin kedaluwarsa; minta tautan baru.';
-      } finally {
-        submitButton.disabled = false;
-      }
-    }
-
-    async function loadAuthorizedProject(user) {
-      const { data: profile, error } = await supabaseClient
-        .from('project_access')
-        .select('full_name, employee_id, role, project_id, project_name')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error || !profile) {
-        await supabaseClient.auth.signOut({ scope: 'local' });
-        currentAuthUser = null;
-        currentAuthProfile = null;
-        authorizedProjectId = null;
-        updateAccountProfile(null);
-        resetLoginForms();
-        showLoginScreen();
-        showAppNotice('Akun belum diberi akses proyek. Hubungi administrator untuk undangan dan penetapan proyek.');
-        return false;
-      }
-
+    function openDashboardForUser(user) {
       currentAuthUser = user;
-      currentAuthProfile = {
-        name: profile.full_name,
-        role: profile.role,
-        employeeId: profile.employee_id,
-        projectId: profile.project_id,
-        projectName: profile.project_name
-      };
-      authorizedProjectId = profile.project_id;
-
-      let project = projectRegistry.find((entry) => entry.id === authorizedProjectId);
-      if (project) {
-        project.name = profile.project_name;
-      } else {
-        project = { id: authorizedProjectId, name: profile.project_name };
-        projectRegistry.push(project);
-      }
-
-      activeProjectId = authorizedProjectId;
-      writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
-      persistProjectRegistry();
-      loadProjectData(activeProjectId);
-      projectFolders = loadProjectFolders(activeProjectId);
-      activeFileFolderId = null;
-      updateActiveProjectTitle();
-      updateAccountProfile(currentAuthProfile);
+      currentAuthProfile = user;
+      authorizedProjectId = user.isPreview ? null : user.sub;
+      updateAccountProfile(user);
       showDashboard();
       renderProjectData();
       switchTab('material');
-      return true;
     }
 
-    async function initializeSupabaseAuth() {
-      showLoginScreen();
-      resetLoginForms();
-      initializeRememberedLoginEmail();
-      removeLocalStorage('isLoggedIn');
-      removeLocalStorage('project-monitor-user-profile');
-      try {
-        sessionStorage.removeItem('isLoggedIn');
-        sessionStorage.removeItem('project-monitor-user-profile');
-      } catch (error) {}
+    function decodeGoogleCredential(credential) {
+      const encodedPayload = credential.split('.')[1];
+      if (!encodedPayload) throw new Error('Credential Google tidak valid.');
+      const base64 = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+      const bytes = Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
+      const claims = JSON.parse(new TextDecoder().decode(bytes));
+      const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
+      if (!audiences.includes(window.GOOGLE_CONFIG?.CLIENT_ID) || Number(claims.exp) * 1000 <= Date.now()) {
+        throw new Error('Credential Google tidak cocok atau sudah kedaluwarsa.');
+      }
+      if (!claims.sub || !claims.email || claims.email_verified !== true) {
+        throw new Error('Google tidak mengembalikan email terverifikasi.');
+      }
+      return {
+        sub: claims.sub,
+        name: claims.name || claims.email,
+        email: claims.email,
+        picture: claims.picture || '',
+        authProvider: 'google',
+        signedInAt: new Date().toISOString()
+      };
+    }
 
-      const config = window.PROJECT_MONITOR_SUPABASE_CONFIG;
-      if (!window.supabase?.createClient || !config?.url || !config?.publishableKey) {
-        setLoginStatus('Login resmi belum dikonfigurasi. Hubungi administrator aplikasi.');
+    function handleGoogleCredential(response) {
+      try {
+        const user = decodeGoogleCredential(response.credential);
+        localStorage.setItem('mep_user', JSON.stringify(user));
+        openDashboardForUser(user);
+      } catch (error) {
+        setLoginStatus(error.message || 'Login Google gagal. Coba kembali.');
+      }
+    }
+
+    function enterPreviewMode() {
+      localStorage.removeItem('mep_user');
+      if (window.google?.accounts?.id) window.google.accounts.id.disableAutoSelect();
+      const previewUser = {
+        sub: 'preview-mode',
+        name: 'Preview Mode',
+        email: 'preview@local',
+        picture: '',
+        authProvider: 'preview',
+        isPreview: true
+      };
+      openDashboardForUser(previewUser);
+    }
+
+    function initializeGoogleSignIn() {
+      let savedUser = null;
+      try {
+        savedUser = JSON.parse(localStorage.getItem('mep_user') || 'null');
+      } catch (error) {
+        localStorage.removeItem('mep_user');
+      }
+      if (savedUser?.sub && savedUser?.email) {
+        openDashboardForUser(savedUser);
+      } else {
+        showLoginScreen();
         updateAccountProfile(null);
+      }
+
+      const clientId = window.GOOGLE_CONFIG?.CLIENT_ID?.trim() || '';
+      if (!clientId || clientId.startsWith('YOUR_')) {
+        setLoginStatus('Google Client ID belum diisi. Gunakan Preview Mode untuk menguji dashboard.');
+        return;
+      }
+      if (!window.google?.accounts?.id) {
+        setLoginStatus('Google Sign-In belum termuat. Periksa koneksi internet lalu muat ulang.');
         return;
       }
 
-      try {
-        supabaseClient = window.supabase.createClient(config.url, config.publishableKey, {
-          auth: {
-            autoRefreshToken: true,
-            detectSessionInUrl: true,
-            flowType: 'pkce',
-            persistSession: true
-          }
-        });
-        const { data, error } = await supabaseClient.auth.getUser();
-        if (error || !data.user) {
-          currentAuthUser = null;
-          currentAuthProfile = null;
-          updateAccountProfile(null);
-          return;
-        }
-        const authLinkType = getAuthLinkType();
-        if (authLinkType === 'invite' || authLinkType === 'recovery') {
-          currentAuthUser = data.user;
-          pendingPasswordFlow = authLinkType;
-          document.getElementById('loginForm').hidden = true;
-          document.getElementById('passwordSetupForm').hidden = false;
-          document.getElementById('passwordSetupHeading').textContent = authLinkType === 'invite'
-            ? 'Buat sandi akun undangan'
-            : 'Atur ulang sandi';
-          document.getElementById('passwordSetupStatus').textContent = 'Buat sandi minimal 12 karakter untuk melanjutkan.';
-          return;
-        }
-        await loadAuthorizedProject(data.user);
-      } catch (error) {
-        currentAuthUser = null;
-        currentAuthProfile = null;
-        updateAccountProfile(null);
-        setLoginStatus('Layanan login tidak dapat dihubungi. Periksa konfigurasi dan koneksi internet.');
-      }
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleCredential,
+        auto_select: true,
+        cancel_on_tap_outside: false
+      });
+      window.google.accounts.id.renderButton(document.getElementById('googleSignInButton'), {
+        type: 'standard',
+        theme: 'filled_blue',
+        size: 'large',
+        text: 'signin_with',
+        shape: 'rectangular',
+        width: Math.min(360, document.querySelector('.login-form-body').clientWidth)
+      });
+      if (!savedUser) setLoginStatus('Masuk dengan akun Google untuk membuka dashboard.');
     }
 
-    async function logoutAppSession() {
-      if (supabaseClient) {
-        const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
-        if (error) {
-          showAppNotice('Sesi belum dapat diakhiri. Coba lagi setelah koneksi pulih.');
-          return;
-        }
-      }
+    function logoutAppSession() {
+      localStorage.removeItem('mep_user');
       currentAuthUser = null;
       currentAuthProfile = null;
       authorizedProjectId = null;
+      if (window.google?.accounts?.id) window.google.accounts.id.disableAutoSelect();
       closeSettingsModal();
       updateAccountProfile(null);
-      resetLoginForms();
       showLoginScreen();
+      setLoginStatus('Masuk dengan akun Google atau pilih Preview Mode.');
     }
 
     function setAppTheme(theme) {
@@ -4897,7 +4778,7 @@
       document.getElementById('checklistDetailProgressLabel').textContent = `${document.getElementById('checklistDetailProgress').value}%`;
     }
 
-    function saveChecklistStatusUpdate() {
+    async function saveChecklistStatusUpdate() {
       const item = checklistItems.find((entry) => entry.id === selectedChecklistDetailId);
       if (!item) return;
 
@@ -4937,7 +4818,7 @@
         delete item.resolvedRole;
       }
 
-      if (!persistChecklistItems()) {
+      if (!await persistChecklistItems()) {
         item.status = previousStatus;
         item.progress = previousProgress;
         item.statusHistory = previousHistory;
@@ -5062,7 +4943,7 @@
       }
 
       checklistItems.unshift(item);
-      if (!persistChecklistItems()) {
+      if (!await persistChecklistItems()) {
         checklistItems.shift();
         return;
       }
@@ -5074,7 +4955,7 @@
     initializeAppTheme();
     initializeModalCloseButtons();
     initializeProjectManager();
-    initializeSupabaseAuth();
+    window.addEventListener('load', initializeGoogleSignIn, { once: true });
     loadAccountPhoto();
   </script>
 </body>
