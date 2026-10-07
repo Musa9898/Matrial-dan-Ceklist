@@ -2832,6 +2832,7 @@
     let authorizedProjects = [];
     let remoteProjectFiles = [];
     let appsScriptBridgeFrame = null;
+    let appsScriptBridgeWindow = null;
     let appsScriptBridgeReady = false;
     let appsScriptBridgeReadyPromise = null;
     let appsScriptBridgeReadyResolve = null;
@@ -3483,7 +3484,7 @@
     }
 
     function handleAppsScriptBridgeMessage(event) {
-      if (!appsScriptBridgeFrame || event.source !== appsScriptBridgeFrame.contentWindow) return;
+      if (!appsScriptBridgeFrame) return;
       let host = '';
       try {
         host = new URL(event.origin).hostname;
@@ -3495,6 +3496,7 @@
       const message = event.data || {};
       if (message.type === 'apps-script-bridge-ready') {
         appsScriptBridgeReady = true;
+        appsScriptBridgeWindow = event.source;
         if (appsScriptBridgeReadyTimeoutId) window.clearTimeout(appsScriptBridgeReadyTimeoutId);
         appsScriptBridgeReadyTimeoutId = null;
         if (appsScriptBridgeReadyResolve) appsScriptBridgeReadyResolve();
@@ -3503,7 +3505,7 @@
         appsScriptBridgeReadyPromise = null;
         return;
       }
-      if (message.type !== 'response' || !message.requestId) return;
+      if (event.source !== appsScriptBridgeWindow || message.type !== 'response' || !message.requestId) return;
 
       const pending = pendingAppsScriptRequests.get(message.requestId);
       if (!pending) return;
@@ -3531,6 +3533,7 @@
           appsScriptBridgeReadyPromise = null;
           appsScriptBridgeFrame?.remove();
           appsScriptBridgeFrame = null;
+          appsScriptBridgeWindow = null;
           appsScriptBridgeReadyResolve = null;
           appsScriptBridgeReadyReject = null;
           appsScriptBridgeReadyTimeoutId = null;
@@ -3539,6 +3542,7 @@
       });
 
       appsScriptBridgeFrame = document.createElement('iframe');
+      appsScriptBridgeWindow = null;
       appsScriptBridgeFrame.hidden = true;
       appsScriptBridgeFrame.title = 'Koneksi Google Apps Script';
       const separator = webAppUrl.includes('?') ? '&' : '?';
@@ -3558,7 +3562,7 @@
           reject(new Error('Apps Script tidak merespons dalam 30 detik.'));
         }, 30000);
         pendingAppsScriptRequests.set(requestId, { resolve, reject, timeoutId });
-        appsScriptBridgeFrame.contentWindow.postMessage({ type: 'request', requestId, request }, '*');
+        appsScriptBridgeWindow.postMessage({ type: 'request', requestId, request }, '*');
       });
     }
 
