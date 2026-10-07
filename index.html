@@ -5486,7 +5486,10 @@
       updateAccountProfile(null);
       const previewButton = document.querySelector('.preview-mode-button');
       const previewModeAllowed = isPreviewModeAllowed();
-      if (previewButton) previewButton.hidden = !previewModeAllowed;
+      if (previewButton) {
+        if (previewModeAllowed) previewButton.hidden = false;
+        else previewButton.remove();
+      }
 
       const clientId = window.GOOGLE_CONFIG?.CLIENT_ID?.trim() || '';
       if (!clientId || clientId.startsWith('YOUR_')) {
