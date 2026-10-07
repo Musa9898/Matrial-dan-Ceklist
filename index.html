@@ -239,6 +239,67 @@
       text-align: center;
     }
 
+    .login-status.is-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .login-form-body.is-loading .google-signin-container,
+    .login-form-body.is-loading .preview-mode-button {
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .loading-spinner {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: loadingSpin 0.75s linear infinite;
+    }
+
+    @keyframes loadingSpin {
+      to { transform: rotate(360deg); }
+    }
+
+    .file-upload-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      margin-bottom: 8px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      background: var(--brand-blue-soft);
+      color: var(--brand-navy);
+      font-size: 0.76rem;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .file-upload-status[hidden] {
+      display: none;
+    }
+
+    .file-upload-status.is-error {
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .file-upload-status.is-success {
+      background: #ecfdf5;
+      color: #166534;
+    }
+
+    .file-folder-toolbar button:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+
     .google-signin-container {
       display: flex;
       justify-content: center;
@@ -2059,7 +2120,10 @@
     <div class="login-form-body">
       <div class="google-signin-container" id="googleSignInButton"></div>
       <button class="preview-mode-button" type="button" onclick="enterPreviewMode()" hidden>Preview Dashboard</button>
-      <p class="login-status" id="loginStatusMessage" role="status" aria-live="polite"></p>
+      <p class="login-status" id="loginStatus" role="status" aria-live="polite" aria-busy="false">
+        <span class="loading-spinner" id="loginLoadingSpinner" hidden aria-hidden="true"></span>
+        <span id="loginStatusMessage"></span>
+      </p>
       <p class="login-footnote">Gunakan akun Google yang terdaftar pada proyek untuk masuk.</p>
     </div>
   </main>
@@ -2324,7 +2388,11 @@
         <div class="file-folder-toolbar">
           <button class="btn-cancel" type="button" onclick="showProjectFolders()">← Folder</button>
           <button class="btn-cancel" type="button" onclick="renameProjectFolder(activeFileFolderId)">Ubah nama</button>
-          <button class="btn-action-primary" type="button" onclick="document.getElementById('projectFileInput').click()">+ Unggah File</button>
+          <button class="btn-action-primary" id="projectFileUploadButton" type="button" onclick="document.getElementById('projectFileInput').click()">+ Unggah File</button>
+        </div>
+        <div class="file-upload-status" id="projectFileUploadStatus" role="status" aria-live="polite" aria-busy="false" hidden>
+          <span class="loading-spinner" id="projectFileUploadSpinner" hidden aria-hidden="true"></span>
+          <span id="projectFileUploadMessage"></span>
         </div>
         <div class="section-title" id="activeFolderTitle" style="margin-bottom: 10px;"></div>
         <input type="file" id="projectFileInput" accept=".pdf,.dxf,application/pdf,application/dxf" multiple hidden onchange="handleProjectFileUpload(this.files)">
@@ -4264,6 +4332,10 @@
       const selectedFiles = [...fileList];
       const folder = projectFolders.find((entry) => entry.id === activeFileFolderId);
       const input = document.getElementById('projectFileInput');
+      const uploadButton = document.getElementById('projectFileUploadButton');
+      const uploadStatus = document.getElementById('projectFileUploadStatus');
+      const uploadSpinner = document.getElementById('projectFileUploadSpinner');
+      const uploadMessage = document.getElementById('projectFileUploadMessage');
       if (!folder || !selectedFiles.length) return;
 
       const acceptedFiles = selectedFiles.filter((file) => /\.(pdf|dxf)$/i.test(file.name));
@@ -4272,8 +4344,19 @@
       if (rejectedFiles) alert(`${rejectedFiles} file dilewati. Hanya PDF dan DXF yang dapat diunggah.`);
       if (!acceptedFiles.length) return;
 
+      input.disabled = true;
+      uploadButton.disabled = true;
+      uploadButton.setAttribute('aria-busy', 'true');
+      uploadStatus.hidden = false;
+      uploadStatus.classList.remove('is-error', 'is-success');
+      uploadStatus.setAttribute('aria-busy', 'true');
+      uploadSpinner.hidden = false;
+      let uploadedCount = 0;
+      let uploadError = null;
       try {
-        for (const file of acceptedFiles) {
+        for (let index = 0; index < acceptedFiles.length; index++) {
+          const file = acceptedFiles[index];
+          uploadMessage.textContent = `Mengunggah ${index + 1}/${acceptedFiles.length}: ${file.name}`;
           await storeProjectFile({
             id: globalThis.crypto?.randomUUID?.() || `file-${Date.now()}-${Math.random().toString(16).slice(2)}`,
             projectId: activeProjectId,
@@ -4285,11 +4368,32 @@
             addedAt: new Date().toISOString(),
             blob: file
           });
+          uploadedCount++;
         }
       } catch (error) {
-        alert(`Gagal menyimpan file: ${error.message}`);
+        uploadError = error;
+      } finally {
+        input.disabled = false;
+        uploadButton.disabled = false;
+        uploadButton.removeAttribute('aria-busy');
+        uploadSpinner.hidden = true;
+        uploadStatus.setAttribute('aria-busy', 'false');
+        if (uploadError) {
+          uploadStatus.classList.add('is-error');
+          uploadMessage.textContent = `Gagal mengunggah setelah ${uploadedCount} file: ${uploadError.message}`;
+        } else {
+          uploadStatus.classList.add('is-success');
+          uploadMessage.textContent = `${uploadedCount} file berhasil diunggah.`;
+          const completedMessage = uploadMessage.textContent;
+          window.setTimeout(() => {
+            if (uploadMessage.textContent !== completedMessage
+              || uploadStatus.getAttribute('aria-busy') === 'true') return;
+            uploadStatus.hidden = true;
+            uploadStatus.classList.remove('is-success');
+          }, 4000);
+        }
+        renderProjectFiles();
       }
-      renderProjectFiles();
     }
 
     async function searchProjectFiles() {
@@ -5475,6 +5579,16 @@
       document.getElementById('loginStatusMessage').textContent = message;
     }
 
+    function setLoginLoading(isLoading, message) {
+      const form = document.querySelector('.login-form-body');
+      const status = document.getElementById('loginStatus');
+      form.classList.toggle('is-loading', isLoading);
+      status.classList.toggle('is-loading', isLoading);
+      status.setAttribute('aria-busy', String(isLoading));
+      document.getElementById('loginLoadingSpinner').hidden = !isLoading;
+      if (message) setLoginStatus(message);
+    }
+
     function openDashboardForUser(user) {
       currentAuthUser = user;
       currentAuthProfile = user;
@@ -5585,20 +5699,32 @@
       };
     }
 
-    function handleGoogleCredential(response) {
+    async function handleGoogleCredential(response) {
+      setLoginLoading(true, 'Memverifikasi akun Google…');
       try {
         const user = decodeGoogleCredential(response.credential);
         currentGoogleCredential = response.credential;
         localStorage.setItem('mep_user', JSON.stringify(user));
-        openDashboardForUser(user);
+        currentAuthUser = user;
+        currentAuthProfile = user;
+        authorizedProjectId = user.sub;
+        updateAccountProfile(user);
         if (getAppsScriptUrl()) {
-          loadAppsScriptProjectData().catch((error) => {
+          setLoginLoading(true, 'Memuat data proyek dari Sheets…');
+          try {
+            await loadAppsScriptProjectData();
+          } catch (error) {
             setAppsScriptStatus('gagal memuat');
+            openDashboardForUser(user);
             showAppNotice(error.message || 'Data proyek gagal dimuat dari Apps Script.');
-          });
+            return;
+          }
         }
+        openDashboardForUser(user);
       } catch (error) {
         setLoginStatus(error.message || 'Login Google gagal. Coba kembali.');
+      } finally {
+        setLoginLoading(false);
       }
     }
 
