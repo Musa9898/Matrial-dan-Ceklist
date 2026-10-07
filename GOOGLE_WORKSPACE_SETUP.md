@@ -24,6 +24,8 @@ Data operasional dipisah ke tab agar mudah difilter dan dianalisis:
 - `Checklists`: tanggal, area, pekerjaan, status, progres, PIC, dan URL foto.
 - `DailyReports`: judul, tanggal, SPV, jumlah tugas/orang, dan ringkasan tugas.
 - `ProjectFiles`: metadata file Drive, folder, URL, ukuran, dan tipe file.
+- `ProjectFolders`: ID dan nama folder logis tiap proyek, sehingga struktur folder tampil lintas perangkat.
+- Jika metadata folder lama belum ada, aplikasi memulihkan nama dari cache/snapshot. Jika hanya `Folder ID` yang tersisa di `ProjectFiles`, aplikasi menampilkan folder bernama `Folder <ID>` agar file tetap bisa diakses; nama itu dapat diubah dari tampilan folder.
 - `Monitoring`: dipertahankan sebagai sumber legacy. Saat snapshot proyek berhasil disimpan, record lama proyek tersebut dipindah ke tab masing-masing; proyek lain tidak ikut diubah.
 
 Record operasional menyertakan kolom terstruktur dan `payload_json` untuk mempertahankan data lengkap aplikasi. Foto Base64 diubah menjadi URL Drive sebelum disimpan.

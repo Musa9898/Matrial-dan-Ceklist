@@ -10,6 +10,7 @@ const ASSETS_SHEET_NAME = 'Assets';
 const CHECKLISTS_SHEET_NAME = 'Checklists';
 const DAILY_REPORTS_SHEET_NAME = 'DailyReports';
 const PROJECT_FILES_SHEET_NAME = 'ProjectFiles';
+const PROJECT_FOLDERS_SHEET_NAME = 'ProjectFolders';
 const PROJECT_HEADERS = ['Project ID', 'Project Name', 'Owner Email', 'Created At'];
 const PROJECT_DATA_HEADERS = ['Project ID', 'Snapshot JSON', 'Updated By', 'Updated At', 'Chunk Index'];
 const MATERIAL_HEADERS = [
@@ -32,6 +33,7 @@ const PROJECT_FILE_HEADERS = [
   'File ID', 'Project ID', 'Folder ID', 'File Name', 'Drive URL', 'Size',
   'Uploaded By', 'Created At', 'MIME Type', 'Payload JSON'
 ];
+const PROJECT_FOLDER_HEADERS = ['Folder ID', 'Project ID', 'Folder Name', 'Created At', 'Created By'];
 const FRONTEND_ORIGINS = [
   'https://musa9898.github.io',
   'http://localhost:8000',
@@ -77,7 +79,8 @@ function doGet(e) {
       email: identity.email,
       projects: allowedProjects,
       records,
-      snapshots
+      snapshots,
+      projectFolders: readProjectFolders_(SpreadsheetApp.openById(SPREADSHEET_ID), projectIds)
     });
   } catch (error) {
     return jsonOutput_({ status: 'error', message: error.message || 'Gagal membaca data.' });
@@ -94,6 +97,16 @@ function doPost(e) {
       return jsonOutput_({
         status: 'success',
         project: createProjectForUser_(request.projectName, identity.email)
+      });
+    }
+    if (request.action === 'saveProjectFolders') {
+      lock.waitLock(20000);
+      const projectId = String(request.projectId || '');
+      const project = getAuthorizedProjects_(identity.email).find((entry) => entry.projectId === projectId);
+      if (!project) throw new Error('Akun tidak memiliki akses ke proyek ini.');
+      return jsonOutput_({
+        status: 'success',
+        folders: saveProjectFolders_(projectId, request.folders, identity.email)
       });
     }
 
@@ -453,6 +466,52 @@ function readProjectFileRecords_(spreadsheet) {
     });
 }
 
+function readProjectFolders_(spreadsheet, projectIds) {
+  const sheet = getSchemaSheet_(spreadsheet, PROJECT_FOLDERS_SHEET_NAME, PROJECT_FOLDER_HEADERS);
+  if (sheet.getLastRow() < 2) return [];
+  const headers = getSheetHeaderIndexes_(sheet);
+  return sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues()
+    .filter((row) => projectIds.has(String(getSheetCell_(row, headers, 'project id'))))
+    .map((row) => ({
+      id: String(getSheetCell_(row, headers, 'folder id')),
+      projectId: String(getSheetCell_(row, headers, 'project id')),
+      name: String(getSheetCell_(row, headers, 'folder name')),
+      createdAt: String(getSheetCell_(row, headers, 'created at')),
+      createdBy: String(getSheetCell_(row, headers, 'created by'))
+    }))
+    .filter((folder) => folder.id && folder.name);
+}
+
+function saveProjectFolders_(projectId, folders, email) {
+  if (!projectId) throw new Error('ID proyek wajib diisi.');
+  if (!Array.isArray(folders) || folders.length > 200) throw new Error('Daftar folder tidak valid.');
+
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = getSchemaSheet_(spreadsheet, PROJECT_FOLDERS_SHEET_NAME, PROJECT_FOLDER_HEADERS);
+  const existing = readProjectFolders_(spreadsheet, new Set([projectId]));
+  const createdAtById = new Map(existing.map((folder) => [folder.id, folder.createdAt]));
+  const seenIds = new Set();
+  const seenNames = new Set();
+  const rows = folders.map((folder) => {
+    const id = String(folder?.id || '').trim();
+    const name = String(folder?.name || '').trim();
+    const normalizedName = name.toLocaleLowerCase('id-ID');
+    if (!id || !name || name.length > 100) throw new Error('Setiap folder harus memiliki ID dan nama maksimal 100 karakter.');
+    if (seenIds.has(id) || seenNames.has(normalizedName)) throw new Error('ID atau nama folder duplikat.');
+    seenIds.add(id);
+    seenNames.add(normalizedName);
+    return sheetRowFromObject_(sheet, {
+      'Folder ID': id,
+      'Project ID': projectId,
+      'Folder Name': name,
+      'Created At': createdAtById.get(id) || folder.createdAt || new Date().toISOString(),
+      'Created By': email
+    });
+  });
+  replaceProjectRows_(sheet, projectId, rows, 'Project ID');
+  return folders.map((folder) => ({ ...folder, projectId: projectId, createdBy: email }));
+}
+
 function readMonitoringRecords_() {
   const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
   return [
@@ -746,6 +805,7 @@ function saveDriveFile_(project, fileData, email) {
     id: driveFile.getId(),
     projectId: project.projectId,
     folderId: String(fileData.folderId || ''),
+    folderName: String(fileData.folderName || ''),
     name: String(fileData.name || name),
     type: mimeType,
     size: driveFile.getSize(),

@@ -2323,6 +2323,7 @@
       <section id="projectFolderContents" style="display: none;">
         <div class="file-folder-toolbar">
           <button class="btn-cancel" type="button" onclick="showProjectFolders()">← Folder</button>
+          <button class="btn-cancel" type="button" onclick="renameProjectFolder(activeFileFolderId)">Ubah nama</button>
           <button class="btn-action-primary" type="button" onclick="document.getElementById('projectFileInput').click()">+ Unggah File</button>
         </div>
         <div class="section-title" id="activeFolderTitle" style="margin-bottom: 10px;"></div>
@@ -3815,7 +3816,7 @@
       applyProjectData(getEmptyProjectData());
       projectFolders = [];
       activeFileFolderId = null;
-      persistProjectFolders();
+      await persistProjectFolders();
       persistActiveProjectData();
       updateActiveProjectTitle();
       closeProjectManager();
@@ -3836,7 +3837,7 @@
       }
     }
 
-    function persistProjectFolders() {
+    function persistProjectFoldersLocally() {
       try {
         localStorage.setItem(getProjectFoldersKey(), JSON.stringify(projectFolders));
         return true;
@@ -3844,6 +3845,22 @@
         alert('Daftar folder tidak dapat disimpan. Penyimpanan browser mungkin penuh.');
         return false;
       }
+    }
+
+    async function persistProjectFolders() {
+      if (getAppsScriptUrl() && currentGoogleCredential && !currentAuthProfile?.isPreview) {
+        try {
+          const result = await appsScriptRequest('saveProjectFolders', {
+            projectId: activeProjectId,
+            folders: projectFolders
+          });
+          if (Array.isArray(result.folders)) projectFolders = result.folders;
+        } catch (error) {
+          showAppNotice(error.message || 'Folder gagal disimpan ke Sheets.');
+          return false;
+        }
+      }
+      return persistProjectFoldersLocally();
     }
 
     function openProjectFilesDatabase() {
@@ -3895,6 +3912,7 @@
             type: fileRecord.type,
             size: fileRecord.size,
             folderId: fileRecord.folderId,
+            folderName: fileRecord.folderName,
             base64
           }
         });
@@ -4133,6 +4151,30 @@
       renderProjectFiles();
     }
 
+    async function renameProjectFolder(folderId) {
+      const folder = projectFolders.find((entry) => entry.id === folderId);
+      if (!folder) return;
+      const name = window.prompt('Nama folder', folder.name);
+      if (name === null) return;
+      const normalizedName = name.trim();
+      if (!normalizedName || normalizedName.length > 100) {
+        alert('Nama folder harus berisi 1 sampai 100 karakter.');
+        return;
+      }
+      if (projectFolders.some((entry) => entry.id !== folderId
+        && entry.name.toLocaleLowerCase('id-ID') === normalizedName.toLocaleLowerCase('id-ID'))) {
+        alert('Nama folder tersebut sudah ada di proyek ini.');
+        return;
+      }
+      const previousName = folder.name;
+      folder.name = normalizedName;
+      if (!await persistProjectFolders()) {
+        folder.name = previousName;
+        return;
+      }
+      renderProjectFiles();
+    }
+
     function formatProjectFileSize(bytes) {
       if (bytes < 1024) return `${bytes} B`;
       if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -4209,7 +4251,8 @@
               </span>
             </span>
             <span class="project-file-actions">
-              <button type="button" onclick="openProjectFile('${escapeHtml(file.id)}')">${extension === 'PDF' ? 'Buka' : 'Unduh'}</button>
+              ${extension === 'PDF' ? `<button type="button" onclick="openProjectFile('${escapeHtml(file.id)}')">Buka</button>` : ''}
+              <button type="button" onclick="downloadProjectFile('${escapeHtml(file.id)}')">Unduh</button>
               <button class="file-delete-button" type="button" onclick="deleteProjectFile('${escapeHtml(file.id)}')" aria-label="Hapus ${escapeHtml(file.name)}">Hapus</button>
             </span>
           </article>
@@ -4235,6 +4278,7 @@
             id: globalThis.crypto?.randomUUID?.() || `file-${Date.now()}-${Math.random().toString(16).slice(2)}`,
             projectId: activeProjectId,
             folderId: folder.id,
+            folderName: folder.name,
             name: file.name,
             type: file.type || (file.name.toLocaleLowerCase('id-ID').endsWith('.pdf') ? 'application/pdf' : 'application/dxf'),
             size: file.size,
@@ -4289,7 +4333,7 @@
                 <span class="global-file-result-name">${escapeHtml(file.name)}</span>
                 <span class="global-file-result-meta">${escapeHtml(folderName)} · ${escapeHtml(extension)} · ${escapeHtml(formatProjectFileSize(file.size))}</span>
               </span>
-              <button type="button" onclick="openProjectFile('${escapeHtml(file.id)}')">${extension === 'PDF' ? 'Buka' : 'Unduh'}</button>
+              <button type="button" onclick="downloadProjectFile('${escapeHtml(file.id)}')">Unduh</button>
             </div>
           `;
         }).join('') : '<div class="history-placeholder">File tidak ditemukan di proyek aktif.</div>';
@@ -4330,6 +4374,43 @@
       return photo
         ? `<img class="${className}" src="${escapeHtml(getPreviewImageUrl(photo))}" alt="${escapeHtml(alt)}">`
         : '';
+    }
+
+    function getDriveDownloadUrl(file) {
+      try {
+        const url = new URL(file.driveUrl);
+        if (url.hostname !== 'drive.google.com') return file.driveUrl;
+        const fileId = url.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || url.searchParams.get('id');
+        return fileId
+          ? `https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}`
+          : file.driveUrl;
+      } catch (error) {
+        return file.driveUrl || '';
+      }
+    }
+
+    function downloadProjectFile(fileId) {
+      const remoteFile = getAppsScriptUrl() && currentGoogleCredential
+        ? remoteProjectFiles.find((file) => file.id === fileId)
+        : null;
+      if (remoteFile?.driveUrl) {
+        window.open(getDriveDownloadUrl(remoteFile), '_blank', 'noopener');
+        return;
+      }
+
+      getProjectFile(fileId).then((file) => {
+        if (!file || file.projectId !== activeProjectId) return;
+        if (file.driveUrl) {
+          window.open(getDriveDownloadUrl(file), '_blank', 'noopener');
+          return;
+        }
+        const objectUrl = URL.createObjectURL(file.blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = file.name;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+      }).catch((error) => alert(`Gagal mengunduh file: ${error.message}`));
     }
 
     async function openProjectFile(fileId) {
@@ -5428,7 +5509,52 @@
       } else {
         applyProjectData(getEmptyProjectData());
       }
-      projectFolders = Array.isArray(snapshot?.projectFolders) ? snapshot.projectFolders : [];
+      const cachedFolders = loadProjectFolders(activeProjectId);
+      const serverFolders = Array.isArray(result.projectFolders)
+        ? result.projectFolders.filter((folder) => folder.projectId === activeProjectId)
+        : [];
+      const snapshotFolders = Array.isArray(snapshot?.projectFolders) ? snapshot.projectFolders : [];
+      const fileFoldersById = new Map();
+      remoteProjectFiles
+        .filter((file) => file.projectId === activeProjectId && file.folderId)
+        .forEach((file) => {
+          const id = String(file.folderId).trim();
+          if (!id) return;
+          const folderName = String(file.folderName || '').trim();
+          const existing = fileFoldersById.get(id);
+          if (!existing || (!existing.folderName && folderName)) {
+            fileFoldersById.set(id, { id, folderName, addedAt: file.addedAt });
+          }
+        });
+      const fileFolders = [...fileFoldersById.values()].map((file) => ({
+        id: file.id,
+        projectId: activeProjectId,
+        name: file.folderName || `Folder ${file.id.slice(0, 8)}`,
+        createdAt: file.addedAt || new Date().toISOString()
+      }));
+      const foldersById = new Map();
+      [...fileFolders, ...snapshotFolders, ...cachedFolders, ...serverFolders].forEach((folder) => {
+        const id = String(folder?.id || '').trim();
+        const name = String(folder?.name || '').trim();
+        if (id && name) foldersById.set(id, { ...folder, id, name, projectId: activeProjectId });
+      });
+      projectFolders = [...foldersById.values()];
+      persistProjectFoldersLocally();
+      const serverFolderIds = new Set(serverFolders.map((folder) => folder.id));
+      if (projectFolders.some((folder) => !serverFolderIds.has(folder.id))) {
+        try {
+          const folderResult = await appsScriptRequest('saveProjectFolders', {
+            projectId: activeProjectId,
+            folders: projectFolders
+          });
+          if (Array.isArray(folderResult.folders)) {
+            projectFolders = folderResult.folders;
+            persistProjectFoldersLocally();
+          }
+        } catch (error) {
+          showAppNotice(error.message || 'Folder lama belum dapat disinkronkan ke Sheets.');
+        }
+      }
       updateActiveProjectTitle();
       renderProjectData();
       setAppsScriptStatus('tersinkron dari Sheets');
