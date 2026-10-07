@@ -2,9 +2,36 @@ const SPREADSHEET_ID = '1IUE9GsCbui3xwFx8rSlUaKUJWOvMboNNSEFAgeU9jZA';
 const FOLDER_ID = '1xTylsRK6qEawXBtYfjbCoYpZ_zwAW9lP';
 const GOOGLE_CLIENT_ID = '441116312261-fd5ofvrlm4dmad44o38n6c1sms31vq65.apps.googleusercontent.com';
 const MONITORING_SHEET_NAME = 'Monitoring';
+const PROJECT_DATA_SHEET_NAME = 'ProjectData';
 const ACCESS_SHEET_NAME = 'Access';
 const PROJECTS_SHEET_NAME = 'Projects';
+const MATERIALS_SHEET_NAME = 'Materials';
+const ASSETS_SHEET_NAME = 'Assets';
+const CHECKLISTS_SHEET_NAME = 'Checklists';
+const DAILY_REPORTS_SHEET_NAME = 'DailyReports';
+const PROJECT_FILES_SHEET_NAME = 'ProjectFiles';
 const PROJECT_HEADERS = ['Project ID', 'Project Name', 'Owner Email', 'Created At'];
+const PROJECT_DATA_HEADERS = ['Project ID', 'Snapshot JSON', 'Updated By', 'Updated At', 'Chunk Index'];
+const MATERIAL_HEADERS = [
+  'record_id', 'project_id', 'material_name', 'unit', 'qty_received', 'qty_issued',
+  'qty_balance', 'target', 'status', 'date', 'reporter', 'notes', 'drive_url', 'payload_json', 'updated_at', 'email'
+];
+const ASSET_HEADERS = [
+  'record_id', 'project_id', 'asset_name', 'asset_code', 'category', 'quantity',
+  'status', 'location', 'date', 'reporter', 'notes', 'drive_url', 'payload_json', 'updated_at', 'email'
+];
+const CHECKLIST_HEADERS = [
+  'record_id', 'project_id', 'date', 'area', 'discipline', 'work', 'status', 'progress',
+  'supervisor', 'assignee', 'due_date', 'notes', 'drive_url', 'payload_json', 'updated_at', 'email'
+];
+const DAILY_REPORT_HEADERS = [
+  'record_id', 'project_id', 'report_title', 'date', 'supervisor', 'task_count',
+  'total_workers', 'task_summary', 'payload_json', 'updated_at', 'email'
+];
+const PROJECT_FILE_HEADERS = [
+  'File ID', 'Project ID', 'Folder ID', 'File Name', 'Drive URL', 'Size',
+  'Uploaded By', 'Created At', 'MIME Type', 'Payload JSON'
+];
 const FRONTEND_ORIGINS = [
   'https://musa9898.github.io',
   'http://localhost:8000',
@@ -281,34 +308,162 @@ function createProjectForUser_(projectName, email) {
   return { projectId: projectId, projectName: name, role: 'admin' };
 }
 
-function getMonitoringSheet_() {
-  if (SPREADSHEET_ID.indexOf('PASTE_') === 0) throw new Error('SPREADSHEET_ID belum dikonfigurasi di Code.gs.');
-  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-  let sheet = spreadsheet.getSheetByName(MONITORING_SHEET_NAME);
-  if (!sheet) sheet = spreadsheet.insertSheet(MONITORING_SHEET_NAME);
-  if (sheet.getLastRow() === 0) sheet.appendRow(MONITORING_HEADERS);
+function getSchemaSheet_(spreadsheet, sheetName, headers) {
+  let sheet = spreadsheet.getSheetByName(sheetName);
+  if (!sheet) sheet = spreadsheet.insertSheet(sheetName);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(headers);
+    return sheet;
+  }
+
+  const existingHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn())
+    .getDisplayValues()[0].map((value) => String(value).trim().toLowerCase());
+  headers.forEach((header) => {
+    if (!existingHeaders.includes(header.toLowerCase())) {
+      sheet.getRange(1, sheet.getLastColumn() + 1).setValue(header);
+      existingHeaders.push(header.toLowerCase());
+    }
+  });
   return sheet;
 }
 
-function readMonitoringRecords_() {
-  const sheet = getMonitoringSheet_();
-  if (sheet.getLastRow() < 2) return [];
-  return sheet.getRange(2, 1, sheet.getLastRow() - 1, MONITORING_HEADERS.length).getValues()
-    .filter((row) => row[0])
+function getMonitoringSheet_() {
+  if (SPREADSHEET_ID.indexOf('PASTE_') === 0) throw new Error('SPREADSHEET_ID belum dikonfigurasi di Code.gs.');
+  return getSchemaSheet_(SpreadsheetApp.openById(SPREADSHEET_ID), MONITORING_SHEET_NAME, MONITORING_HEADERS);
+}
+
+function getSheetHeaderIndexes_(sheet) {
+  return sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0]
+    .map((value) => String(value).trim().toLowerCase());
+}
+
+function getSheetCell_(row, headers, name) {
+  const index = headers.indexOf(name.toLowerCase());
+  return index < 0 ? '' : row[index];
+}
+
+function readRecordRows_(sheet) {
+  if (!sheet || sheet.getLastRow() < 2) return [];
+  const headers = getSheetHeaderIndexes_(sheet);
+  return sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues()
+    .filter((row) => getSheetCell_(row, headers, 'record_id'))
     .map((row) => ({
-      recordId: String(row[0]),
-      projectId: String(row[1]),
-      recordType: String(row[2]),
-      itemName: String(row[3]),
-      status: String(row[4]),
-      date: String(row[5]),
-      reporter: String(row[6]),
-      notes: String(row[7]),
-      driveUrl: String(row[8]),
-      payload: parseJson_(row[9]),
-      updatedAt: String(row[10]),
-      email: String(row[11])
+      recordId: String(getSheetCell_(row, headers, 'record_id')),
+      projectId: String(getSheetCell_(row, headers, 'project_id')),
+      recordType: String(getSheetCell_(row, headers, 'record_type')),
+      itemName: String(getSheetCell_(row, headers, 'item_name')),
+      status: String(getSheetCell_(row, headers, 'status')),
+      date: String(getSheetCell_(row, headers, 'date')),
+      reporter: String(getSheetCell_(row, headers, 'reporter')),
+      notes: String(getSheetCell_(row, headers, 'notes')),
+      driveUrl: String(getSheetCell_(row, headers, 'drive_url')),
+      payload: parseJson_(getSheetCell_(row, headers, 'payload_json')),
+      updatedAt: String(getSheetCell_(row, headers, 'updated_at')),
+      email: String(getSheetCell_(row, headers, 'email'))
     }));
+}
+
+function readTypedRecords_(spreadsheet, sheetName, headers, recordType, itemNameColumn) {
+  const sheet = getSchemaSheet_(spreadsheet, sheetName, headers);
+  if (sheet.getLastRow() < 2) return [];
+  const headerIndexes = getSheetHeaderIndexes_(sheet);
+  return sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues()
+    .filter((row) => getSheetCell_(row, headerIndexes, 'record_id'))
+    .map((row) => {
+      const email = String(getSheetCell_(row, headerIndexes, 'email'));
+      const updatedAt = String(getSheetCell_(row, headerIndexes, 'updated_at'));
+      return {
+        recordId: String(getSheetCell_(row, headerIndexes, 'record_id')),
+        projectId: String(getSheetCell_(row, headerIndexes, 'project_id')),
+        recordType: recordType,
+        itemName: String(getSheetCell_(row, headerIndexes, itemNameColumn)),
+        status: String(getSheetCell_(row, headerIndexes, 'status')),
+        date: String(getSheetCell_(row, headerIndexes, 'date') || updatedAt),
+        reporter: String(getSheetCell_(row, headerIndexes, 'reporter') || getSheetCell_(row, headerIndexes, 'supervisor') || email),
+        notes: String(getSheetCell_(row, headerIndexes, 'notes') || getSheetCell_(row, headerIndexes, 'task_summary')),
+        driveUrl: String(getSheetCell_(row, headerIndexes, 'drive_url') || getSheetCell_(row, headerIndexes, 'photo_url')),
+        payload: parseJson_(getSheetCell_(row, headerIndexes, 'payload_json')),
+        updatedAt: updatedAt,
+        email: email
+      };
+    });
+}
+
+function readProjectDataRecords_(spreadsheet) {
+  const sheet = getSchemaSheet_(spreadsheet, PROJECT_DATA_SHEET_NAME, PROJECT_DATA_HEADERS);
+  if (sheet.getLastRow() < 2) return [];
+  const headers = getSheetHeaderIndexes_(sheet);
+  return sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues()
+    .filter((row) => getSheetCell_(row, headers, 'project id') && getSheetCell_(row, headers, 'snapshot json'))
+    .map((row, index) => {
+      const rawChunkIndex = getSheetCell_(row, headers, 'chunk index');
+      const chunkIndex = rawChunkIndex === '' ? index : Number(rawChunkIndex);
+      return {
+        recordId: 'snapshot:' + getSheetCell_(row, headers, 'project id') + ':' + chunkIndex,
+        projectId: String(getSheetCell_(row, headers, 'project id')),
+        recordType: 'snapshot_chunk',
+        itemName: 'Project snapshot',
+        status: String(chunkIndex),
+        date: String(getSheetCell_(row, headers, 'updated at')),
+        reporter: String(getSheetCell_(row, headers, 'updated by')),
+        notes: 'Snapshot chunk',
+        driveUrl: '',
+        payload: String(getSheetCell_(row, headers, 'snapshot json')),
+        updatedAt: String(getSheetCell_(row, headers, 'updated at')),
+        email: String(getSheetCell_(row, headers, 'updated by'))
+      };
+    });
+}
+
+function readProjectFileRecords_(spreadsheet) {
+  const sheet = getSchemaSheet_(spreadsheet, PROJECT_FILES_SHEET_NAME, PROJECT_FILE_HEADERS);
+  if (sheet.getLastRow() < 2) return [];
+  const headers = getSheetHeaderIndexes_(sheet);
+  return sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues()
+    .filter((row) => getSheetCell_(row, headers, 'file id'))
+    .map((row) => {
+      const fileId = String(getSheetCell_(row, headers, 'file id')).replace(/^file:/, '');
+      const projectId = String(getSheetCell_(row, headers, 'project id'));
+      const createdAt = String(getSheetCell_(row, headers, 'created at'));
+      const uploadedBy = String(getSheetCell_(row, headers, 'uploaded by'));
+      const payload = parseJson_(getSheetCell_(row, headers, 'payload json')) || {
+        id: fileId,
+        projectId: projectId,
+        folderId: String(getSheetCell_(row, headers, 'folder id')),
+        name: String(getSheetCell_(row, headers, 'file name')),
+        driveUrl: String(getSheetCell_(row, headers, 'drive url')),
+        size: Number(getSheetCell_(row, headers, 'size')) || 0,
+        type: String(getSheetCell_(row, headers, 'mime type')),
+        addedAt: createdAt
+      };
+      return {
+        recordId: 'file:' + fileId,
+        projectId: projectId,
+        recordType: 'file',
+        itemName: payload.name || String(getSheetCell_(row, headers, 'file name')),
+        status: 'UPLOADED',
+        date: createdAt,
+        reporter: uploadedBy,
+        notes: 'Drive file',
+        driveUrl: payload.driveUrl || String(getSheetCell_(row, headers, 'drive url')),
+        payload: payload,
+        updatedAt: createdAt,
+        email: uploadedBy
+      };
+    });
+}
+
+function readMonitoringRecords_() {
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  return [
+    ...readRecordRows_(getSchemaSheet_(spreadsheet, MONITORING_SHEET_NAME, MONITORING_HEADERS)),
+    ...readProjectDataRecords_(spreadsheet),
+    ...readTypedRecords_(spreadsheet, MATERIALS_SHEET_NAME, MATERIAL_HEADERS, 'material', 'material_name'),
+    ...readTypedRecords_(spreadsheet, ASSETS_SHEET_NAME, ASSET_HEADERS, 'asset', 'asset_name'),
+    ...readTypedRecords_(spreadsheet, CHECKLISTS_SHEET_NAME, CHECKLIST_HEADERS, 'checklist', 'work'),
+    ...readTypedRecords_(spreadsheet, DAILY_REPORTS_SHEET_NAME, DAILY_REPORT_HEADERS, 'daily_report', 'report_title'),
+    ...readProjectFileRecords_(spreadsheet)
+  ];
 }
 
 function replaceBase64Images_(value, projectId, uploadedFiles, key) {
@@ -441,33 +596,135 @@ function firstPhotoUrl_(photos) {
   return list.find((photo) => typeof photo === 'string' && /^https:\/\//i.test(photo)) || '';
 }
 
-function replaceProjectRecords_(projectId, records) {
-  const sheet = getMonitoringSheet_();
+function sheetRowFromObject_(sheet, values) {
+  const headers = getSheetHeaderIndexes_(sheet);
+  const row = Array(headers.length).fill('');
+  Object.keys(values).forEach((key) => {
+    const index = headers.indexOf(key.toLowerCase());
+    if (index >= 0) row[index] = values[key];
+  });
+  return row;
+}
+
+function structuredRecordRow_(sheet, record) {
+  const payload = record.payload || {};
+  const values = {
+    record_id: record.recordId,
+    project_id: record.projectId,
+    status: record.status,
+    date: record.date,
+    reporter: record.reporter,
+    notes: record.notes,
+    drive_url: record.driveUrl,
+    payload_json: JSON.stringify(payload),
+    updated_at: record.updatedAt,
+    email: record.email
+  };
+
+  if (record.recordType === 'material') {
+    values.material_name = record.itemName;
+    values.unit = payload.unit || '';
+    values.qty_received = Number(payload.received) || 0;
+    values.qty_issued = Number(payload.issued) || 0;
+    values.qty_balance = (Number(payload.received) || 0) - (Number(payload.issued) || 0);
+    values.target = Number(payload.target) || 0;
+  } else if (record.recordType === 'asset') {
+    values.asset_name = record.itemName;
+    values.asset_code = payload.code || '';
+    values.category = payload.category || '';
+    values.quantity = Number(payload.quantity) || 0;
+    values.location = payload.location || '';
+  } else if (record.recordType === 'checklist') {
+    values.area = [payload.floor, payload.room, payload.area].filter(Boolean).join(' / ');
+    values.discipline = payload.discipline || payload.category || '';
+    values.work = record.itemName;
+    values.progress = Number(payload.progress) || 0;
+    values.supervisor = payload.supervisor || record.reporter;
+    values.assignee = payload.assignee || '';
+    values.due_date = payload.dueDate || '';
+  } else if (record.recordType === 'daily_report') {
+    const tasks = Array.isArray(payload.tasks) ? payload.tasks : [];
+    values.report_title = record.itemName;
+    values.supervisor = payload.supervisor || record.reporter;
+    values.task_count = tasks.length;
+    values.total_workers = tasks.reduce((total, task) => total + (Number(task.workers) || 0), 0);
+    values.task_summary = record.notes;
+  }
+
+  return sheetRowFromObject_(sheet, values);
+}
+
+function replaceProjectRows_(sheet, projectId, rows, projectIdHeader) {
+  const headers = getSheetHeaderIndexes_(sheet);
+  const projectIdIndex = headers.indexOf(projectIdHeader.toLowerCase());
+  if (projectIdIndex < 0) throw new Error('Kolom project_id tidak ditemukan di tab ' + sheet.getName() + '.');
   const lastRow = sheet.getLastRow();
   if (lastRow > 1) {
-    const existing = sheet.getRange(2, 2, lastRow - 1, 2).getDisplayValues();
-    for (let index = existing.length - 1; index >= 0; index--) {
-      if (String(existing[index][0]) === projectId && String(existing[index][1]) !== 'file') {
-        sheet.deleteRow(index + 2);
-      }
+    const existingProjectIds = sheet.getRange(2, projectIdIndex + 1, lastRow - 1, 1).getDisplayValues();
+    for (let index = existingProjectIds.length - 1; index >= 0; index--) {
+      if (String(existingProjectIds[index][0]) === projectId) sheet.deleteRow(index + 2);
     }
   }
-  if (!records.length) return;
-  const rows = records.map((record) => [
-    record.recordId,
-    record.projectId,
-    record.recordType,
-    record.itemName,
-    record.status,
-    record.date,
-    record.reporter,
-    record.notes,
-    record.driveUrl,
-    JSON.stringify(record.payload),
-    record.updatedAt,
-    record.email
-  ]);
-  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, MONITORING_HEADERS.length).setValues(rows);
+  if (rows.length) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, headers.length).setValues(rows);
+  }
+}
+
+function replaceProjectRecords_(projectId, records) {
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const monitoringSheet = getSchemaSheet_(spreadsheet, MONITORING_SHEET_NAME, MONITORING_HEADERS);
+  const legacyFiles = readRecordRows_(monitoringSheet)
+    .filter((record) => record.projectId === projectId && record.recordType === 'file');
+
+  const tableDefinitions = [
+    { type: 'material', name: MATERIALS_SHEET_NAME, headers: MATERIAL_HEADERS, itemName: 'material_name' },
+    { type: 'asset', name: ASSETS_SHEET_NAME, headers: ASSET_HEADERS, itemName: 'asset_name' },
+    { type: 'checklist', name: CHECKLISTS_SHEET_NAME, headers: CHECKLIST_HEADERS, itemName: 'work' },
+    { type: 'daily_report', name: DAILY_REPORTS_SHEET_NAME, headers: DAILY_REPORT_HEADERS, itemName: 'report_title' }
+  ];
+
+  tableDefinitions.forEach((definition) => {
+    const sheet = getSchemaSheet_(spreadsheet, definition.name, definition.headers);
+    const rows = records.filter((record) => record.recordType === definition.type)
+      .map((record) => structuredRecordRow_(sheet, record));
+    replaceProjectRows_(sheet, projectId, rows, 'project_id');
+  });
+
+  const projectDataSheet = getSchemaSheet_(spreadsheet, PROJECT_DATA_SHEET_NAME, PROJECT_DATA_HEADERS);
+  const snapshotChunks = records.filter((record) => record.recordType === 'snapshot_chunk')
+    .sort((first, second) => Number(first.status) - Number(second.status));
+  const snapshotRows = snapshotChunks.map((record, index) => sheetRowFromObject_(projectDataSheet, {
+    'Project ID': projectId,
+    'Snapshot JSON': record.payload || '{}',
+    'Updated By': record.email || record.reporter || '',
+    'Updated At': record.updatedAt || record.date || new Date().toISOString(),
+    'Chunk Index': Number(record.status) || index
+  }));
+  replaceProjectRows_(projectDataSheet, projectId, snapshotRows, 'Project ID');
+
+  const projectFilesSheet = getSchemaSheet_(spreadsheet, PROJECT_FILES_SHEET_NAME, PROJECT_FILE_HEADERS);
+  const previousFiles = readProjectFileRecords_(spreadsheet).filter((record) => record.projectId === projectId);
+  const newFiles = records.filter((record) => record.recordType === 'file');
+  const allFiles = new Map();
+  [...previousFiles, ...legacyFiles, ...newFiles].forEach((record) => allFiles.set(record.recordId, record));
+  const fileRows = Array.from(allFiles.values()).map((record) => {
+    const file = record.payload || {};
+    return sheetRowFromObject_(projectFilesSheet, {
+      'File ID': String(file.id || record.recordId.replace(/^file:/, '')),
+      'Project ID': projectId,
+      'Folder ID': file.folderId || '',
+      'File Name': record.itemName || file.name || '',
+      'Drive URL': record.driveUrl || file.driveUrl || '',
+      'Size': Number(file.size) || 0,
+      'Uploaded By': record.reporter || record.email || '',
+      'Created At': record.date || file.addedAt || '',
+      'MIME Type': file.type || '',
+      'Payload JSON': JSON.stringify(file)
+    });
+  });
+  replaceProjectRows_(projectFilesSheet, projectId, fileRows, 'Project ID');
+
+  replaceProjectRows_(monitoringSheet, projectId, [], 'project_id');
 }
 
 function saveDriveFile_(project, fileData, email) {
@@ -513,20 +770,37 @@ function saveDriveFile_(project, fileData, email) {
 }
 
 function appendMonitoringRecord_(record) {
-  getMonitoringSheet_().appendRow([
-    record.recordId, record.projectId, record.recordType, record.itemName,
-    record.status, record.date, record.reporter, record.notes, record.driveUrl,
-    JSON.stringify(record.payload), record.updatedAt, record.email
-  ]);
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = getSchemaSheet_(spreadsheet, PROJECT_FILES_SHEET_NAME, PROJECT_FILE_HEADERS);
+  const file = record.payload || {};
+  const row = sheetRowFromObject_(sheet, {
+    'File ID': String(file.id || record.recordId.replace(/^file:/, '')),
+    'Project ID': record.projectId,
+    'Folder ID': file.folderId || '',
+    'File Name': record.itemName || file.name || '',
+    'Drive URL': record.driveUrl || file.driveUrl || '',
+    'Size': Number(file.size) || 0,
+    'Uploaded By': record.reporter || record.email || '',
+    'Created At': record.date || file.addedAt || '',
+    'MIME Type': file.type || '',
+    'Payload JSON': JSON.stringify(file)
+  });
+  sheet.appendRow(row);
 }
 
 function deleteDriveFile_(projectId, fileId) {
   if (!fileId) throw new Error('ID file wajib diisi.');
-  const sheet = getMonitoringSheet_();
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = getSchemaSheet_(spreadsheet, PROJECT_FILES_SHEET_NAME, PROJECT_FILE_HEADERS);
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) throw new Error('File tidak ditemukan.');
-  const rows = sheet.getRange(2, 1, lastRow - 1, 3).getDisplayValues();
-  const rowIndex = rows.findIndex((row) => row[0] === 'file:' + fileId && row[1] === projectId && row[2] === 'file');
+  const headers = getSheetHeaderIndexes_(sheet);
+  const fileIdIndex = headers.indexOf('file id');
+  const projectIdIndex = headers.indexOf('project id');
+  const rows = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getDisplayValues();
+  const rowIndex = rows.findIndex((row) =>
+    String(row[fileIdIndex]).replace(/^file:/, '') === fileId
+      && String(row[projectIdIndex]) === projectId);
   if (rowIndex < 0) throw new Error('File tidak ditemukan pada proyek ini.');
   DriveApp.getFileById(fileId).setTrashed(true);
   sheet.deleteRow(rowIndex + 2);
