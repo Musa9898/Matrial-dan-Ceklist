@@ -1,8 +1,10 @@
-const SPREADSHEET_ID = '1fJE9Gscbui3swfa8rSEuKlUW0VMboNNSEFAgeUkf6ZA';
+const SPREADSHEET_ID = '1lUE9Gscbui3xwFx8rSlUaKUJ0WvMboNNSEFAgeU9jZA';
 const FOLDER_ID = '1xTylsRK6qEawXBtYfjbCoYpZ_zwAW9lP';
 const GOOGLE_CLIENT_ID = '441116312261-fd5ofvrlm4dmad44o38n6c1sms31vq65.apps.googleusercontent.com';
 const MONITORING_SHEET_NAME = 'Monitoring';
 const ACCESS_SHEET_NAME = 'Access';
+const PROJECTS_SHEET_NAME = 'Projects';
+const PROJECT_HEADERS = ['Project ID', 'Project Name', 'Owner Email', 'Created At'];
 const FRONTEND_ORIGINS = [
   'https://musa9898.github.io',
   'http://localhost:8000',
@@ -60,6 +62,14 @@ function doPost(e) {
   try {
     const request = JSON.parse(e?.postData?.contents || '{}');
     const identity = verifyGoogleIdToken_(request.idToken);
+    if (request.action === 'createProject') {
+      lock.waitLock(20000);
+      return jsonOutput_({
+        status: 'success',
+        project: createProjectForUser_(request.projectName, identity.email)
+      });
+    }
+
     const projectId = String(request.projectId || '');
     const project = getAuthorizedProjects_(identity.email).find((entry) => entry.projectId === projectId);
     if (!project) throw new Error('Akun tidak memiliki akses ke proyek ini.');
@@ -120,19 +130,19 @@ function createBridgeOutput_(parentOrigin) {
     const allowedOrigins = ${allowedOrigins};
     const initialOrigin = ${initialOrigin};
     window.addEventListener('message', function(event) {
-      if (event.source !== window.parent || allowedOrigins.indexOf(event.origin) < 0) return;
+      if (event.source !== window.top || allowedOrigins.indexOf(event.origin) < 0) return;
       const message = event.data || {};
       if (message.type !== 'request' || !message.requestId || !message.request) return;
       google.script.run
         .withSuccessHandler(function(result) {
-          event.source.postMessage({ type: 'response', requestId: message.requestId, result: result }, event.origin);
+          window.top.postMessage({ type: 'response', requestId: message.requestId, result: result }, event.origin);
         })
         .withFailureHandler(function(error) {
-          event.source.postMessage({ type: 'response', requestId: message.requestId, error: error.message || 'Permintaan gagal.' }, event.origin);
+          window.top.postMessage({ type: 'response', requestId: message.requestId, error: error.message || 'Permintaan gagal.' }, event.origin);
         })
         .handleBridgeRequest(message.request);
     });
-    window.parent.postMessage({ type: 'apps-script-bridge-ready' }, initialOrigin);
+    window.top.postMessage({ type: 'apps-script-bridge-ready' }, initialOrigin);
   </script></body></html>`;
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
@@ -190,6 +200,85 @@ function getAuthorizedProjects_(email) {
       role: String(row[roleIndex]).trim()
     }))
     .filter((project) => project.projectId && project.projectName);
+}
+
+function createProjectForUser_(projectName, email) {
+  const name = String(projectName || '').trim();
+  if (!name) throw new Error('Nama proyek wajib diisi.');
+  if (name.length > 100) throw new Error('Nama proyek maksimal 100 karakter.');
+
+  const currentProjects = getAuthorizedProjects_(email);
+  if (!currentProjects.some((project) => ['admin', 'owner'].includes(project.role.toLowerCase()))) {
+    throw new Error('Hanya admin atau owner proyek yang dapat menambahkan proyek.');
+  }
+
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const accessSheet = spreadsheet.getSheetByName(ACCESS_SHEET_NAME);
+  const accessValues = accessSheet.getDataRange().getDisplayValues();
+  const accessHeaders = accessValues[0].map((value) => String(value).trim().toLowerCase());
+  const accessIndexes = {
+    email: accessHeaders.indexOf('email'),
+    projectId: accessHeaders.indexOf('project_id'),
+    projectName: accessHeaders.indexOf('project_name'),
+    role: accessHeaders.indexOf('role'),
+    active: accessHeaders.indexOf('active')
+  };
+
+  let projectsSheet = spreadsheet.getSheetByName(PROJECTS_SHEET_NAME);
+  if (!projectsSheet) projectsSheet = spreadsheet.insertSheet(PROJECTS_SHEET_NAME);
+  if (projectsSheet.getLastRow() === 0) projectsSheet.appendRow(PROJECT_HEADERS);
+  const projectValues = projectsSheet.getDataRange().getDisplayValues();
+  const projectHeaders = projectValues[0].map((value) => String(value).trim().toLowerCase());
+  const projectIndexes = {
+    id: projectHeaders.indexOf('project id'),
+    name: projectHeaders.indexOf('project name'),
+    owner: projectHeaders.indexOf('owner email'),
+    createdAt: projectHeaders.indexOf('created at')
+  };
+  if (Object.values(projectIndexes).some((index) => index < 0)) {
+    throw new Error('Header tab Projects harus berisi Project ID, Project Name, Owner Email, Created At.');
+  }
+
+  const normalizedName = name.toLocaleLowerCase('id-ID');
+  const duplicateInProjects = projectValues.slice(1)
+    .some((row) => String(row[projectIndexes.name]).trim().toLocaleLowerCase('id-ID') === normalizedName);
+  const duplicateInAccess = accessValues.slice(1)
+    .some((row) => String(row[accessIndexes.projectName]).trim().toLocaleLowerCase('id-ID') === normalizedName);
+  if (duplicateInProjects || duplicateInAccess) throw new Error('Nama proyek tersebut sudah digunakan.');
+
+  const existingIds = new Set([
+    ...projectValues.slice(1).map((row) => String(row[projectIndexes.id]).trim()),
+    ...accessValues.slice(1).map((row) => String(row[accessIndexes.projectId]).trim())
+  ].filter(Boolean));
+  const baseId = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'proyek';
+  let projectId = baseId;
+  let suffix = 2;
+  while (existingIds.has(projectId)) projectId = `${baseId}-${suffix++}`;
+
+  const projectRow = Array(projectsSheet.getLastColumn()).fill('');
+  projectRow[projectIndexes.id] = projectId;
+  projectRow[projectIndexes.name] = name;
+  projectRow[projectIndexes.owner] = email;
+  projectRow[projectIndexes.createdAt] = new Date().toISOString();
+
+  const accessRow = Array(accessSheet.getLastColumn()).fill('');
+  accessRow[accessIndexes.email] = email;
+  accessRow[accessIndexes.projectId] = projectId;
+  accessRow[accessIndexes.projectName] = name;
+  accessRow[accessIndexes.role] = 'admin';
+  accessRow[accessIndexes.active] = true;
+
+  const projectRowIndex = projectsSheet.getLastRow() + 1;
+  projectsSheet.appendRow(projectRow);
+  try {
+    accessSheet.appendRow(accessRow);
+  } catch (error) {
+    projectsSheet.deleteRow(projectRowIndex);
+    throw error;
+  }
+
+  return { projectId: projectId, projectName: name, role: 'admin' };
 }
 
 function getMonitoringSheet_() {

@@ -3683,8 +3683,11 @@
 
     function openProjectManager() {
       document.getElementById('newProjectName').value = '';
-      document.getElementById('newProjectName').closest('.form-row').hidden = Boolean(authorizedProjectId);
-      document.querySelector('#modalProjectManager .btn-save').hidden = Boolean(authorizedProjectId);
+      const canCreate = Boolean(currentAuthProfile?.isPreview)
+        || (Boolean(currentGoogleCredential) && authorizedProjects.some((project) =>
+          ['admin', 'owner'].includes(String(project.role || '').trim().toLowerCase())));
+      document.getElementById('newProjectName').closest('.form-row').hidden = !canCreate;
+      document.querySelector('#modalProjectManager .btn-save').hidden = !canCreate;
       renderProjectList();
       document.getElementById('modalProjectManager').style.display = 'flex';
     }
@@ -3732,11 +3735,7 @@
       switchTab('material');
     }
 
-    function createProject() {
-      if (authorizedProjectId) {
-        showAppNotice('Pembuatan proyek harus dilakukan oleh administrator.');
-        return;
-      }
+    async function createProject() {
       const name = document.getElementById('newProjectName').value.trim();
       if (!name) {
         alert('Nama proyek wajib diisi.');
@@ -3746,7 +3745,34 @@
         alert('Nama proyek tersebut sudah digunakan.');
         return;
       }
-      if (!persistActiveProjectData()) return;
+
+      if (currentGoogleCredential && getAppsScriptUrl()) {
+        const canCreate = authorizedProjects.some((project) =>
+          ['admin', 'owner'].includes(String(project.role || '').trim().toLowerCase()));
+        if (!canCreate) {
+          showAppNotice('Hanya admin atau owner proyek yang dapat menambahkan proyek.');
+          return;
+        }
+        if (!await persistActiveProjectData()) return;
+        try {
+          const result = await appsScriptRequest('createProject', { projectName: name });
+          if (!result.project?.projectId) throw new Error('Apps Script tidak mengembalikan proyek baru.');
+          activeProjectId = result.project.projectId;
+          writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
+          await loadAppsScriptProjectData();
+          closeProjectManager();
+          switchTab('material');
+        } catch (error) {
+          showAppNotice(error.message || 'Proyek gagal dibuat.');
+        }
+        return;
+      }
+
+      if (currentGoogleCredential || authorizedProjectId) {
+        showAppNotice('Pembuatan proyek akun Google memerlukan Apps Script aktif.');
+        return;
+      }
+      if (!await persistActiveProjectData()) return;
 
       const project = {
         id: `project-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`}`,
