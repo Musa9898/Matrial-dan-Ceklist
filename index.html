@@ -266,7 +266,8 @@
       to { transform: rotate(360deg); }
     }
 
-    .file-upload-status {
+    .file-upload-status,
+    .photo-upload-status {
       display: flex;
       align-items: center;
       gap: 8px;
@@ -281,16 +282,19 @@
       overflow-wrap: anywhere;
     }
 
-    .file-upload-status[hidden] {
+    .file-upload-status[hidden],
+    .photo-upload-status[hidden] {
       display: none;
     }
 
-    .file-upload-status.is-error {
+    .file-upload-status.is-error,
+    .photo-upload-status.is-error {
       background: #fef2f2;
       color: #b91c1c;
     }
 
-    .file-upload-status.is-success {
+    .file-upload-status.is-success,
+    .photo-upload-status.is-success {
       background: #ecfdf5;
       color: #166534;
     }
@@ -2427,6 +2431,10 @@
           <label for="assetPhotoInput">Foto Alat (opsional)</label>
           <input id="assetPhotoInput" type="file" accept="image/*" onchange="previewAssetPhoto(this.files[0])">
           <img class="asset-photo" id="assetPhotoPreview" alt="Pratinjau foto aset" hidden>
+          <div class="photo-upload-status" id="assetPhotoUploadStatus" role="status" aria-live="polite" aria-busy="false" hidden>
+            <span class="loading-spinner" id="assetPhotoUploadSpinner" hidden aria-hidden="true"></span>
+            <span id="assetPhotoUploadMessage"></span>
+          </div>
         </div>
         <div class="form-row">
           <label class="required-label" for="assetStatus">Kondisi</label>
@@ -2568,6 +2576,10 @@
         <div class="form-row">
           <label>Foto Surat Jalan</label>
           <input type="file" id="modalPhoto" accept="image/*">
+          <div class="photo-upload-status" id="materialPhotoUploadStatus" role="status" aria-live="polite" aria-busy="false" hidden>
+            <span class="loading-spinner" id="materialPhotoUploadSpinner" hidden aria-hidden="true"></span>
+            <span id="materialPhotoUploadMessage"></span>
+          </div>
         </div>
         <div class="btn-group">
           <button class="btn-cancel" onclick="closeInputModal()">Batal</button>
@@ -2856,6 +2868,10 @@
           <label id="formPhotoLabel">Foto Dokumentasi</label>
           <input type="file" id="formPhoto" accept="image/*" multiple onchange="addChecklistPhotos(this.files)">
           <span class="form-hint" id="checklistPhotoCount" aria-live="polite"></span>
+          <div class="photo-upload-status" id="checklistPhotoUploadStatus" role="status" aria-live="polite" aria-busy="false" hidden>
+            <span class="loading-spinner" id="checklistPhotoUploadSpinner" hidden aria-hidden="true"></span>
+            <span id="checklistPhotoUploadMessage"></span>
+          </div>
           <div class="checklist-photo-selection" id="checklistPhotoSelection"></div>
         </div>
 
@@ -2871,7 +2887,7 @@
 
         <div class="btn-group">
           <button class="btn-cancel" onclick="closeChecklistModal()">Batal</button>
-          <button class="btn-save" onclick="saveNewChecklist()">Simpan Ceklist</button>
+          <button class="btn-save" id="saveChecklistButton" onclick="saveNewChecklist()">Simpan Ceklist</button>
         </div>
       </div>
     </div>
@@ -3310,6 +3326,7 @@
     function openAssetForm(assetId = '') {
       const asset = assetItems.find((entry) => entry.id === assetId);
       editingAssetId = asset?.id || '';
+      setPhotoUploadStatus('asset', 'idle', '');
       document.getElementById('assetFormTitle').textContent = asset ? 'Ubah Aset Alat Kerja' : 'Tambah Aset Alat Kerja';
       document.getElementById('assetName').value = asset?.name || '';
       document.getElementById('assetCode').value = asset?.code || '';
@@ -3318,6 +3335,8 @@
       document.getElementById('assetLocation').value = asset?.location || '';
       document.getElementById('assetStatus').value = asset?.status || 'Tersedia';
       document.getElementById('assetPhotoInput').value = '';
+      document.getElementById('assetPhotoInput').disabled = false;
+      document.getElementById('saveAssetButton').disabled = false;
       previewAssetPhoto(null, asset?.photo || '');
       document.getElementById('modalAssetForm').style.display = 'flex';
     }
@@ -3363,36 +3382,54 @@
 
       const oldItems = [...assetItems];
       const oldAsset = assetItems.find((asset) => asset.id === editingAssetId);
-      const photoFile = document.getElementById('assetPhotoInput').files[0];
+      const photoInput = document.getElementById('assetPhotoInput');
+      const saveButton = document.getElementById('saveAssetButton');
+      const photoFile = photoInput.files[0];
       let photo = oldAsset?.photo || '';
       if (photoFile) {
-        try {
+        photoInput.disabled = true;
+        saveButton.disabled = true;
+        setPhotoUploadStatus('asset', 'loading', 'Memproses foto aset…');
+      }
+
+      let succeeded = false;
+      try {
+        if (photoFile) {
           photo = await readChecklistPhoto(photoFile);
-        } catch (error) {
-          showAppNotice(error.message);
+          setPhotoUploadStatus('asset', 'loading', 'Menyimpan foto dan data aset…');
+        }
+        const asset = {
+          id: editingAssetId || `asset-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`}`,
+          name,
+          code,
+          category: document.getElementById('assetCategory').value.trim(),
+          quantity,
+          location: document.getElementById('assetLocation').value.trim(),
+          status,
+          photo,
+          updatedAt: new Date().toISOString()
+        };
+        if (oldAsset) assetItems = assetItems.map((entry) => entry.id === editingAssetId ? asset : entry);
+        else assetItems.unshift(asset);
+
+        if (!await persistActiveProjectData()) {
+          assetItems = oldItems;
+          if (photoFile) setPhotoUploadStatus('asset', 'error', 'Foto atau data aset gagal disimpan.');
           return;
         }
+        succeeded = true;
+        closeAssetForm();
+        renderAssetCards();
+      } catch (error) {
+        if (photoFile) setPhotoUploadStatus('asset', 'error', `Gagal mengunggah foto: ${error.message}`);
+        else showAppNotice(error.message || 'Data aset gagal disimpan.');
+      } finally {
+        if (photoFile) {
+          photoInput.disabled = false;
+          saveButton.disabled = false;
+          if (succeeded) setPhotoUploadStatus('asset', 'success', 'Foto aset berhasil disimpan.');
+        }
       }
-      const asset = {
-        id: editingAssetId || `asset-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`}`,
-        name,
-        code,
-        category: document.getElementById('assetCategory').value.trim(),
-        quantity,
-        location: document.getElementById('assetLocation').value.trim(),
-        status,
-        photo,
-        updatedAt: new Date().toISOString()
-      };
-      if (oldAsset) assetItems = assetItems.map((entry) => entry.id === editingAssetId ? asset : entry);
-      else assetItems.unshift(asset);
-
-      if (!await persistActiveProjectData()) {
-        assetItems = oldItems;
-        return;
-      }
-      closeAssetForm();
-      renderAssetCards();
     }
 
     async function deleteAssetItem(assetId) {
@@ -5014,12 +5051,15 @@
       const materialInput = document.getElementById('modalMat');
       const unitInput = document.getElementById('modalUnit');
       const material = materialItems.find((item) => materialNamesMatch(materialName, item.name));
+      setPhotoUploadStatus('material', 'idle', '');
+      document.getElementById('modalPhoto').disabled = false;
       materialInput.value = materialName || '';
       materialInput.readOnly = Boolean(materialName);
       unitInput.value = material?.unit || 'Meter';
       unitInput.disabled = Boolean(material);
       document.getElementById('modalDate').value = getTodayISO();
       updateIncomingUnitSettings();
+      validateNewMaterialInput();
       document.getElementById('modalInput').style.display = 'flex';
     }
 
@@ -5072,55 +5112,82 @@
         return;
       }
 
-      const photo = await readFileAsDataUrl(photoFile);
-      const existingIndex = materialItems.findIndex((item) => normalizeMaterialName(item.name) === normalizeMaterialName(mat));
-      const canonicalName = existingIndex >= 0 ? materialItems[existingIndex].name : mat;
-      const currentReceived = existingIndex >= 0 ? parseNonNegativeNumber(materialItems[existingIndex].received) ?? 0 : 0;
-      const updatedReceived = currentReceived + qty;
-      if (!Number.isFinite(updatedReceived) || updatedReceived > Number.MAX_SAFE_INTEGER) {
-        alert('Jumlah stok melewati batas angka yang dapat disimpan.');
-        return;
-      }
-      const record = {
-        date: formatDateForDisplay(arrivalDate),
-        qty,
-        sj,
-        photo
-      };
-      const previousMaterial = existingIndex >= 0 ? { ...materialItems[existingIndex] } : null;
-      const previousHistory = [...(deliveryHistory[canonicalName] || [])];
-
-      if (!deliveryHistory[canonicalName]) {
-        deliveryHistory[canonicalName] = [];
-      }
-      deliveryHistory[canonicalName].unshift(record);
-
-      if (existingIndex >= 0) {
-        materialItems[existingIndex].issued = parseNonNegativeNumber(materialItems[existingIndex].issued) ?? 0;
-        materialItems[existingIndex].received = updatedReceived;
-      } else {
-        materialItems.unshift({
-          category: detectCategory(mat),
-          name: mat,
-          received: qty,
-          issued: 0,
-          target: Math.max(qty, 1),
-          unit
-        });
+      const photoInput = document.getElementById('modalPhoto');
+      const saveButton = document.getElementById('saveDeliveryButton');
+      if (photoFile) {
+        photoInput.disabled = true;
+        saveButton.disabled = true;
+        setPhotoUploadStatus('material', 'loading', 'Memproses foto surat jalan…');
       }
 
-      if (!await persistActiveProjectData()) {
-        deliveryHistory[canonicalName] = previousHistory;
-        if (existingIndex >= 0) materialItems[existingIndex] = previousMaterial;
-        else materialItems.shift();
-        return;
+      let succeeded = false;
+      try {
+        const photo = await readFileAsDataUrl(photoFile);
+        if (photoFile) setPhotoUploadStatus('material', 'loading', 'Menyimpan foto dan data material…');
+        const existingIndex = materialItems.findIndex((item) => normalizeMaterialName(item.name) === normalizeMaterialName(mat));
+        const canonicalName = existingIndex >= 0 ? materialItems[existingIndex].name : mat;
+        const currentReceived = existingIndex >= 0 ? parseNonNegativeNumber(materialItems[existingIndex].received) ?? 0 : 0;
+        const updatedReceived = currentReceived + qty;
+        if (!Number.isFinite(updatedReceived) || updatedReceived > Number.MAX_SAFE_INTEGER) {
+          alert('Jumlah stok melewati batas angka yang dapat disimpan.');
+          if (photoFile) setPhotoUploadStatus('material', 'error', 'Jumlah stok melewati batas yang dapat disimpan.');
+          return;
+        }
+        const record = {
+          date: formatDateForDisplay(arrivalDate),
+          qty,
+          sj,
+          photo
+        };
+        const previousMaterial = existingIndex >= 0 ? { ...materialItems[existingIndex] } : null;
+        const previousHistory = [...(deliveryHistory[canonicalName] || [])];
+
+        if (!deliveryHistory[canonicalName]) {
+          deliveryHistory[canonicalName] = [];
+        }
+        deliveryHistory[canonicalName].unshift(record);
+
+        if (existingIndex >= 0) {
+          materialItems[existingIndex].issued = parseNonNegativeNumber(materialItems[existingIndex].issued) ?? 0;
+          materialItems[existingIndex].received = updatedReceived;
+        } else {
+          materialItems.unshift({
+            category: detectCategory(mat),
+            name: mat,
+            received: qty,
+            issued: 0,
+            target: Math.max(qty, 1),
+            unit
+          });
+        }
+
+        if (!await persistActiveProjectData()) {
+          deliveryHistory[canonicalName] = previousHistory;
+          if (existingIndex >= 0) materialItems[existingIndex] = previousMaterial;
+          else materialItems.shift();
+          if (photoFile) setPhotoUploadStatus('material', 'error', 'Foto atau data material gagal disimpan.');
+          return;
+        }
+        succeeded = true;
+        renderMaterialCards();
+        alert(`Pencatatan Berhasil!\n\nMaterial: ${canonicalName}\nQty: ${qty}\nNo. SJ: ${sj}`);
+        closeInputModal();
+      } catch (error) {
+        if (photoFile) setPhotoUploadStatus('material', 'error', `Gagal mengunggah foto: ${error.message}`);
+        else showAppNotice(error.message || 'Data kedatangan gagal disimpan.');
+      } finally {
+        if (photoFile) {
+          photoInput.disabled = false;
+          saveButton.disabled = !validateNewMaterialInput();
+          if (succeeded) setPhotoUploadStatus('material', 'success', 'Foto surat jalan berhasil disimpan.');
+        }
       }
-      renderMaterialCards();
-  alert(`Pencatatan Berhasil!\n\nMaterial: ${canonicalName}\nQty: ${qty}\nNo. SJ: ${sj}`);
-      closeInputModal();
     }
 
     function openChecklistModal() {
+      setPhotoUploadStatus('checklist', 'idle', '');
+      document.getElementById('formPhoto').disabled = false;
+      document.getElementById('saveChecklistButton').disabled = false;
       document.getElementById('formDate').value = getTodayISO();
       document.getElementById('formStatus').value = 'Belum';
       document.getElementById('formSPV').value = '';
@@ -5589,6 +5656,18 @@
       if (message) setLoginStatus(message);
     }
 
+    function setPhotoUploadStatus(formName, state, message = '') {
+      const status = document.getElementById(`${formName}PhotoUploadStatus`);
+      if (!status) return;
+      const isLoading = state === 'loading';
+      status.hidden = !message;
+      status.classList.toggle('is-error', state === 'error');
+      status.classList.toggle('is-success', state === 'success');
+      status.setAttribute('aria-busy', String(isLoading));
+      document.getElementById(`${formName}PhotoUploadSpinner`).hidden = !isLoading;
+      document.getElementById(`${formName}PhotoUploadMessage`).textContent = message;
+    }
+
     function openDashboardForUser(user) {
       currentAuthUser = user;
       currentAuthProfile = user;
@@ -6041,21 +6120,45 @@
         return;
       }
 
+      const photoInput = document.getElementById('formPhoto');
+      const saveButton = document.getElementById('saveChecklistButton');
+      if (photoFiles.length) {
+        photoInput.disabled = true;
+        saveButton.disabled = true;
+      }
+
+      let succeeded = false;
       try {
-        item.photos = await readChecklistPhotos(photoFiles);
+        const photos = [];
+        for (let index = 0; index < photoFiles.length; index++) {
+          const file = photoFiles[index];
+          setPhotoUploadStatus('checklist', 'loading', `Memproses foto ${index + 1}/${photoFiles.length}: ${file.name}`);
+          photos.push(await readChecklistPhoto(file));
+        }
+        item.photos = photos;
+        if (photoFiles.length) setPhotoUploadStatus('checklist', 'loading', 'Menyimpan foto dan data ceklist…');
+
+        checklistItems.unshift(item);
+        if (!await persistChecklistItems()) {
+          checklistItems.shift();
+          if (photoFiles.length) setPhotoUploadStatus('checklist', 'error', 'Foto atau data ceklist gagal disimpan.');
+          return;
+        }
+
+        succeeded = true;
+        if (photoFiles.length) setPhotoUploadStatus('checklist', 'success', `${photoFiles.length} foto berhasil disimpan.`);
+        renderChecklistCards();
+        closeChecklistModal();
       } catch (error) {
-        alert(error.message);
-        return;
+        if (photoFiles.length) setPhotoUploadStatus('checklist', 'error', `Gagal mengunggah foto: ${error.message}`);
+        else alert(error.message);
+      } finally {
+        if (photoFiles.length) {
+          photoInput.disabled = false;
+          saveButton.disabled = false;
+          if (succeeded) setPhotoUploadStatus('checklist', 'success', `${photoFiles.length} foto berhasil disimpan.`);
+        }
       }
-
-      checklistItems.unshift(item);
-      if (!await persistChecklistItems()) {
-        checklistItems.shift();
-        return;
-      }
-
-      renderChecklistCards();
-      closeChecklistModal();
     }
 
     initializeAppTheme();
