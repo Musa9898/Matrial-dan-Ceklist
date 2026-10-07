@@ -1,4 +1,4 @@
-const SPREADSHEET_ID = '1lUE9Gscbui3xwFx8rSlUaKUJ0WvMboNNSEFAgeU9jZA';
+const SPREADSHEET_ID = '1IUE9GsCbui3xwFx8rSlUaKUJWOvMboNNSEFAgeU9jZA';
 const FOLDER_ID = '1xTylsRK6qEawXBtYfjbCoYpZ_zwAW9lP';
 const GOOGLE_CLIENT_ID = '441116312261-fd5ofvrlm4dmad44o38n6c1sms31vq65.apps.googleusercontent.com';
 const MONITORING_SHEET_NAME = 'Monitoring';
@@ -376,6 +376,7 @@ function buildMonitoringRecords_(project, snapshot, email, uploadedFiles) {
   });
 
   (snapshot.materialItems || []).forEach((item) => {
+    const deliveryHistory = snapshot.deliveryHistory?.[item.name] || [];
     records.push({
       recordId: 'material:' + item.name,
       projectId: project.projectId,
@@ -385,9 +386,26 @@ function buildMonitoringRecords_(project, snapshot, email, uploadedFiles) {
       date: now,
       reporter: email,
       notes: 'Stok: ' + (item.received || 0) + ' ' + (item.unit || '') + '; keluar: ' + (item.issued || 0),
-      driveUrl: '',
+      driveUrl: firstPhotoUrl_(deliveryHistory.map((delivery) => delivery.photo)),
       payload: item,
       updatedAt: now,
+      email: email
+    });
+  });
+
+  (snapshot.assetItems || []).forEach((item) => {
+    records.push({
+      recordId: 'asset:' + item.id,
+      projectId: project.projectId,
+      recordType: 'asset',
+      itemName: item.name || '',
+      status: item.status || '',
+      date: item.updatedAt || now,
+      reporter: email,
+      notes: [item.code ? 'Kode: ' + item.code : '', item.location || ''].filter(Boolean).join(' | '),
+      driveUrl: firstPhotoUrl_(item.photo),
+      payload: item,
+      updatedAt: item.updatedAt || now,
       email: email
     });
   });
