@@ -61,12 +61,36 @@
       position: relative;
     }
 
+    .login-screen::after,
+    .app-container::after {
+      position: absolute;
+      right: 12px;
+      z-index: 10;
+      color: var(--text-muted);
+      content: "Orion Creative";
+      font-size: 0.62rem;
+      font-weight: 600;
+      line-height: 1;
+      opacity: 0.7;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .login-screen::after {
+      bottom: 10px;
+    }
+
+    .app-container::after {
+      bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    }
+
     .app-container[hidden],
     .login-screen[hidden] {
       display: none !important;
     }
 
     .login-screen {
+      position: relative;
       display: flex;
       flex-direction: column;
       width: 100%;
