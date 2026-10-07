@@ -2034,9 +2034,9 @@
     </section>
     <div class="login-form-body">
       <div class="google-signin-container" id="googleSignInButton"></div>
-      <button class="preview-mode-button" type="button" onclick="enterPreviewMode()">Preview Dashboard</button>
+      <button class="preview-mode-button" type="button" onclick="enterPreviewMode()" hidden>Preview Dashboard</button>
       <p class="login-status" id="loginStatusMessage" role="status" aria-live="polite"></p>
-      <p class="login-footnote">Sesi Google di tahap ini hanya membuka antarmuka; akses undangan dan penyimpanan server-side menyusul lewat Apps Script.</p>
+      <p class="login-footnote">Gunakan akun Google yang terdaftar pada proyek untuk masuk.</p>
     </div>
   </main>
 
@@ -5452,7 +5452,12 @@
       }
     }
 
+    function isPreviewModeAllowed() {
+      return ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    }
+
     function enterPreviewMode() {
+      if (!isPreviewModeAllowed()) return;
       currentGoogleCredential = '';
       localStorage.removeItem('mep_user');
       if (window.google?.accounts?.id) window.google.accounts.id.disableAutoSelect();
@@ -5479,10 +5484,15 @@
       currentAuthProfile = null;
       showLoginScreen();
       updateAccountProfile(null);
+      const previewButton = document.querySelector('.preview-mode-button');
+      const previewModeAllowed = isPreviewModeAllowed();
+      if (previewButton) previewButton.hidden = !previewModeAllowed;
 
       const clientId = window.GOOGLE_CONFIG?.CLIENT_ID?.trim() || '';
       if (!clientId || clientId.startsWith('YOUR_')) {
-        setLoginStatus('Google Client ID belum diisi. Gunakan Preview Mode untuk menguji dashboard.');
+        setLoginStatus(previewModeAllowed
+          ? 'Google Client ID belum diisi. Preview tersedia hanya untuk localhost.'
+          : 'Google Client ID belum dikonfigurasi.');
         return;
       }
       if (!window.google?.accounts?.id) {
