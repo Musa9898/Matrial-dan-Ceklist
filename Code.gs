@@ -409,6 +409,30 @@ function buildMonitoringRecords_(project, snapshot, email, uploadedFiles) {
       email: email
     });
   });
+
+  (snapshot.dailyWorkPlans || []).forEach((report, index) => {
+    const tasks = Array.isArray(report.tasks) ? report.tasks : [];
+    const taskSummary = tasks.map((task) => [
+      task.discipline,
+      task.title,
+      task.area,
+      Number.isFinite(Number(task.workers)) ? Number(task.workers) + ' orang' : ''
+    ].filter(Boolean).join(' - ')).join(' | ');
+    records.push({
+      recordId: 'daily-report:' + (report.id || report.date || index),
+      projectId: project.projectId,
+      recordType: 'daily_report',
+      itemName: report.title || 'Laporan Harian MEP',
+      status: 'Tersimpan',
+      date: report.date || now,
+      reporter: report.supervisor || email,
+      notes: taskSummary,
+      driveUrl: firstPhotoUrl_(report.photos || report.photo),
+      payload: report,
+      updatedAt: now,
+      email: email
+    });
+  });
   return records;
 }
 
