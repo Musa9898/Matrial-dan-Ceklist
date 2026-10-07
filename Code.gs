@@ -3,14 +3,20 @@ const FOLDER_ID = 'PASTE_DRIVE_FOLDER_ID_HERE';
 const GOOGLE_CLIENT_ID = '441116312261-fd5ofvrlm4dmad44o38n6c1sms31vq65.apps.googleusercontent.com';
 const MONITORING_SHEET_NAME = 'Monitoring';
 const ACCESS_SHEET_NAME = 'Access';
+const FRONTEND_ORIGINS = [
+  'https://musa9898.github.io',
+  'http://localhost:8000',
+  'http://127.0.0.1:8000'
+];
 const MONITORING_HEADERS = [
   'record_id', 'project_id', 'record_type', 'item_name', 'status',
   'date', 'reporter', 'notes', 'drive_url', 'payload_json', 'updated_at', 'email'
 ];
 
 function doGet(e) {
+  const params = (e && e.parameter) || {};
+  if (params.bridge === '1') return createBridgeOutput_(params.origin);
   try {
-    const params = (e && e.parameter) || {};
     const identity = verifyGoogleIdToken_(params.idToken);
     const projects = getAuthorizedProjects_(identity.email);
     const requestedProjectId = String(params.projectId || '');
@@ -91,6 +97,45 @@ function doPost(e) {
   } finally {
     if (lock.hasLock()) lock.releaseLock();
   }
+}
+
+function handleBridgeRequest(request) {
+  try {
+    const output = request.action === 'load'
+      ? doGet({ parameter: request })
+      : doPost({ postData: { contents: JSON.stringify(request) } });
+    return JSON.parse(output.getContent());
+  } catch (error) {
+    return { status: 'error', message: error.message || 'Permintaan Apps Script gagal.' };
+  }
+}
+
+function createBridgeOutput_(parentOrigin) {
+  if (FRONTEND_ORIGINS.indexOf(String(parentOrigin || '')) < 0) {
+    return HtmlService.createHtmlOutput('Origin tidak diizinkan.');
+  }
+  const allowedOrigins = JSON.stringify(FRONTEND_ORIGINS);
+  const initialOrigin = JSON.stringify(parentOrigin);
+  const html = `<!doctype html><html><head><base target="_top"></head><body><script>
+    const allowedOrigins = ${allowedOrigins};
+    const initialOrigin = ${initialOrigin};
+    window.addEventListener('message', function(event) {
+      if (event.source !== window.parent || allowedOrigins.indexOf(event.origin) < 0) return;
+      const message = event.data || {};
+      if (message.type !== 'request' || !message.requestId || !message.request) return;
+      google.script.run
+        .withSuccessHandler(function(result) {
+          event.source.postMessage({ type: 'response', requestId: message.requestId, result: result }, event.origin);
+        })
+        .withFailureHandler(function(error) {
+          event.source.postMessage({ type: 'response', requestId: message.requestId, error: error.message || 'Permintaan gagal.' }, event.origin);
+        })
+        .handleBridgeRequest(message.request);
+    });
+    window.parent.postMessage({ type: 'apps-script-bridge-ready' }, initialOrigin);
+  </script></body></html>`;
+  return HtmlService.createHtmlOutput(html)
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 function jsonOutput_(value) {

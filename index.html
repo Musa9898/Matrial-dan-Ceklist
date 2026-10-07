@@ -2831,6 +2831,14 @@
     let authorizedProjectIds = new Set();
     let authorizedProjects = [];
     let remoteProjectFiles = [];
+    let appsScriptBridgeFrame = null;
+    let appsScriptBridgeReady = false;
+    let appsScriptBridgeReadyPromise = null;
+    let appsScriptBridgeReadyResolve = null;
+    let appsScriptBridgeReadyReject = null;
+    let appsScriptBridgeReadyTimeoutId = null;
+    let appsScriptBridgeRequestId = 0;
+    const pendingAppsScriptRequests = new Map();
 
     function readLocalStorage(key) {
       try {
@@ -3474,34 +3482,84 @@
       return !url || url.startsWith('ISI_') ? '' : url;
     }
 
-    async function appsScriptRequest(action, payload = {}, method = 'POST') {
-      const webAppUrl = getAppsScriptUrl();
-      if (!webAppUrl) throw new Error('URL Apps Script belum dikonfigurasi di google-config.js.');
+    function handleAppsScriptBridgeMessage(event) {
+      if (!appsScriptBridgeFrame || event.source !== appsScriptBridgeFrame.contentWindow) return;
+      let host = '';
+      try {
+        host = new URL(event.origin).hostname;
+      } catch (error) {
+        return;
+      }
+      if (host !== 'script.google.com' && !host.endsWith('.googleusercontent.com')) return;
 
-      let requestUrl = webAppUrl;
-      const options = { method };
-      if (method === 'GET') {
-        const query = new URLSearchParams({
-          action,
-          idToken: currentGoogleCredential,
-          projectId: String(payload.projectId || '')
-        });
-        requestUrl += `${requestUrl.includes('?') ? '&' : '?'}${query.toString()}`;
+      const message = event.data || {};
+      if (message.type === 'apps-script-bridge-ready') {
+        appsScriptBridgeReady = true;
+        if (appsScriptBridgeReadyTimeoutId) window.clearTimeout(appsScriptBridgeReadyTimeoutId);
+        appsScriptBridgeReadyTimeoutId = null;
+        if (appsScriptBridgeReadyResolve) appsScriptBridgeReadyResolve();
+        appsScriptBridgeReadyResolve = null;
+        appsScriptBridgeReadyReject = null;
+        appsScriptBridgeReadyPromise = null;
+        return;
+      }
+      if (message.type !== 'response' || !message.requestId) return;
+
+      const pending = pendingAppsScriptRequests.get(message.requestId);
+      if (!pending) return;
+      window.clearTimeout(pending.timeoutId);
+      pendingAppsScriptRequests.delete(message.requestId);
+      if (message.error) pending.reject(new Error(message.error));
+      else if (!message.result || message.result.status !== 'success') {
+        pending.reject(new Error(message.result?.message || 'Apps Script gagal memproses permintaan.'));
       } else {
-        options.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
-        options.body = JSON.stringify({
-          ...payload,
-          action,
-          idToken: currentGoogleCredential
-        });
+        pending.resolve(message.result);
       }
+    }
 
-      const response = await fetch(requestUrl, options);
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || result.status !== 'success') {
-        throw new Error(result.message || `Apps Script merespons ${response.status}.`);
-      }
-      return result;
+    function ensureAppsScriptBridge() {
+      if (appsScriptBridgeReady && appsScriptBridgeFrame?.contentWindow) return Promise.resolve();
+      if (appsScriptBridgeReadyPromise) return appsScriptBridgeReadyPromise;
+      const webAppUrl = getAppsScriptUrl();
+      if (!webAppUrl) return Promise.reject(new Error('URL Apps Script belum dikonfigurasi di google-config.js.'));
+
+      appsScriptBridgeReadyPromise = new Promise((resolve, reject) => {
+        appsScriptBridgeReadyResolve = resolve;
+        appsScriptBridgeReadyReject = reject;
+        appsScriptBridgeReadyTimeoutId = window.setTimeout(() => {
+          appsScriptBridgeReady = false;
+          appsScriptBridgeReadyPromise = null;
+          appsScriptBridgeFrame?.remove();
+          appsScriptBridgeFrame = null;
+          appsScriptBridgeReadyResolve = null;
+          appsScriptBridgeReadyReject = null;
+          appsScriptBridgeReadyTimeoutId = null;
+          reject(new Error('Apps Script bridge tidak merespons. Pastikan Code.gs versi terbaru sudah dideploy sebagai Web App.'));
+        }, 20000);
+      });
+
+      appsScriptBridgeFrame = document.createElement('iframe');
+      appsScriptBridgeFrame.hidden = true;
+      appsScriptBridgeFrame.title = 'Koneksi Google Apps Script';
+      const separator = webAppUrl.includes('?') ? '&' : '?';
+      appsScriptBridgeFrame.src = `${webAppUrl}${separator}bridge=1&origin=${encodeURIComponent(window.location.origin)}`;
+      document.body.appendChild(appsScriptBridgeFrame);
+      return appsScriptBridgeReadyPromise;
+    }
+
+    async function appsScriptRequest(action, payload = {}, method = 'POST') {
+      if (!currentGoogleCredential) throw new Error('Sesi Google tidak aktif. Masuk kembali untuk melanjutkan.');
+      await ensureAppsScriptBridge();
+      const requestId = `apps-script-${Date.now()}-${++appsScriptBridgeRequestId}`;
+      const request = { ...payload, action, idToken: currentGoogleCredential };
+      return new Promise((resolve, reject) => {
+        const timeoutId = window.setTimeout(() => {
+          pendingAppsScriptRequests.delete(requestId);
+          reject(new Error('Apps Script tidak merespons dalam 30 detik.'));
+        }, 30000);
+        pendingAppsScriptRequests.set(requestId, { resolve, reject, timeoutId });
+        appsScriptBridgeFrame.contentWindow.postMessage({ type: 'request', requestId, request }, '*');
+      });
     }
 
     function setAppsScriptStatus(message) {
@@ -5667,6 +5725,7 @@
     initializeModalCloseButtons();
     initializeProjectManager();
     closeSearchFilterPopovers();
+    window.addEventListener('message', handleAppsScriptBridgeMessage);
     window.addEventListener('load', initializeGoogleSignIn, { once: true });
     loadAccountPhoto();
   </script>
