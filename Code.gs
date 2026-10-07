@@ -1,5 +1,5 @@
-const SPREADSHEET_ID = 'PASTE_SPREADSHEET_ID_HERE';
-const FOLDER_ID = 'PASTE_DRIVE_FOLDER_ID_HERE';
+const SPREADSHEET_ID = '1fJE9Gscbui3swfa8rSEuKlUW0VMboNNSEFAgeUkf6ZA';
+const FOLDER_ID = '1xTylsRK6qEawXBtYfjbCoYpZ_zwAW9lP';
 const GOOGLE_CLIENT_ID = '441116312261-fd5ofvrlm4dmad44o38n6c1sms31vq65.apps.googleusercontent.com';
 const MONITORING_SHEET_NAME = 'Monitoring';
 const ACCESS_SHEET_NAME = 'Access';

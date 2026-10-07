@@ -5427,13 +5427,11 @@
       } catch (error) {
         localStorage.removeItem('mep_user');
       }
-      if (savedUser?.sub && savedUser?.email) {
-        openDashboardForUser(savedUser);
-      } else {
-        currentGoogleCredential = '';
-        showLoginScreen();
-        updateAccountProfile(null);
-      }
+      currentGoogleCredential = '';
+      currentAuthUser = null;
+      currentAuthProfile = null;
+      showLoginScreen();
+      updateAccountProfile(null);
 
       const clientId = window.GOOGLE_CONFIG?.CLIENT_ID?.trim() || '';
       if (!clientId || clientId.startsWith('YOUR_')) {
@@ -5459,7 +5457,10 @@
         shape: 'rectangular',
         width: Math.min(360, document.querySelector('.login-form-body').clientWidth)
       });
-      if (!savedUser) setLoginStatus('Masuk dengan akun Google untuk membuka dashboard.');
+      setLoginStatus(savedUser?.email
+        ? `Akun ${savedUser.email} tersimpan. Masuk dengan Google lagi untuk memuat data Sheets.`
+        : 'Masuk dengan akun Google untuk membuka dashboard.');
+      if (savedUser?.email) window.google.accounts.id.prompt();
     }
 
     function logoutAppSession() {
