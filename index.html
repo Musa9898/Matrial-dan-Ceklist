@@ -3187,7 +3187,7 @@
       document.getElementById('assetSummary').textContent = `${filteredAssets.length} jenis aset · ${totalUnits} unit`;
       list.innerHTML = filteredAssets.length ? filteredAssets.map((asset) => {
         const statusClass = asset.status === 'Tersedia' ? 'text-komplit' : asset.status === 'Rusak' ? 'text-danger' : 'text-kurang';
-        const photo = asset.photo ? `<img class="asset-photo" src="${escapeHtml(asset.photo)}" alt="Foto ${escapeHtml(asset.name)}">` : '';
+        const photo = asset.photo ? `<img class="asset-photo" src="${escapeHtml(getPreviewImageUrl(asset.photo))}" alt="Foto ${escapeHtml(asset.name)}">` : '';
         return `
           <article class="item-card">
             <div class="item-card-top">
@@ -3238,7 +3238,7 @@
         preview.src = assetPhotoPreviewObjectUrl;
         preview.hidden = false;
       } else if (existingPhoto) {
-        preview.src = existingPhoto;
+        preview.src = getPreviewImageUrl(existingPhoto);
         preview.hidden = false;
       } else {
         preview.removeAttribute('src');
@@ -4287,9 +4287,24 @@
       updateFilterPopoverState('fileFilterPopover', 'fileFilterCount', ['globalFileSearchInput', 'fileTypeFilter', 'fileDateFrom', 'fileDateTo']);
     }
 
+    function getPreviewImageUrl(source) {
+      const imageUrl = String(source || '').trim();
+      try {
+        const url = new URL(imageUrl, window.location.href);
+        if (url.hostname !== 'drive.google.com') return imageUrl;
+        const filePathMatch = url.pathname.match(/\/file\/d\/([^/]+)/);
+        const fileId = filePathMatch?.[1] || url.searchParams.get('id');
+        return fileId
+          ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w1600`
+          : imageUrl;
+      } catch (error) {
+        return imageUrl;
+      }
+    }
+
     function projectPhotoMarkup(photo, alt, className = 'history-photo') {
       return photo
-        ? `<img class="${className}" src="${escapeHtml(photo)}" alt="${escapeHtml(alt)}">`
+        ? `<img class="${className}" src="${escapeHtml(getPreviewImageUrl(photo))}" alt="${escapeHtml(alt)}">`
         : '';
     }
 
