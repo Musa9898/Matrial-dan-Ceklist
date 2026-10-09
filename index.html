@@ -3968,7 +3968,8 @@
         try {
           return await appsScriptFetch(request, timeoutMs, onSlow, method);
         } catch (error) {
-          const canFallback = repeatable && (error.code === 'network' || error.code === 'badresponse');
+          const canFallback = repeatable
+            && ['timeout', 'network', 'badresponse'].includes(error.code);
           if (!canFallback) throw error;
         }
       }
