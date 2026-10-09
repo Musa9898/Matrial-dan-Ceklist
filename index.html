@@ -3985,6 +3985,32 @@
       return base;
     }
 
+    // Apps Script kerap gagal pada percobaan pertama karena cold start,
+    // lalu berhasil pada percobaan berikutnya. Ulangi sendiri agar pengguna
+    // tidak perlu menekan "Coba Lagi" secara manual.
+    const AUTO_RETRY_ERROR_CODES = ['timeout', 'network', 'bridge', 'badresponse'];
+    const AUTO_RETRY_ATTEMPTS = 3;
+
+    function isTransientAppsScriptError(error) {
+      return AUTO_RETRY_ERROR_CODES.includes(error?.code);
+    }
+
+    function waitMs(milliseconds) {
+      return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+    }
+
+    async function runWithAutoRetry(task, onRetry) {
+      for (let attempt = 1; ; attempt++) {
+        try {
+          return await task();
+        } catch (error) {
+          if (attempt >= AUTO_RETRY_ATTEMPTS || !isTransientAppsScriptError(error)) throw error;
+          if (onRetry) onRetry(attempt + 1, AUTO_RETRY_ATTEMPTS);
+          await waitMs(attempt * 1500);
+        }
+      }
+    }
+
     let connectionRetryHandler = null;
 
     function showConnectionProblem(error, retryHandler) {
@@ -4016,7 +4042,10 @@
 
     async function reloadProjectDataWithRetry() {
       try {
-        await loadAppsScriptProjectData();
+        await runWithAutoRetry(
+          () => loadAppsScriptProjectData(),
+          (attempt, total) => setAppsScriptStatus(`server lambat, mencoba ulang ${attempt}/${total}…`)
+        );
         hideConnectionProblem();
       } catch (error) {
         setAppsScriptStatus('gagal memuat');
@@ -6154,7 +6183,10 @@
 
     async function retryLoginAndLoad() {
       try {
-        await loginAppsScript();
+        await runWithAutoRetry(
+          () => loginAppsScript(),
+          (attempt, total) => setAppsScriptStatus(`server lambat, mencoba ulang ${attempt}/${total}…`)
+        );
       } catch (error) {
         showConnectionProblem(error, retryLoginAndLoad);
         return;
@@ -6176,7 +6208,10 @@
         if (getAppsScriptUrl()) {
           setLoginLoading(true, 'Memverifikasi akun…');
           try {
-            await loginAppsScript();
+            await runWithAutoRetry(
+              () => loginAppsScript(),
+              (attempt, total) => setLoginLoading(true, `Server lambat, mencoba ulang ${attempt}/${total}…`)
+            );
           } catch (error) {
             setAppsScriptStatus('gagal masuk');
             openDashboardForUser(user);
