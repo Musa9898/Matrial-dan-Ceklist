@@ -34,7 +34,7 @@ const PROJECT_FILE_HEADERS = [
   'Uploaded By', 'Created At', 'MIME Type', 'Payload JSON'
 ];
 const PROJECT_FOLDER_HEADERS = ['Folder ID', 'Project ID', 'Folder Name', 'Created At', 'Created By'];
-const BACKEND_VERSION = '2026-10-10-fast';
+const BACKEND_VERSION = '2026-10-10-login';
 const FRONTEND_ORIGINS = [
   'https://musa9898.github.io',
   'http://localhost:8000',
@@ -51,8 +51,12 @@ function doGet(e) {
   if (params.action === 'ping') return jsonOutput_(buildPingResponse_());
   try {
     const identity = verifyGoogleIdToken_(params.idToken);
-    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const spreadsheet = getSpreadsheet_();
     const projects = getAccessibleProjects_(identity.email, spreadsheet);
+    if (params.action === 'login') {
+      if (!projects.length) throw new Error('Akun ini belum diberi akses proyek pada tab Access.');
+      return jsonOutput_({ status: 'success', email: identity.email, projects });
+    }
     const requestedProjectId = String(params.projectId || '');
     const allowedProjects = requestedProjectId
       ? projects.filter((project) => project.projectId === requestedProjectId)
@@ -109,6 +113,17 @@ function readProjectData_(spreadsheet, projectIds) {
   };
 }
 
+let spreadsheetHandle_ = null;
+
+// Dibuka satu kali per eksekusi; variabel global direset setiap request.
+function getSpreadsheet_() {
+  if (!spreadsheetHandle_) {
+    if (SPREADSHEET_ID.indexOf('PASTE_') === 0) throw new Error('SPREADSHEET_ID belum dikonfigurasi di Code.gs.');
+    spreadsheetHandle_ = SpreadsheetApp.openById(SPREADSHEET_ID);
+  }
+  return spreadsheetHandle_;
+}
+
 const DATA_VERSION_KEY = 'data-version';
 const LOAD_CACHE_TTL_SECONDS = 60;
 const CACHE_CHUNK_SIZE = 90000;
@@ -159,7 +174,7 @@ function doPost(e) {
     const request = parseRequestBody_(e);
     if (request.action === 'ping') return jsonOutput_(buildPingResponse_());
     const identity = verifyGoogleIdToken_(request.idToken);
-    if (request.action === 'load') return doGet({ parameter: request });
+    if (request.action === 'load' || request.action === 'login') return doGet({ parameter: request });
     mutated = true;
     if (request.action === 'createProject') {
       lock.waitLock(20000);
@@ -241,7 +256,7 @@ function buildPingResponse_() {
 
 function handleBridgeRequest(request) {
   try {
-    const output = request.action === 'load' || request.action === 'ping'
+    const output = ['load', 'login', 'ping'].includes(request.action)
       ? doGet({ parameter: request })
       : doPost({ postData: { contents: JSON.stringify(request) } });
     return JSON.parse(output.getContent());
@@ -335,7 +350,7 @@ function withPermissions_(project) {
 }
 
 function readActiveAccessRows_(spreadsheet) {
-  const book = spreadsheet || SpreadsheetApp.openById(SPREADSHEET_ID);
+  const book = spreadsheet || getSpreadsheet_();
   const sheet = book.getSheetByName(ACCESS_SHEET_NAME);
   if (!sheet || sheet.getLastRow() < 2) throw new Error('Daftar undangan belum disiapkan di tab Access.');
 
@@ -395,7 +410,7 @@ function requireProjectPermission_(project, permission) {
 }
 
 function mergeSnapshotByPermissions_(project, requestedSnapshot, projectId) {
-  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const spreadsheet = getSpreadsheet_();
   const operationalRecords = readOperationalRecords_(spreadsheet);
   const storedChunks = readProjectDataRecords_(spreadsheet)
     .filter((record) => record.projectId === projectId)
@@ -425,7 +440,7 @@ function createProjectForUser_(projectName, email) {
     throw new Error('Hanya admin, owner, atau Engineering yang dapat menambahkan proyek.');
   }
 
-  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const spreadsheet = getSpreadsheet_();
   const accessSheet = spreadsheet.getSheetByName(ACCESS_SHEET_NAME);
   const accessValues = accessSheet.getDataRange().getDisplayValues();
   const accessHeaders = accessValues[0].map((value) => String(value).trim().toLowerCase());
@@ -515,7 +530,7 @@ function getSchemaSheet_(spreadsheet, sheetName, headers) {
 
 function getMonitoringSheet_() {
   if (SPREADSHEET_ID.indexOf('PASTE_') === 0) throw new Error('SPREADSHEET_ID belum dikonfigurasi di Code.gs.');
-  return getSchemaSheet_(SpreadsheetApp.openById(SPREADSHEET_ID), MONITORING_SHEET_NAME, MONITORING_HEADERS);
+  return getSchemaSheet_(getSpreadsheet_(), MONITORING_SHEET_NAME, MONITORING_HEADERS);
 }
 
 function getSheetHeaderIndexes_(sheet) {
@@ -665,7 +680,7 @@ function saveProjectFolders_(projectId, folders, email) {
   if (!projectId) throw new Error('ID proyek wajib diisi.');
   if (!Array.isArray(folders) || folders.length > 200) throw new Error('Daftar folder tidak valid.');
 
-  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const spreadsheet = getSpreadsheet_();
   const sheet = getSchemaSheet_(spreadsheet, PROJECT_FOLDERS_SHEET_NAME, PROJECT_FOLDER_HEADERS);
   const existing = readProjectFolders_(spreadsheet, new Set([projectId]));
   const createdAtById = new Map(existing.map((folder) => [folder.id, folder.createdAt]));
@@ -943,7 +958,7 @@ function replaceProjectRows_(sheet, projectId, rows, projectIdHeader) {
 }
 
 function replaceProjectRecords_(projectId, records) {
-  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const spreadsheet = getSpreadsheet_();
   const monitoringSheet = getSchemaSheet_(spreadsheet, MONITORING_SHEET_NAME, MONITORING_HEADERS);
   const legacyFiles = readRecordRows_(monitoringSheet)
     .filter((record) => record.projectId === projectId && record.recordType === 'file');
@@ -1043,7 +1058,7 @@ function saveDriveFile_(project, fileData, email) {
 }
 
 function appendMonitoringRecord_(record) {
-  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const spreadsheet = getSpreadsheet_();
   const sheet = getSchemaSheet_(spreadsheet, PROJECT_FILES_SHEET_NAME, PROJECT_FILE_HEADERS);
   const file = record.payload || {};
   const row = sheetRowFromObject_(sheet, {
@@ -1063,7 +1078,7 @@ function appendMonitoringRecord_(record) {
 
 function deleteDriveFile_(projectId, fileId) {
   if (!fileId) throw new Error('ID file wajib diisi.');
-  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const spreadsheet = getSpreadsheet_();
   const sheet = getSchemaSheet_(spreadsheet, PROJECT_FILES_SHEET_NAME, PROJECT_FILE_HEADERS);
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) throw new Error('File tidak ditemukan.');

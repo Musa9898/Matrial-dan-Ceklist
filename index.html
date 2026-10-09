@@ -3920,6 +3920,10 @@
 
     async function persistActiveProjectData() {
       if (!activeProjectId) return false;
+      if (isRoleRestrictionActive() && !projectDataReady) {
+        showAppNotice('Data proyek masih dimuat dari Sheets. Tunggu sebentar lalu coba lagi.');
+        return false;
+      }
       if (isRoleRestrictionActive() && authorizedProjects.find((entry) => entry.projectId === activeProjectId)?.readOnly) return true;
       const snapshot = JSON.parse(JSON.stringify(getActiveProjectSnapshot()));
       let localSaved = false;
@@ -4174,6 +4178,10 @@
 
     async function persistProjectFolders() {
       if (getAppsScriptUrl() && currentGoogleCredential && !currentAuthProfile?.isPreview) {
+        if (!projectDataReady) {
+          showAppNotice('Data proyek masih dimuat dari Sheets. Tunggu sebentar lalu coba lagi.');
+          return false;
+        }
         try {
           const result = await appsScriptRequest('saveProjectFolders', {
             projectId: activeProjectId,
@@ -5912,21 +5920,38 @@
       switchTab('material');
     }
 
+    let projectDataReady = false;
+
+    function applyAuthorizedProjects(projects) {
+      authorizedProjects = Array.isArray(projects) ? projects : [];
+      authorizedProjectIds = new Set(authorizedProjects.map((project) => project.projectId));
+      if (!authorizedProjects.length) throw new Error('Akun ini belum diberi akses proyek pada tab Access.');
+      projectRegistry = authorizedProjects.map((project) => ({ id: project.projectId, name: project.projectName }));
+      const candidateProjectId = readLocalStorage(ACTIVE_PROJECT_KEY) || activeProjectId;
+      activeProjectId = authorizedProjectIds.has(candidateProjectId) ? candidateProjectId : authorizedProjects[0].projectId;
+      authorizedProjectId = activeProjectId;
+      writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
+    }
+
+    // Login ringan: hanya memverifikasi akun dan daftar proyek, tanpa data material/file.
+    async function loginAppsScript() {
+      const result = await appsScriptRequest('login', {}, 'GET');
+      applyAuthorizedProjects(result.projects);
+      applyProjectData(getEmptyProjectData());
+      projectDataReady = false;
+      return true;
+    }
+
     async function loadAppsScriptProjectData() {
       if (!getAppsScriptUrl() || !currentGoogleCredential) return false;
+      projectDataReady = false;
       setAppsScriptStatus('memuat dari Sheets…');
       const preferredProjectId = readLocalStorage(ACTIVE_PROJECT_KEY) || activeProjectId;
       const result = await appsScriptRequest('load', { dataProjectId: preferredProjectId }, 'GET');
-      authorizedProjects = Array.isArray(result.projects) ? result.projects : [];
-      authorizedProjectIds = new Set(authorizedProjects.map((project) => project.projectId));
+      applyAuthorizedProjects(result.projects);
       remoteProjectFiles = (result.records || [])
         .filter((record) => record.recordType === 'file' && record.payload)
         .map((record) => record.payload);
-      if (!authorizedProjects.length) throw new Error('Akun ini belum diberi akses proyek pada tab Access.');
-      projectRegistry = authorizedProjects.map((project) => ({ id: project.projectId, name: project.projectName }));
-      if (!authorizedProjectIds.has(activeProjectId)) activeProjectId = authorizedProjects[0].projectId;
-      authorizedProjectId = activeProjectId;
-      writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
       const snapshot = result.snapshots?.[activeProjectId];
       if (snapshot) {
         applyProjectData(snapshot);
@@ -5980,6 +6005,7 @@
           showAppNotice(error.message || 'Folder lama belum dapat disinkronkan ke Sheets.');
         }
       }
+      projectDataReady = true;
       updateActiveProjectTitle();
       renderProjectData();
       setAppsScriptStatus('tersinkron dari Sheets');
@@ -6010,6 +6036,17 @@
       };
     }
 
+    async function retryLoginAndLoad() {
+      try {
+        await loginAppsScript();
+      } catch (error) {
+        showConnectionProblem(error, retryLoginAndLoad);
+        return;
+      }
+      updateActiveProjectTitle();
+      await reloadProjectDataWithRetry();
+    }
+
     async function handleGoogleCredential(response) {
       setLoginLoading(true, 'Memverifikasi akun Google…');
       try {
@@ -6021,15 +6058,19 @@
         authorizedProjectId = user.sub;
         updateAccountProfile(user);
         if (getAppsScriptUrl()) {
-          setLoginLoading(true, 'Memuat data proyek dari Sheets…');
+          setLoginLoading(true, 'Memverifikasi akun…');
           try {
-            await loadAppsScriptProjectData();
+            await loginAppsScript();
           } catch (error) {
-            setAppsScriptStatus('gagal memuat');
+            setAppsScriptStatus('gagal masuk');
             openDashboardForUser(user);
-            showConnectionProblem(error, reloadProjectDataWithRetry);
+            showConnectionProblem(error, retryLoginAndLoad);
             return;
           }
+          openDashboardForUser(user);
+          updateActiveProjectTitle();
+          reloadProjectDataWithRetry();
+          return;
         }
         openDashboardForUser(user);
       } catch (error) {
