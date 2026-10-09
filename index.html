@@ -3784,6 +3784,105 @@
 
     let appsScriptPreferBridge = false;
 
+    // ---------------------------------------------------------------
+    // Jalur baca cepat lewat Supabase.
+    // Sumber kebenaran tetap Google Sheets & Drive: semua penulisan tetap
+    // melalui Apps Script, dan bila Supabase gagal kita jatuh balik ke sana.
+    // ---------------------------------------------------------------
+    let supabaseSession = null;
+    let supabaseSessionCredential = '';
+    let supabaseDisabled = false;
+
+    function getSupabaseConfig() {
+      const config = window.GOOGLE_CONFIG || {};
+      if (supabaseDisabled || !config.SUPABASE_URL || !config.SUPABASE_PUBLISHABLE_KEY) return null;
+      return config;
+    }
+
+    async function supabaseFetch(path, options = {}) {
+      const config = getSupabaseConfig();
+      if (!config) throw new Error('Supabase tidak dikonfigurasi.');
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), config.SUPABASE_TIMEOUT_MS || 8000);
+      try {
+        const response = await fetch(`${config.SUPABASE_URL}${path}`, {
+          ...options,
+          signal: controller.signal,
+          headers: {
+            apikey: config.SUPABASE_PUBLISHABLE_KEY,
+            'Content-Type': 'application/json',
+            ...(options.headers || {})
+          }
+        });
+        const text = await response.text();
+        const body = text ? JSON.parse(text) : null;
+        if (!response.ok) throw new Error(body?.message || body?.error_description || `Supabase ${response.status}`);
+        return body;
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+    }
+
+    async function ensureSupabaseSession() {
+      if (!getSupabaseConfig() || !currentGoogleCredential) return null;
+      const stillValid = supabaseSession
+        && supabaseSessionCredential === currentGoogleCredential
+        && supabaseSession.expiresAt - 60000 > Date.now();
+      if (stillValid) return supabaseSession;
+      const body = await supabaseFetch('/auth/v1/token?grant_type=id_token', {
+        method: 'POST',
+        body: JSON.stringify({ provider: 'google', id_token: currentGoogleCredential })
+      });
+      if (!body?.access_token) throw new Error('Supabase menolak kredensial Google.');
+      supabaseSession = {
+        accessToken: body.access_token,
+        expiresAt: Date.now() + (Number(body.expires_in) || 3600) * 1000
+      };
+      supabaseSessionCredential = currentGoogleCredential;
+      return supabaseSession;
+    }
+
+    async function supabaseSelect(query) {
+      const session = await ensureSupabaseSession();
+      if (!session) throw new Error('Sesi Supabase tidak tersedia.');
+      return supabaseFetch(`/rest/v1/${query}`, {
+        headers: { Authorization: `Bearer ${session.accessToken}` }
+      });
+    }
+
+    async function supabaseReadProjects() {
+      const rows = await supabaseSelect('user_projects?select=project_id,project_name,role,permissions,read_only');
+      if (!Array.isArray(rows) || !rows.length) throw new Error('Cermin Supabase belum berisi data akses.');
+      return rows
+        .slice()
+        .sort((first, second) => Number(first.read_only) - Number(second.read_only))
+        .map((row) => ({
+          projectId: row.project_id,
+          projectName: row.project_name,
+          role: row.role,
+          permissions: Array.isArray(row.permissions) ? row.permissions : [],
+          readOnly: Boolean(row.read_only)
+        }));
+    }
+
+    async function supabaseRequest(action, payload = {}) {
+      const projects = await supabaseReadProjects();
+      if (action === 'login') return { status: 'success', projects };
+
+      const projectIds = new Set(projects.map((project) => project.projectId));
+      const preferredId = projectIds.has(payload.dataProjectId) ? payload.dataProjectId : projects[0].projectId;
+      const rows = await supabaseSelect(`project_cache?select=data&project_id=eq.${encodeURIComponent(preferredId)}`);
+      const data = Array.isArray(rows) && rows.length ? rows[0].data : null;
+      if (!data) throw new Error('Cermin Supabase belum berisi data proyek ini.');
+      return {
+        status: 'success',
+        projects,
+        records: Array.isArray(data.records) ? data.records : [],
+        snapshots: data.snapshot ? { [preferredId]: data.snapshot } : {},
+        projectFolders: Array.isArray(data.projectFolders) ? data.projectFolders : []
+      };
+    }
+
     async function appsScriptFetch(request, timeoutMs, onSlow, method = 'POST') {
       const controller = new AbortController();
       const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
@@ -3854,6 +3953,16 @@
       const quiet = action === 'ping';
       const onSlow = quiet ? null : () => setAppsScriptStatus('server lambat, masih menunggu…');
       const repeatable = !['createProject', 'uploadFile'].includes(action);
+
+      // Baca lewat cermin Supabase dulu; tulis tetap ke Apps Script.
+      if ((action === 'login' || action === 'load') && getSupabaseConfig()) {
+        try {
+          return await supabaseRequest(action, payload);
+        } catch (error) {
+          if (error?.name === 'AbortError') supabaseDisabled = true;
+          console.warn('Cermin Supabase dilewati:', error?.message || error);
+        }
+      }
 
       if (!appsScriptPreferBridge) {
         try {

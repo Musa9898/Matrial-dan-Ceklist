@@ -468,3 +468,50 @@ $$;
 grant usage on schema public to anon, authenticated;
 grant select, insert, update, delete on all tables in schema public to authenticated;
 revoke all on all tables in schema public from anon;
+
+-- ---------------------------------------------------------------------
+-- 7. Tabel cermin (mirror) untuk mempercepat baca
+--    Sumber kebenaran tetap Google Sheets + Google Drive. Isi kedua tabel
+--    ini ditulis oleh Apps Script memakai secret key (bypass RLS); klien
+--    hanya boleh membaca baris miliknya sendiri.
+-- ---------------------------------------------------------------------
+
+create table if not exists public.user_projects (
+  email        extensions.citext not null,
+  project_id   text not null,
+  project_name text not null,
+  role         text,
+  permissions  jsonb not null default '[]'::jsonb,
+  read_only    boolean not null default false,
+  updated_at   timestamptz not null default now(),
+  primary key (email, project_id)
+);
+
+create table if not exists public.project_cache (
+  project_id text primary key,
+  data       jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists user_projects_email_idx on public.user_projects (email);
+
+alter table public.user_projects enable row level security;
+alter table public.project_cache enable row level security;
+
+drop policy if exists user_projects_read_own on public.user_projects;
+create policy user_projects_read_own on public.user_projects
+  for select to authenticated
+  using (email = private.request_email());
+
+drop policy if exists project_cache_read_members on public.project_cache;
+create policy project_cache_read_members on public.project_cache
+  for select to authenticated
+  using (exists (
+    select 1 from public.user_projects up
+    where up.project_id = project_cache.project_id
+      and up.email = private.request_email()
+  ));
+
+grant select on public.user_projects, public.project_cache to authenticated;
+revoke insert, update, delete on public.user_projects, public.project_cache from authenticated;
+revoke all on public.user_projects, public.project_cache from anon;

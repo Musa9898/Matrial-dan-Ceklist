@@ -34,7 +34,7 @@ const PROJECT_FILE_HEADERS = [
   'Uploaded By', 'Created At', 'MIME Type', 'Payload JSON'
 ];
 const PROJECT_FOLDER_HEADERS = ['Folder ID', 'Project ID', 'Folder Name', 'Created At', 'Created By'];
-const BACKEND_VERSION = '2026-10-10-login';
+const BACKEND_VERSION = '2026-10-10-supabase';
 const FRONTEND_ORIGINS = [
   'https://musa9898.github.io',
   'http://localhost:8000',
@@ -170,8 +170,10 @@ function cachePutLarge_(key, value) {
 function doPost(e) {
   const lock = LockService.getScriptLock();
   let mutated = false;
+  let syncProjectId = '';
   try {
     const request = parseRequestBody_(e);
+    syncProjectId = String(request.projectId || '');
     if (request.action === 'ping') return jsonOutput_(buildPingResponse_());
     const identity = verifyGoogleIdToken_(request.idToken);
     if (request.action === 'load' || request.action === 'login') return doGet({ parameter: request });
@@ -234,7 +236,10 @@ function doPost(e) {
   } catch (error) {
     return jsonOutput_({ status: 'error', message: error.message || 'Gagal menyimpan data.' });
   } finally {
-    if (mutated) bumpDataVersion_();
+    if (mutated) {
+      bumpDataVersion_();
+      syncSupabaseSafely_(syncProjectId);
+    }
     if (lock.hasLock()) lock.releaseLock();
   }
 }
@@ -1104,4 +1109,153 @@ function parseJson_(value) {
 
 function safeFileName_(value) {
   return String(value || 'project').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50);
+}
+
+// =====================================================================
+// Cermin baca Supabase
+// Google Sheets & Drive tetap sumber kebenaran. Setelah setiap penulisan
+// data disalin ke Supabase agar frontend bisa membaca dengan cepat.
+// Secret key disimpan di Project Settings > Script Properties, bukan di kode.
+// =====================================================================
+const SUPABASE_URL = 'https://ktmbunxnmdmrhpffjbxg.supabase.co';
+const SUPABASE_KEY_PROPERTY = 'SUPABASE_SECRET_KEY';
+
+function getSupabaseKey_() {
+  return String(PropertiesService.getScriptProperties().getProperty(SUPABASE_KEY_PROPERTY) || '').trim();
+}
+
+function supabaseFetch_(path, method, payload, extraHeaders) {
+  const key = getSupabaseKey_();
+  if (!key) return '';
+  const headers = { apikey: key, Authorization: 'Bearer ' + key };
+  Object.keys(extraHeaders || {}).forEach((name) => { headers[name] = extraHeaders[name]; });
+  const options = {
+    method: method,
+    contentType: 'application/json',
+    headers: headers,
+    muteHttpExceptions: true
+  };
+  if (payload !== undefined) options.payload = JSON.stringify(payload);
+  const response = UrlFetchApp.fetch(SUPABASE_URL + '/rest/v1/' + path, options);
+  const code = response.getResponseCode();
+  if (code >= 300) {
+    throw new Error('Supabase ' + code + ': ' + String(response.getContentText()).slice(0, 300));
+  }
+  return response.getContentText();
+}
+
+function supabaseUpsert_(path, rows) {
+  if (!rows || !rows.length) return;
+  for (let index = 0; index < rows.length; index += 200) {
+    supabaseFetch_(path, 'post', rows.slice(index, index + 200), {
+      Prefer: 'resolution=merge-duplicates,return=minimal'
+    });
+  }
+}
+
+function syncAccessToSupabase_(spreadsheet) {
+  const book = spreadsheet || getSpreadsheet_();
+  const rows = readActiveAccessRows_(book);
+  if (!rows.length) return 0;
+  const stamp = new Date().toISOString();
+
+  const projectNames = {};
+  rows.forEach((row) => { projectNames[row.projectId] = row.projectName; });
+
+  const emails = [];
+  rows.forEach((row) => { if (emails.indexOf(row.email) === -1) emails.push(row.email); });
+
+  const entries = [];
+  emails.forEach((email) => {
+    const own = rows.filter((row) => row.email === email);
+    const ownIds = own.map((row) => row.projectId);
+    own.forEach((row) => {
+      const project = withPermissions_({ projectId: row.projectId, projectName: row.projectName, role: row.role });
+      entries.push({
+        email: email,
+        project_id: project.projectId,
+        project_name: project.projectName,
+        role: project.role,
+        permissions: project.permissions,
+        read_only: project.readOnly,
+        updated_at: stamp
+      });
+    });
+    // Sama seperti getAccessibleProjects_: proyek lain tetap terlihat sebagai viewer read-only.
+    Object.keys(projectNames).forEach((projectId) => {
+      if (ownIds.indexOf(projectId) !== -1) return;
+      entries.push({
+        email: email,
+        project_id: projectId,
+        project_name: projectNames[projectId],
+        role: 'viewer',
+        permissions: [],
+        read_only: true,
+        updated_at: stamp
+      });
+    });
+  });
+
+  supabaseUpsert_('user_projects?on_conflict=email,project_id', entries);
+  // Baris lama yang tidak ikut ditulis berarti aksesnya sudah dicabut di sheet Access.
+  supabaseFetch_('user_projects?updated_at=lt.' + encodeURIComponent(stamp), 'delete', undefined, {
+    Prefer: 'return=minimal'
+  });
+  return entries.length;
+}
+
+function syncProjectCacheToSupabase_(projectId, spreadsheet) {
+  const id = String(projectId || '').trim();
+  if (!id) return false;
+  const book = spreadsheet || getSpreadsheet_();
+  const data = readProjectData_(book, new Set([id]));
+  supabaseUpsert_('project_cache?on_conflict=project_id', [{
+    project_id: id,
+    data: {
+      snapshot: data.snapshots[id] || null,
+      records: data.records,
+      projectFolders: data.projectFolders
+    },
+    updated_at: new Date().toISOString()
+  }]);
+  return true;
+}
+
+// Dipanggil setelah doPost berhasil menulis. Kegagalan sync tidak boleh
+// membatalkan penyimpanan yang sudah masuk ke Sheets.
+function syncSupabaseSafely_(projectId) {
+  if (!getSupabaseKey_()) return;
+  try {
+    const spreadsheet = getSpreadsheet_();
+    syncAccessToSupabase_(spreadsheet);
+    if (projectId) syncProjectCacheToSupabase_(projectId, spreadsheet);
+  } catch (error) {
+    console.warn('Sinkronisasi Supabase gagal: ' + error.message);
+  }
+}
+
+// Jalankan manual dari editor Apps Script untuk mengisi cermin pertama kali.
+function fullSyncToSupabase() {
+  if (!getSupabaseKey_()) throw new Error('Script Property ' + SUPABASE_KEY_PROPERTY + ' belum diisi.');
+  const spreadsheet = getSpreadsheet_();
+  syncAccessToSupabase_(spreadsheet);
+  const projectIds = [];
+  readActiveAccessRows_(spreadsheet).forEach((row) => {
+    if (projectIds.indexOf(row.projectId) === -1) projectIds.push(row.projectId);
+  });
+  projectIds.forEach((projectId) => syncProjectCacheToSupabase_(projectId, spreadsheet));
+  return 'Tersinkron: ' + projectIds.length + ' proyek.';
+}
+
+function syncAccessToSupabase() {
+  return syncAccessToSupabase_(getSpreadsheet_());
+}
+
+// Jalankan sekali agar pencabutan akses tetap terpropagasi walau tanpa penulisan.
+function installSupabaseSyncTrigger() {
+  ScriptApp.getProjectTriggers()
+    .filter((trigger) => trigger.getHandlerFunction() === 'syncAccessToSupabase')
+    .forEach((trigger) => ScriptApp.deleteTrigger(trigger));
+  ScriptApp.newTrigger('syncAccessToSupabase').timeBased().everyMinutes(5).create();
+  return 'Trigger sinkronisasi akses aktif.';
 }
