@@ -5915,7 +5915,8 @@
     async function loadAppsScriptProjectData() {
       if (!getAppsScriptUrl() || !currentGoogleCredential) return false;
       setAppsScriptStatus('memuat dari Sheets…');
-      const result = await appsScriptRequest('load', {}, 'GET');
+      const preferredProjectId = readLocalStorage(ACTIVE_PROJECT_KEY) || activeProjectId;
+      const result = await appsScriptRequest('load', { dataProjectId: preferredProjectId }, 'GET');
       authorizedProjects = Array.isArray(result.projects) ? result.projects : [];
       authorizedProjectIds = new Set(authorizedProjects.map((project) => project.projectId));
       remoteProjectFiles = (result.records || [])

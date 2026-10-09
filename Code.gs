@@ -34,7 +34,7 @@ const PROJECT_FILE_HEADERS = [
   'Uploaded By', 'Created At', 'MIME Type', 'Payload JSON'
 ];
 const PROJECT_FOLDER_HEADERS = ['Folder ID', 'Project ID', 'Folder Name', 'Created At', 'Created By'];
-const BACKEND_VERSION = '2026-10-10-rbac';
+const BACKEND_VERSION = '2026-10-10-fast';
 const FRONTEND_ORIGINS = [
   'https://musa9898.github.io',
   'http://localhost:8000',
@@ -59,49 +59,108 @@ function doGet(e) {
       : projects;
     if (!allowedProjects.length) throw new Error('Akun tidak memiliki akses ke proyek ini.');
 
-    const projectIds = new Set(allowedProjects.map((project) => project.projectId));
-    const operationalRecords = readOperationalRecords_(spreadsheet);
-    const records = readMonitoringRecords_(spreadsheet, operationalRecords)
-      .filter((record) => projectIds.has(record.projectId));
-    const snapshots = {};
-    const snapshotChunks = {};
-    records.forEach((record) => {
-      if (record.recordType === 'snapshot_chunk') {
-        if (!snapshotChunks[record.projectId]) snapshotChunks[record.projectId] = [];
-        snapshotChunks[record.projectId].push({ index: Number(record.status), text: String(record.payload || '') });
-      }
-    });
-    Object.keys(snapshotChunks).forEach((projectId) => {
-      const serialized = snapshotChunks[projectId]
-        .sort((first, second) => first.index - second.index)
-        .map((chunk) => chunk.text)
-        .join('');
-      snapshots[projectId] = parseJson_(serialized);
-    });
-    Object.keys(snapshots).forEach((projectId) => {
-      snapshots[projectId] = reconcileSnapshotWithRecords_(snapshots[projectId], operationalRecords, projectId);
-    });
+    // Data berat hanya dibaca untuk proyek aktif; daftar proyek tetap lengkap.
+    const dataProjectId = String(params.dataProjectId || '');
+    const dataProjects = dataProjectId
+      ? [allowedProjects.find((project) => project.projectId === dataProjectId) || allowedProjects[0]]
+      : allowedProjects;
+    const projectIds = new Set(dataProjects.map((project) => project.projectId));
+    const cacheKey = 'load:' + getDataVersion_() + ':' + Array.from(projectIds).sort().join(',');
+    const cachedData = cacheGetLarge_(cacheKey);
+    if (cachedData) {
+      return jsonOutput_(Object.assign({ status: 'success', email: identity.email, projects: allowedProjects }, cachedData));
+    }
 
-    return jsonOutput_({
-      status: 'success',
-      email: identity.email,
-      projects: allowedProjects,
-      records: records.filter((record) => record.recordType === 'file'),
-      snapshots,
-      projectFolders: readProjectFolders_(spreadsheet, projectIds)
-    });
+    const data = readProjectData_(spreadsheet, projectIds);
+    cachePutLarge_(cacheKey, data);
+    return jsonOutput_(Object.assign({ status: 'success', email: identity.email, projects: allowedProjects }, data));
   } catch (error) {
     return jsonOutput_({ status: 'error', message: error.message || 'Gagal membaca data.' });
   }
 }
 
+function readProjectData_(spreadsheet, projectIds) {
+  const operationalRecords = readOperationalRecords_(spreadsheet, projectIds);
+  const records = readMonitoringRecords_(spreadsheet, operationalRecords, projectIds)
+    .filter((record) => projectIds.has(record.projectId));
+  const snapshots = {};
+  const snapshotChunks = {};
+  records.forEach((record) => {
+    if (record.recordType === 'snapshot_chunk') {
+      if (!snapshotChunks[record.projectId]) snapshotChunks[record.projectId] = [];
+      snapshotChunks[record.projectId].push({ index: Number(record.status), text: String(record.payload || '') });
+    }
+  });
+  Object.keys(snapshotChunks).forEach((projectId) => {
+    const serialized = snapshotChunks[projectId]
+      .sort((first, second) => first.index - second.index)
+      .map((chunk) => chunk.text)
+      .join('');
+    snapshots[projectId] = parseJson_(serialized);
+  });
+  Object.keys(snapshots).forEach((projectId) => {
+    snapshots[projectId] = reconcileSnapshotWithRecords_(snapshots[projectId], operationalRecords, projectId);
+  });
+
+  return {
+    records: records.filter((record) => record.recordType === 'file'),
+    snapshots,
+    projectFolders: readProjectFolders_(spreadsheet, projectIds)
+  };
+}
+
+const DATA_VERSION_KEY = 'data-version';
+const LOAD_CACHE_TTL_SECONDS = 60;
+const CACHE_CHUNK_SIZE = 90000;
+const CACHE_MAX_CHUNKS = 10;
+
+function getDataVersion_() {
+  return CacheService.getScriptCache().get(DATA_VERSION_KEY) || '0';
+}
+
+function bumpDataVersion_() {
+  CacheService.getScriptCache().put(DATA_VERSION_KEY, String(Date.now()), 21600);
+}
+
+function cacheGetLarge_(key) {
+  try {
+    const cache = CacheService.getScriptCache();
+    const count = Number(cache.get(key + ':n') || 0);
+    if (!count) return null;
+    const keys = [];
+    for (let index = 0; index < count; index++) keys.push(key + ':' + index);
+    const parts = cache.getAll(keys);
+    const chunks = keys.map((chunkKey) => parts[chunkKey]);
+    if (chunks.some((chunk) => typeof chunk !== 'string')) return null;
+    return JSON.parse(chunks.join(''));
+  } catch (error) {
+    return null;
+  }
+}
+
+function cachePutLarge_(key, value) {
+  try {
+    const text = JSON.stringify(value);
+    const count = Math.ceil(text.length / CACHE_CHUNK_SIZE);
+    if (!count || count > CACHE_MAX_CHUNKS) return;
+    const entries = {};
+    for (let index = 0; index < count; index++) {
+      entries[key + ':' + index] = text.slice(index * CACHE_CHUNK_SIZE, (index + 1) * CACHE_CHUNK_SIZE);
+    }
+    entries[key + ':n'] = String(count);
+    CacheService.getScriptCache().putAll(entries, LOAD_CACHE_TTL_SECONDS);
+  } catch (error) {}
+}
+
 function doPost(e) {
   const lock = LockService.getScriptLock();
+  let mutated = false;
   try {
     const request = parseRequestBody_(e);
     if (request.action === 'ping') return jsonOutput_(buildPingResponse_());
     const identity = verifyGoogleIdToken_(request.idToken);
     if (request.action === 'load') return doGet({ parameter: request });
+    mutated = true;
     if (request.action === 'createProject') {
       lock.waitLock(20000);
       return jsonOutput_({
@@ -160,6 +219,7 @@ function doPost(e) {
   } catch (error) {
     return jsonOutput_({ status: 'error', message: error.message || 'Gagal menyimpan data.' });
   } finally {
+    if (mutated) bumpDataVersion_();
     if (lock.hasLock()) lock.releaseLock();
   }
 }
@@ -468,11 +528,12 @@ function getSheetCell_(row, headers, name) {
   return index < 0 ? '' : row[index];
 }
 
-function readRecordRows_(sheet) {
+function readRecordRows_(sheet, projectIds) {
   if (!sheet || sheet.getLastRow() < 2) return [];
   const headers = getSheetHeaderIndexes_(sheet);
   return sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues()
-    .filter((row) => getSheetCell_(row, headers, 'record_id'))
+    .filter((row) => getSheetCell_(row, headers, 'record_id')
+      && (!projectIds || projectIds.has(String(getSheetCell_(row, headers, 'project_id')))))
     .map((row) => ({
       recordId: String(getSheetCell_(row, headers, 'record_id')),
       projectId: String(getSheetCell_(row, headers, 'project_id')),
@@ -489,13 +550,14 @@ function readRecordRows_(sheet) {
     }));
 }
 
-function readTypedRecords_(spreadsheet, sheetName, headers, recordType, itemNameColumn) {
+function readTypedRecords_(spreadsheet, sheetName, headers, recordType, itemNameColumn, projectIds) {
   const sheet = getSchemaSheet_(spreadsheet, sheetName, headers);
   if (sheet.getLastRow() < 2) return [];
   const headerIndexes = getSheetHeaderIndexes_(sheet);
   return sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues()
     .filter((row) => getSheetCell_(row, headerIndexes, 'record_id')
       && getSheetCell_(row, headerIndexes, 'project_id')
+      && (!projectIds || projectIds.has(String(getSheetCell_(row, headerIndexes, 'project_id'))))
       && String(getSheetCell_(row, headerIndexes, itemNameColumn) || '').trim())
     .map((row) => {
       const email = String(getSheetCell_(row, headerIndexes, 'email'));
@@ -517,12 +579,13 @@ function readTypedRecords_(spreadsheet, sheetName, headers, recordType, itemName
     });
 }
 
-function readProjectDataRecords_(spreadsheet) {
+function readProjectDataRecords_(spreadsheet, projectIds) {
   const sheet = getSchemaSheet_(spreadsheet, PROJECT_DATA_SHEET_NAME, PROJECT_DATA_HEADERS);
   if (sheet.getLastRow() < 2) return [];
   const headers = getSheetHeaderIndexes_(sheet);
   return sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues()
-    .filter((row) => getSheetCell_(row, headers, 'project id') && getSheetCell_(row, headers, 'snapshot json'))
+    .filter((row) => getSheetCell_(row, headers, 'project id') && getSheetCell_(row, headers, 'snapshot json')
+      && (!projectIds || projectIds.has(String(getSheetCell_(row, headers, 'project id')))))
     .map((row, index) => {
       const rawChunkIndex = getSheetCell_(row, headers, 'chunk index');
       const chunkIndex = rawChunkIndex === '' ? index : Number(rawChunkIndex);
@@ -543,12 +606,13 @@ function readProjectDataRecords_(spreadsheet) {
     });
 }
 
-function readProjectFileRecords_(spreadsheet) {
+function readProjectFileRecords_(spreadsheet, projectIds) {
   const sheet = getSchemaSheet_(spreadsheet, PROJECT_FILES_SHEET_NAME, PROJECT_FILE_HEADERS);
   if (sheet.getLastRow() < 2) return [];
   const headers = getSheetHeaderIndexes_(sheet);
   return sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues()
-    .filter((row) => getSheetCell_(row, headers, 'file id'))
+    .filter((row) => getSheetCell_(row, headers, 'file id')
+      && (!projectIds || projectIds.has(String(getSheetCell_(row, headers, 'project id')))))
     .map((row) => {
       const fileId = String(getSheetCell_(row, headers, 'file id')).replace(/^file:/, '');
       const projectId = String(getSheetCell_(row, headers, 'project id'));
@@ -627,21 +691,21 @@ function saveProjectFolders_(projectId, folders, email) {
   return folders.map((folder) => ({ ...folder, projectId: projectId, createdBy: email }));
 }
 
-function readOperationalRecords_(spreadsheet) {
+function readOperationalRecords_(spreadsheet, projectIds) {
   return [
-    ...readTypedRecords_(spreadsheet, MATERIALS_SHEET_NAME, MATERIAL_HEADERS, 'material', 'material_name'),
-    ...readTypedRecords_(spreadsheet, ASSETS_SHEET_NAME, ASSET_HEADERS, 'asset', 'asset_name'),
-    ...readTypedRecords_(spreadsheet, CHECKLISTS_SHEET_NAME, CHECKLIST_HEADERS, 'checklist', 'work'),
-    ...readTypedRecords_(spreadsheet, DAILY_REPORTS_SHEET_NAME, DAILY_REPORT_HEADERS, 'daily_report', 'report_title')
+    ...readTypedRecords_(spreadsheet, MATERIALS_SHEET_NAME, MATERIAL_HEADERS, 'material', 'material_name', projectIds),
+    ...readTypedRecords_(spreadsheet, ASSETS_SHEET_NAME, ASSET_HEADERS, 'asset', 'asset_name', projectIds),
+    ...readTypedRecords_(spreadsheet, CHECKLISTS_SHEET_NAME, CHECKLIST_HEADERS, 'checklist', 'work', projectIds),
+    ...readTypedRecords_(spreadsheet, DAILY_REPORTS_SHEET_NAME, DAILY_REPORT_HEADERS, 'daily_report', 'report_title', projectIds)
   ];
 }
 
-function readMonitoringRecords_(spreadsheet, operationalRecords) {
+function readMonitoringRecords_(spreadsheet, operationalRecords, projectIds) {
   return [
-    ...readRecordRows_(getSchemaSheet_(spreadsheet, MONITORING_SHEET_NAME, MONITORING_HEADERS)),
-    ...readProjectDataRecords_(spreadsheet),
+    ...readRecordRows_(getSchemaSheet_(spreadsheet, MONITORING_SHEET_NAME, MONITORING_HEADERS), projectIds),
+    ...readProjectDataRecords_(spreadsheet, projectIds),
     ...operationalRecords,
-    ...readProjectFileRecords_(spreadsheet)
+    ...readProjectFileRecords_(spreadsheet, projectIds)
   ];
 }
 
