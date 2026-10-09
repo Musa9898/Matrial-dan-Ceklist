@@ -49,7 +49,7 @@ function doGet(e) {
   if (params.bridge === '1') return createBridgeOutput_(params.origin);
   try {
     const identity = verifyGoogleIdToken_(params.idToken);
-    const projects = getAuthorizedProjects_(identity.email);
+    const projects = getAccessibleProjects_(identity.email);
     const requestedProjectId = String(params.projectId || '');
     const allowedProjects = requestedProjectId
       ? projects.filter((project) => project.projectId === requestedProjectId)
@@ -110,6 +110,7 @@ function doPost(e) {
       const projectId = String(request.projectId || '');
       const project = getAuthorizedProjects_(identity.email).find((entry) => entry.projectId === projectId);
       if (!project) throw new Error('Akun tidak memiliki akses ke proyek ini.');
+      requireProjectPermission_(project, 'files');
       return jsonOutput_({
         status: 'success',
         folders: saveProjectFolders_(projectId, request.folders, identity.email)
@@ -121,6 +122,7 @@ function doPost(e) {
     if (!project) throw new Error('Akun tidak memiliki akses ke proyek ini.');
 
     if (request.action === 'uploadFile') {
+      requireProjectPermission_(project, 'files');
       lock.waitLock(20000);
       return jsonOutput_({
         status: 'success',
@@ -128,6 +130,7 @@ function doPost(e) {
       });
     }
     if (request.action === 'deleteFile') {
+      requireProjectPermission_(project, 'files');
       lock.waitLock(20000);
       deleteDriveFile_(projectId, String(request.fileId || ''));
       return jsonOutput_({ status: 'success' });
@@ -135,10 +138,12 @@ function doPost(e) {
     if (request.action !== 'saveSnapshot' || !request.snapshot || typeof request.snapshot !== 'object') {
       throw new Error('Payload penyimpanan tidak valid.');
     }
+    if (project.readOnly) throw new Error('Peran ' + (project.role || 'Anda') + ' hanya dapat melihat proyek ini.');
 
     lock.waitLock(20000);
+    const permittedSnapshot = mergeSnapshotByPermissions_(project, request.snapshot, projectId);
     const uploadedFiles = [];
-    const cleanSnapshot = replaceBase64Images_(request.snapshot, projectId, uploadedFiles);
+    const cleanSnapshot = replaceBase64Images_(permittedSnapshot, projectId, uploadedFiles);
     const records = buildMonitoringRecords_(project, cleanSnapshot, identity.email, uploadedFiles);
     replaceProjectRecords_(projectId, records);
 
@@ -221,7 +226,36 @@ function verifyGoogleIdToken_(idToken) {
   };
 }
 
-function getAuthorizedProjects_(email) {
+const FULL_ACCESS_PERMISSIONS = ['material', 'asset', 'checklist', 'daily_report', 'files', 'create_project'];
+const SUPERVISOR_PERMISSIONS = ['material', 'asset', 'checklist', 'daily_report'];
+const ROLE_PERMISSIONS = {
+  admin: FULL_ACCESS_PERMISSIONS,
+  owner: FULL_ACCESS_PERMISSIONS,
+  engineering: FULL_ACCESS_PERMISSIONS,
+  enginering: FULL_ACCESS_PERMISSIONS,
+  engineer: FULL_ACCESS_PERMISSIONS,
+  spv: SUPERVISOR_PERMISSIONS,
+  supervisor: SUPERVISOR_PERMISSIONS,
+  logistik: ['material', 'asset']
+};
+const SNAPSHOT_SECTIONS = {
+  material: ['materialItems', 'deliveryHistory', 'usageHistory'],
+  asset: ['assetItems'],
+  checklist: ['checklistItems'],
+  daily_report: ['dailyWorkPlans'],
+  files: ['projectFolders']
+};
+
+function getRolePermissions_(role) {
+  return (ROLE_PERMISSIONS[String(role || '').trim().toLowerCase()] || []).slice();
+}
+
+function withPermissions_(project) {
+  const permissions = getRolePermissions_(project.role);
+  return { ...project, permissions: permissions, readOnly: permissions.length === 0 };
+}
+
+function readActiveAccessRows_() {
   const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = spreadsheet.getSheetByName(ACCESS_SHEET_NAME);
   if (!sheet || sheet.getLastRow() < 2) throw new Error('Daftar undangan belum disiapkan di tab Access.');
@@ -238,14 +272,68 @@ function getAuthorizedProjects_(email) {
   }
 
   return values.slice(1)
-    .filter((row) => String(row[emailIndex]).trim().toLowerCase() === email
-      && ['true', 'yes', 'active', '1'].includes(String(row[activeIndex]).trim().toLowerCase()))
+    .filter((row) => ['true', 'yes', 'active', '1'].includes(String(row[activeIndex]).trim().toLowerCase()))
     .map((row) => ({
+      email: String(row[emailIndex]).trim().toLowerCase(),
       projectId: String(row[projectIdIndex]).trim(),
       projectName: String(row[projectNameIndex]).trim(),
       role: String(row[roleIndex]).trim()
     }))
     .filter((project) => project.projectId && project.projectName);
+}
+
+function getAuthorizedProjects_(email) {
+  return readActiveAccessRows_()
+    .filter((row) => row.email === email)
+    .map((row) => withPermissions_({ projectId: row.projectId, projectName: row.projectName, role: row.role }));
+}
+
+function getAccessibleProjects_(email) {
+  const rows = readActiveAccessRows_();
+  const ownProjects = rows.filter((row) => row.email === email)
+    .map((row) => withPermissions_({ projectId: row.projectId, projectName: row.projectName, role: row.role }));
+  if (!ownProjects.length) return [];
+
+  const ownIds = new Set(ownProjects.map((project) => project.projectId));
+  const viewOnlyProjects = new Map();
+  rows.forEach((row) => {
+    if (ownIds.has(row.projectId) || viewOnlyProjects.has(row.projectId)) return;
+    viewOnlyProjects.set(row.projectId, {
+      projectId: row.projectId,
+      projectName: row.projectName,
+      role: 'viewer',
+      permissions: [],
+      readOnly: true
+    });
+  });
+  return [...ownProjects, ...viewOnlyProjects.values()];
+}
+
+function requireProjectPermission_(project, permission) {
+  if (!project.permissions.includes(permission)) {
+    throw new Error('Peran ' + (project.role || 'Anda') + ' tidak memiliki izin untuk aksi ini.');
+  }
+}
+
+function mergeSnapshotByPermissions_(project, requestedSnapshot, projectId) {
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const operationalRecords = readOperationalRecords_(spreadsheet);
+  const storedChunks = readProjectDataRecords_(spreadsheet)
+    .filter((record) => record.projectId === projectId)
+    .sort((first, second) => Number(first.status) - Number(second.status))
+    .map((record) => String(record.payload || ''))
+    .join('');
+  const stored = reconcileSnapshotWithRecords_(parseJson_(storedChunks), operationalRecords, projectId);
+
+  const merged = { ...requestedSnapshot };
+  Object.keys(SNAPSHOT_SECTIONS).forEach((permission) => {
+    if (project.permissions.includes(permission)) return;
+    SNAPSHOT_SECTIONS[permission].forEach((key) => {
+      if (stored[key] === undefined) delete merged[key];
+      else merged[key] = stored[key];
+    });
+  });
+  return merged;
 }
 
 function createProjectForUser_(projectName, email) {
@@ -254,8 +342,8 @@ function createProjectForUser_(projectName, email) {
   if (name.length > 100) throw new Error('Nama proyek maksimal 100 karakter.');
 
   const currentProjects = getAuthorizedProjects_(email);
-  if (!currentProjects.some((project) => ['admin', 'owner'].includes(project.role.toLowerCase()))) {
-    throw new Error('Hanya admin atau owner proyek yang dapat menambahkan proyek.');
+  if (!currentProjects.some((project) => project.permissions.includes('create_project'))) {
+    throw new Error('Hanya admin, owner, atau Engineering yang dapat menambahkan proyek.');
   }
 
   const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -324,7 +412,7 @@ function createProjectForUser_(projectName, email) {
     throw error;
   }
 
-  return { projectId: projectId, projectName: name, role: 'admin' };
+  return withPermissions_({ projectId: projectId, projectName: name, role: 'admin' });
 }
 
 function getSchemaSheet_(spreadsheet, sheetName, headers) {

@@ -3307,10 +3307,10 @@
             ${photo}
             <div class="item-card-meta"><span>Kode: <b>${escapeHtml(asset.code)}</b></span><b>${escapeHtml(asset.quantity)} unit</b></div>
             <div class="item-card-meta"><span>Lokasi / pemegang</span><b>${escapeHtml(asset.location || '-')}</b></div>
-            <div class="btn-group">
+            ${canAccess('asset') ? `<div class="btn-group">
               <button class="btn-cancel" type="button" onclick="openAssetForm('${escapeHtml(asset.id)}')">Ubah</button>
               <button class="btn-cancel" type="button" onclick="deleteAssetItem('${escapeHtml(asset.id)}')">Hapus</button>
-            </div>
+            </div>` : ''}
           </article>
         `;
       }).join('') : '<div class="history-placeholder">Belum ada aset alat kerja. Tambahkan aset untuk memulai.</div>';
@@ -3324,6 +3324,7 @@
     }
 
     function openAssetForm(assetId = '') {
+      if (!requireAccess('asset')) return;
       const asset = assetItems.find((entry) => entry.id === assetId);
       editingAssetId = asset?.id || '';
       setPhotoUploadStatus('asset', 'idle', '');
@@ -3366,6 +3367,7 @@
     }
 
     async function saveAssetItem() {
+      if (!requireAccess('asset')) return;
       const name = document.getElementById('assetName').value.trim();
       const code = document.getElementById('assetCode').value.trim();
       const quantity = Number(document.getElementById('assetQuantity').value);
@@ -3433,6 +3435,7 @@
     }
 
     async function deleteAssetItem(assetId) {
+      if (!requireAccess('asset')) return;
       const index = assetItems.findIndex((asset) => asset.id === assetId);
       if (index < 0 || !window.confirm(`Hapus aset ${assetItems[index].name}?`)) return;
       const [removed] = assetItems.splice(index, 1);
@@ -3613,6 +3616,47 @@
       return !url || url.startsWith('ISI_') ? '' : url;
     }
 
+    function isRoleRestrictionActive() {
+      return Boolean(getAppsScriptUrl() && currentGoogleCredential && !currentAuthProfile?.isPreview);
+    }
+
+    function canAccess(permission) {
+      if (!isRoleRestrictionActive()) return true;
+      const project = authorizedProjects.find((entry) => entry.projectId === activeProjectId);
+      return Boolean(project?.permissions?.includes(permission));
+    }
+
+    function requireAccess(permission) {
+      if (canAccess(permission)) return true;
+      const project = authorizedProjects.find((entry) => entry.projectId === activeProjectId);
+      const roleLabel = project?.readOnly ? 'hanya dapat melihat proyek ini' : `dengan peran ${project?.role || 'Anda'} tidak memiliki izin untuk aksi ini`;
+      showAppNotice(`Akun ${roleLabel}.`);
+      return false;
+    }
+
+    function canCreateProjects() {
+      if (currentAuthProfile?.isPreview) return true;
+      return Boolean(currentGoogleCredential)
+        && authorizedProjects.some((project) => project.permissions?.includes('create_project'));
+    }
+
+    function applyRoleAccess() {
+      const toggle = (selector, permission) => {
+        const allowed = canAccess(permission);
+        document.querySelectorAll(selector).forEach((element) => { element.style.display = allowed ? '' : 'none'; });
+      };
+      toggle('button[onclick^="openInputModal"]', 'material');
+      toggle('button[onclick^="addNewDeliveryForSelectedMaterial"]', 'material');
+      toggle('button[onclick^="openIssueModal"]', 'material');
+      toggle('button[onclick^="openAssetForm"]', 'asset');
+      toggle('button[onclick^="openChecklistModal"]', 'checklist');
+      toggle('button[onclick^="saveChecklistStatusUpdate"]', 'checklist');
+      toggle('button[onclick^="openDailyWorkReportForm"]', 'daily_report');
+      toggle('#addProjectFolderButton', 'files');
+      toggle('#projectFolderContents button[onclick^="renameProjectFolder"]', 'files');
+      toggle('#projectFileUploadButton', 'files');
+    }
+
     function handleAppsScriptBridgeMessage(event) {
       if (!appsScriptBridgeFrame) return;
       let host = '';
@@ -3703,6 +3747,7 @@
 
     async function persistActiveProjectData() {
       if (!activeProjectId) return false;
+      if (isRoleRestrictionActive() && authorizedProjects.find((entry) => entry.projectId === activeProjectId)?.readOnly) return true;
       const snapshot = JSON.parse(JSON.stringify(getActiveProjectSnapshot()));
       let localSaved = false;
       try {
@@ -3808,16 +3853,14 @@
       list.innerHTML = projectRegistry.map((project) => `
         <button class="project-option ${project.id === activeProjectId ? 'active' : ''}" type="button" onclick="switchProject('${escapeHtml(project.id)}')">
           <span>${escapeHtml(project.name)}</span>
-          <strong>${project.id === activeProjectId ? 'Aktif' : 'Pilih'}</strong>
+          <strong>${project.id === activeProjectId ? 'Aktif' : 'Pilih'}${authorizedProjects.find((entry) => entry.projectId === project.id)?.readOnly ? ' · Lihat saja' : ''}</strong>
         </button>
       `).join('');
     }
 
     function openProjectManager() {
       document.getElementById('newProjectName').value = '';
-      const canCreate = Boolean(currentAuthProfile?.isPreview)
-        || (Boolean(currentGoogleCredential) && authorizedProjects.some((project) =>
-          ['admin', 'owner'].includes(String(project.role || '').trim().toLowerCase())));
+      const canCreate = canCreateProjects();
       document.getElementById('newProjectName').closest('.form-row').hidden = !canCreate;
       document.querySelector('#modalProjectManager .btn-save').hidden = !canCreate;
       renderProjectList();
@@ -3829,6 +3872,7 @@
     }
 
     function renderProjectData() {
+      applyRoleAccess();
       renderMaterialCards();
       renderAssetCards();
       renderChecklistCards();
@@ -3879,10 +3923,8 @@
       }
 
       if (currentGoogleCredential && getAppsScriptUrl()) {
-        const canCreate = authorizedProjects.some((project) =>
-          ['admin', 'owner'].includes(String(project.role || '').trim().toLowerCase()));
-        if (!canCreate) {
-          showAppNotice('Hanya admin atau owner proyek yang dapat menambahkan proyek.');
+        if (!canCreateProjects()) {
+          showAppNotice('Hanya admin, owner, atau Engineering yang dapat menambahkan proyek.');
           return;
         }
         if (!await persistActiveProjectData()) return;
@@ -4211,6 +4253,7 @@
     }
 
     function openProjectFolderModal() {
+      if (!requireAccess('files')) return;
       document.getElementById('newProjectFolderName').value = '';
       document.getElementById('modalProjectFolder').style.display = 'flex';
     }
@@ -4220,6 +4263,7 @@
     }
 
     async function createProjectFolder() {
+      if (!requireAccess('files')) return;
       const name = document.getElementById('newProjectFolderName').value.trim();
       if (!name) {
         alert('Nama folder wajib diisi.');
@@ -4257,6 +4301,7 @@
     }
 
     async function renameProjectFolder(folderId) {
+      if (!requireAccess('files')) return;
       const folder = projectFolders.find((entry) => entry.id === folderId);
       if (!folder) return;
       const name = window.prompt('Nama folder', folder.name);
@@ -4358,7 +4403,7 @@
             <span class="project-file-actions">
               ${extension === 'PDF' ? `<button type="button" onclick="openProjectFile('${escapeHtml(file.id)}')">Buka</button>` : ''}
               <button type="button" onclick="downloadProjectFile('${escapeHtml(file.id)}')">Unduh</button>
-              <button class="file-delete-button" type="button" onclick="deleteProjectFile('${escapeHtml(file.id)}')" aria-label="Hapus ${escapeHtml(file.name)}">Hapus</button>
+              ${canAccess('files') ? `<button class="file-delete-button" type="button" onclick="deleteProjectFile('${escapeHtml(file.id)}')" aria-label="Hapus ${escapeHtml(file.name)}">Hapus</button>` : ''}
             </span>
           </article>
         `;
@@ -4366,6 +4411,7 @@
     }
 
     async function handleProjectFileUpload(fileList) {
+      if (!requireAccess('files')) return;
       const selectedFiles = [...fileList];
       const folder = projectFolders.find((entry) => entry.id === activeFileFolderId);
       const input = document.getElementById('projectFileInput');
@@ -4592,6 +4638,7 @@
     }
 
     async function deleteProjectFile(fileId) {
+      if (!requireAccess('files')) return;
       try {
         const file = await getProjectFile(fileId);
         if (!file || file.projectId !== activeProjectId) return;
@@ -4609,6 +4656,7 @@
     }
 
     async function confirmProjectFileDelete() {
+      if (!requireAccess('files')) return;
       const fileId = pendingProjectFileDeleteId;
       if (!fileId) return;
       try {
@@ -4695,6 +4743,7 @@
     }
 
     function openDailyWorkReportForm() {
+      if (!requireAccess('daily_report')) return;
       dailyWorkDraftTasks = [];
       document.getElementById('dailyReportTitle').value = 'Rencana Kerja MEP';
       document.getElementById('dailyReportDate').value = getTodayISO();
@@ -4747,6 +4796,7 @@
     }
 
     async function saveDailyWorkReport() {
+      if (!requireAccess('daily_report')) return;
       const title = document.getElementById('dailyReportTitle').value.trim();
       const date = document.getElementById('dailyReportDate').value;
       const supervisor = document.getElementById('dailyReportSupervisor').value.trim();
@@ -4882,6 +4932,7 @@
     }
 
     function openIssueModal(materialName = '') {
+      if (!requireAccess('material')) return;
       const input = document.getElementById('issueMaterial');
       const dateInput = document.getElementById('issueDate');
       const selectedName = materialName || selectedMaterialForEntry || '';
@@ -4948,6 +4999,7 @@
     }
 
     async function saveMaterialIssue() {
+      if (!requireAccess('material')) return;
       const materialName = document.getElementById('issueMaterial').value.trim();
       const petugasLogistik = document.getElementById('issueLogistik').value.trim();
       const penerima = document.getElementById('issuePenerima').value.trim();
@@ -5048,6 +5100,7 @@
     }
 
     function openInputModal(materialName = '') {
+      if (!requireAccess('material')) return;
       const materialInput = document.getElementById('modalMat');
       const unitInput = document.getElementById('modalUnit');
       const material = materialItems.find((item) => materialNamesMatch(materialName, item.name));
@@ -5092,6 +5145,7 @@
     }
 
     async function saveNewDelivery() {
+      if (!requireAccess('material')) return;
       const mat = document.getElementById('modalMat').value.trim();
       const unit = document.getElementById('modalUnit').value;
       const qty = parsePositiveNumber(document.getElementById('modalQty').value);
@@ -5185,6 +5239,7 @@
     }
 
     function openChecklistModal() {
+      if (!requireAccess('checklist')) return;
       setPhotoUploadStatus('checklist', 'idle', '');
       document.getElementById('formPhoto').disabled = false;
       document.getElementById('saveChecklistButton').disabled = false;
@@ -5732,7 +5787,7 @@
       projectFolders = [...foldersById.values()];
       persistProjectFoldersLocally();
       const serverFolderIds = new Set(serverFolders.map((folder) => folder.id));
-      if (projectFolders.some((folder) => !serverFolderIds.has(folder.id))) {
+      if (canAccess('files') && projectFolders.some((folder) => !serverFolderIds.has(folder.id))) {
         try {
           const folderResult = await appsScriptRequest('saveProjectFolders', {
             projectId: activeProjectId,
@@ -5962,6 +6017,7 @@
     }
 
     async function saveChecklistStatusUpdate() {
+      if (!requireAccess('checklist')) return;
       const item = checklistItems.find((entry) => entry.id === selectedChecklistDetailId);
       if (!item) return;
 
@@ -6049,6 +6105,7 @@
     }
 
     async function saveNewChecklist() {
+      if (!requireAccess('checklist')) return;
       const floor = document.getElementById('formLantai').value.trim();
       const status = document.getElementById('formStatus').value;
       const progress = Number(document.getElementById('formProgres').value);

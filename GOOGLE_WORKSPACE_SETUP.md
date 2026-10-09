@@ -40,3 +40,16 @@ Browser tidak memakai `fetch()` langsung ke URL Apps Script. `index.html` membua
 Pola ini menghindari CORS `ContentService` karena pemanggilan Sheets/Drive terjadi di dalam Apps Script, bukan `fetch()` cross-origin dari halaman. `TextOutput` memang tidak menyediakan API untuk menambahkan header `Access-Control-Allow-Origin` kustom.
 
 Script membagikan foto sebagai **Anyone with the link – Viewer**, sesuai permintaan tautan Drive yang dapat dibuka. Artinya siapa pun yang memperoleh URL foto dapat melihatnya; jangan unggah foto sensitif. Snapshot lama yang sudah tersimpan di browser tidak otomatis dimigrasikan sampai pengguna membuka proyek dan menyimpannya kembali.
+
+## Hak akses per role
+
+Kolom `role` pada tab `Access` menentukan apa yang boleh dilakukan pengguna di proyeknya:
+
+| Role | Material | Aset | Ceklis | Laporan Harian | Upload File/Folder | Buat Proyek |
+|---|---|---|---|---|---|---|
+| admin / owner | ya | ya | ya | ya | ya | ya |
+| Engineering | ya | ya | ya | ya | ya | ya |
+| SPV | ya | ya | ya | ya | tidak | tidak |
+| Logistik | ya | ya | tidak | tidak | tidak | tidak |
+
+Semua pengguna yang punya baris Access aktif juga dapat melihat proyek lain di sheet Access, tetapi hanya lihat saja (tidak bisa edit/upload). Aturan ini dicek di server (`Code.gs`), jadi `Code.gs` harus di-paste ulang dan di-deploy sebagai New version.
