@@ -3784,7 +3784,7 @@
 
     function getAppsScriptTimeout(action) {
       const config = window.GOOGLE_CONFIG || {};
-      if (action === 'ping') return Number(config.PING_TIMEOUT_MS) || 12000;
+      if (action === 'ping') return Number(config.PING_TIMEOUT_MS) || 30000;
       if (action === 'uploadFile') return Number(config.UPLOAD_TIMEOUT_MS) || 120000;
       if (action === 'chatSync') return 20000;
       return Number(config.REQUEST_TIMEOUT_MS) || 45000;

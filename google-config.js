@@ -5,7 +5,7 @@ const GOOGLE_CONFIG = Object.freeze({
   // Batas waktu permintaan (milidetik).
   REQUEST_TIMEOUT_MS: 45000,
   UPLOAD_TIMEOUT_MS: 120000,
-  PING_TIMEOUT_MS: 12000
+  PING_TIMEOUT_MS: 30000
 });
 
 window.GOOGLE_CONFIG = GOOGLE_CONFIG;
