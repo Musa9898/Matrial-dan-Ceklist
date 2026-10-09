@@ -53,3 +53,12 @@ Kolom `role` pada tab `Access` menentukan apa yang boleh dilakukan pengguna di p
 | Logistik | ya | ya | tidak | tidak | tidak | tidak |
 
 Semua pengguna yang punya baris Access aktif juga dapat melihat proyek lain di sheet Access, tetapi hanya lihat saja (tidak bisa edit/upload). Aturan ini dicek di server (`Code.gs`), jadi `Code.gs` harus di-paste ulang dan di-deploy sebagai New version.
+
+## Daftar online dan ruang chat
+
+Tombol chat (kanan bawah) menampilkan jumlah user online dan membuka ruang chat bersama untuk semua user yang punya baris Access aktif.
+
+- Tab `Presence` dan `Chat` dibuat otomatis oleh Code.gs saat pertama dipakai.
+- User dianggap online jika aplikasinya mengirim sinyal dalam 100 detik terakhir (sinyal tiap 40 detik, tiap 8 detik saat chat dibuka).
+- Pesan lebih dari 24 jam dihapus otomatis dari tab `Chat` setiap ada sinkronisasi.
+- Chat tidak tersedia di Preview Mode.

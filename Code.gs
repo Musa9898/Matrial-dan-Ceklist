@@ -105,6 +105,10 @@ function doPost(e) {
         project: createProjectForUser_(request.projectName, identity.email)
       });
     }
+    if (request.action === 'chatSync') {
+      lock.waitLock(15000);
+      return jsonOutput_(Object.assign({ status: 'success' }, syncChat_(identity, request)));
+    }
     if (request.action === 'saveProjectFolders') {
       lock.waitLock(20000);
       const projectId = String(request.projectId || '');
@@ -208,6 +212,16 @@ function verifyGoogleIdToken_(idToken) {
   if (!idToken) throw new Error('Sesi Google tidak ditemukan. Silakan masuk kembali.');
   if (GOOGLE_CLIENT_ID.indexOf('PASTE_') === 0) throw new Error('GOOGLE_CLIENT_ID belum dikonfigurasi di Code.gs.');
 
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'tok:' + Utilities.base64EncodeWebSafe(
+    Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(idToken))
+  );
+  const cached = cache.get(cacheKey);
+  if (cached) {
+    const identity = JSON.parse(cached);
+    if (identity.expiresAt > Date.now()) return identity.user;
+  }
+
   const response = UrlFetchApp.fetch(
     'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(idToken),
     { muteHttpExceptions: true }
@@ -219,10 +233,99 @@ function verifyGoogleIdToken_(idToken) {
   if (claims.aud !== GOOGLE_CLIENT_ID || expiresAt <= Date.now() || String(claims.email_verified) !== 'true') {
     throw new Error('Identitas Google tidak valid.');
   }
-  return {
+  const user = {
     sub: String(claims.sub || ''),
     email: String(claims.email || '').trim().toLowerCase(),
     name: String(claims.name || claims.email || '')
+  };
+  const ttlSeconds = Math.min(300, Math.floor((expiresAt - Date.now()) / 1000));
+  if (ttlSeconds > 5) cache.put(cacheKey, JSON.stringify({ user, expiresAt }), ttlSeconds);
+  return user;
+}
+
+const PRESENCE_SHEET_NAME = 'Presence';
+const CHAT_SHEET_NAME = 'Chat';
+const PRESENCE_HEADERS = ['email', 'name', 'role', 'last_seen'];
+const CHAT_HEADERS = ['id', 'email', 'name', 'text', 'created_at'];
+const ONLINE_WINDOW_MS = 100000;
+const CHAT_RETENTION_MS = 24 * 60 * 60 * 1000;
+const CHAT_MAX_LENGTH = 500;
+const CHAT_MAX_MESSAGES = 300;
+
+function getOrCreateSheet_(spreadsheet, name, headers) {
+  let sheet = spreadsheet.getSheetByName(name);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(name);
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function readDataRows_(sheet, columnCount) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+  return sheet.getRange(2, 1, lastRow - 1, columnCount).getValues();
+}
+
+function deleteSheetRows_(sheet, rowNumbers) {
+  rowNumbers.slice().sort((first, second) => second - first).forEach((rowNumber) => sheet.deleteRow(rowNumber));
+}
+
+function syncChat_(identity, request) {
+  const own = getAccessibleProjects_(identity.email).find((project) => project.role !== 'viewer');
+  if (!own) throw new Error('Akun tidak memiliki akses.');
+
+  const now = Date.now();
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const presenceSheet = getOrCreateSheet_(spreadsheet, PRESENCE_SHEET_NAME, PRESENCE_HEADERS);
+  const chatSheet = getOrCreateSheet_(spreadsheet, CHAT_SHEET_NAME, CHAT_HEADERS);
+
+  const chatRows = readDataRows_(chatSheet, CHAT_HEADERS.length);
+  const expiredChatRows = [];
+  chatRows.forEach((row, index) => {
+    if (now - Number(row[4]) > CHAT_RETENTION_MS) expiredChatRows.push(index + 2);
+  });
+  if (expiredChatRows.length) deleteSheetRows_(chatSheet, expiredChatRows);
+  const messages = chatRows
+    .filter((row, index) => expiredChatRows.indexOf(index + 2) < 0)
+    .map((row) => ({ id: String(row[0]), email: String(row[1]), name: String(row[2]), text: String(row[3]), createdAt: Number(row[4]) }));
+
+  const text = String(request.text || '').trim().slice(0, CHAT_MAX_LENGTH);
+  if (text) {
+    const message = {
+      id: Utilities.getUuid(),
+      email: identity.email,
+      name: identity.name || identity.email,
+      text,
+      createdAt: now
+    };
+    chatSheet.appendRow([message.id, message.email, message.name, message.text, message.createdAt]);
+    messages.push(message);
+  }
+
+  const presenceRows = readDataRows_(presenceSheet, PRESENCE_HEADERS.length);
+  const expiredPresenceRows = [];
+  let ownRowNumber = 0;
+  presenceRows.forEach((row, index) => {
+    const rowNumber = index + 2;
+    if (String(row[0]).toLowerCase() === identity.email) ownRowNumber = rowNumber;
+    else if (now - Number(row[3]) > CHAT_RETENTION_MS) expiredPresenceRows.push(rowNumber);
+  });
+  const ownValues = [identity.email, identity.name || identity.email, own.role || '', now];
+  if (ownRowNumber) presenceSheet.getRange(ownRowNumber, 1, 1, PRESENCE_HEADERS.length).setValues([ownValues]);
+  else presenceSheet.appendRow(ownValues);
+  if (expiredPresenceRows.length) deleteSheetRows_(presenceSheet, expiredPresenceRows);
+
+  const online = presenceRows
+    .filter((row) => String(row[0]).toLowerCase() !== identity.email && now - Number(row[3]) <= ONLINE_WINDOW_MS)
+    .map((row) => ({ email: String(row[0]), name: String(row[1]), role: String(row[2]) }));
+  online.unshift({ email: identity.email, name: ownValues[1], role: ownValues[2] });
+
+  return {
+    online,
+    messages: messages.slice(-CHAT_MAX_MESSAGES),
+    serverTime: now
   };
 }
 
