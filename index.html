@@ -941,108 +941,6 @@
     .connection-banner button:disabled { opacity: 0.6; }
     .connection-banner .connection-banner-close { background: transparent; color: inherit; font-size: 1rem; padding: 2px 6px; }
 
-    /* Chat & online users */
-    .chat-fab {
-      position: absolute;
-      right: 14px;
-      bottom: calc(78px + env(safe-area-inset-bottom, 0px));
-      z-index: 30;
-      width: 48px;
-      height: 48px;
-      border: none;
-      border-radius: 50%;
-      background: #4f46e5;
-      color: #fff;
-      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.3);
-      cursor: pointer;
-      display: grid;
-      place-items: center;
-    }
-    .chat-fab[hidden] { display: none; }
-    .chat-fab svg { width: 24px; height: 24px; fill: currentColor; }
-    .chat-fab-online {
-      position: absolute;
-      left: -4px;
-      bottom: -4px;
-      min-width: 20px;
-      padding: 1px 5px;
-      border-radius: 10px;
-      background: #10b981;
-      font-size: 0.65rem;
-      font-weight: 700;
-      line-height: 16px;
-    }
-    .chat-fab-badge {
-      position: absolute;
-      right: -4px;
-      top: -4px;
-      min-width: 20px;
-      padding: 1px 5px;
-      border-radius: 10px;
-      background: #ef4444;
-      font-size: 0.65rem;
-      font-weight: 700;
-      line-height: 16px;
-    }
-    .chat-online { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-    .chat-online-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 3px 9px;
-      border-radius: 999px;
-      background: #ecfdf5;
-      color: #065f46;
-      font-size: 0.72rem;
-      font-weight: 600;
-    }
-    .chat-online-chip::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #10b981; }
-    .chat-online-chip small { font-weight: 500; opacity: 0.75; }
-    .chat-messages {
-      height: 38vh;
-      min-height: 160px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 10px;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      background: #f8fafc;
-    }
-    .chat-empty { margin: auto; color: #94a3b8; font-size: 0.8rem; }
-    .chat-message { max-width: 82%; align-self: flex-start; }
-    .chat-message.mine { align-self: flex-end; }
-    .chat-message .chat-meta { font-size: 0.65rem; color: #64748b; margin-bottom: 2px; }
-    .chat-message .chat-bubble {
-      padding: 7px 11px;
-      border-radius: 12px;
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      font-size: 0.85rem;
-      color: #0f172a;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-    }
-    .chat-message.mine .chat-bubble { background: #4f46e5; border-color: #4f46e5; color: #fff; }
-    .chat-message.mine .chat-meta { text-align: right; }
-    .chat-form { display: flex; gap: 8px; margin-top: 10px; }
-    .chat-form input {
-      flex: 1;
-      min-width: 0;
-      padding: 10px 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      font-size: 0.9rem;
-    }
-    .chat-form .btn-save { width: auto; padding: 0 16px; }
-    .chat-note { margin-top: 6px; font-size: 0.68rem; color: #94a3b8; }
-    body.theme-dark .chat-messages { background: #0d1422; border-color: #26324a; }
-    body.theme-dark .chat-message .chat-bubble { background: #172033; border-color: #26324a; color: #e2e8f0; }
-    body.theme-dark .chat-message.mine .chat-bubble { background: #4f46e5; border-color: #4f46e5; color: #fff; }
-    body.theme-dark .chat-form input { background: #172033; border-color: #26324a; color: #e2e8f0; }
-    body.theme-dark .chat-online-chip { background: #12332b; color: #6ee7b7; }
-
     /* Modal Form Input Pop-up */
     .modal-backdrop {
       position: absolute;
@@ -2919,28 +2817,6 @@
       </div>
     </div>
 
-    <div class="modal-backdrop" id="modalChat">
-      <div class="modal-sheet chat-sheet">
-        <h3>Ruang Chat</h3>
-        <div class="chat-online" id="chatOnlineList"></div>
-        <div class="chat-messages" id="chatMessages" aria-live="polite"></div>
-        <form class="chat-form" onsubmit="sendChatMessage(event)">
-          <input type="text" id="chatInput" maxlength="500" placeholder="Tulis pesan…" autocomplete="off">
-          <button type="submit" class="btn-save" id="chatSendButton">Kirim</button>
-        </form>
-        <p class="chat-note">Percakapan dihapus otomatis setiap 24 jam.</p>
-        <div class="btn-group">
-          <button class="btn-cancel" type="button" onclick="closeChat()">Tutup</button>
-        </div>
-      </div>
-    </div>
-
-    <button class="chat-fab" id="chatFab" type="button" onclick="openChat()" hidden aria-label="Buka ruang chat">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 5a3 3 0 013-3h10a3 3 0 013 3v6a3 3 0 01-3 3H9l-4 3.5V14a3 3 0 01-3-3V5z"/></svg>
-      <span class="chat-fab-online" id="chatFabOnline">0</span>
-      <span class="chat-fab-badge" id="chatFabBadge" hidden>0</span>
-    </button>
-
     <div class="modal-backdrop" id="modalChecklist">
       <div class="modal-sheet">
         <h3>Form Inspeksi Ceklist MEP</h3>
@@ -3786,7 +3662,6 @@
       const config = window.GOOGLE_CONFIG || {};
       if (action === 'ping') return Number(config.PING_TIMEOUT_MS) || 30000;
       if (action === 'uploadFile') return Number(config.UPLOAD_TIMEOUT_MS) || 120000;
-      if (action === 'chatSync') return 20000;
       return Number(config.REQUEST_TIMEOUT_MS) || 45000;
     }
 
@@ -3969,9 +3844,9 @@
 
       const request = { ...payload, action, idToken: currentGoogleCredential };
       const timeoutMs = getAppsScriptTimeout(action);
-      const quiet = action === 'ping' || action === 'chatSync';
+      const quiet = action === 'ping';
       const onSlow = quiet ? null : () => setAppsScriptStatus('server lambat, masih menunggu…');
-      const repeatable = !['createProject', 'uploadFile'].includes(action) && !(action === 'chatSync' && payload.text);
+      const repeatable = !['createProject', 'uploadFile'].includes(action);
 
       if (!appsScriptPreferBridge) {
         try {
@@ -4032,7 +3907,6 @@
       try {
         await loadAppsScriptProjectData();
         hideConnectionProblem();
-        startChat();
       } catch (error) {
         setAppsScriptStatus('gagal memuat');
         showConnectionProblem(error, reloadProjectDataWithRetry);
@@ -5933,137 +5807,6 @@
       applyAppTheme(savedTheme);
     }
 
-    let chatTimerId = null;
-    let chatOpen = false;
-    let chatBusy = false;
-    let chatMessages = [];
-    const CHAT_READ_KEY = 'project-monitor-chat-read';
-    const CHAT_POLL_CLOSED_MS = 40000;
-    const CHAT_POLL_OPEN_MS = 8000;
-
-    function isChatAvailable() {
-      return Boolean(getAppsScriptUrl() && currentGoogleCredential && currentAuthProfile && !currentAuthProfile.isPreview);
-    }
-
-    function getChatLastRead() {
-      return Number(readLocalStorage(CHAT_READ_KEY) || 0);
-    }
-
-    function startChat() {
-      if (!isChatAvailable()) return;
-      document.getElementById('chatFab').hidden = false;
-      syncChat();
-    }
-
-    function stopChat() {
-      window.clearTimeout(chatTimerId);
-      chatTimerId = null;
-      chatOpen = false;
-      chatMessages = [];
-      document.getElementById('chatFab').hidden = true;
-      document.getElementById('modalChat').style.display = 'none';
-    }
-
-    function scheduleChatSync() {
-      window.clearTimeout(chatTimerId);
-      if (!isChatAvailable()) return;
-      chatTimerId = window.setTimeout(() => syncChat(), chatOpen ? CHAT_POLL_OPEN_MS : CHAT_POLL_CLOSED_MS);
-    }
-
-    async function syncChat(text = '') {
-      if (!isChatAvailable()) return false;
-      if (chatBusy) return false;
-      if (!text && document.hidden) {
-        scheduleChatSync();
-        return false;
-      }
-      chatBusy = true;
-      let sent = true;
-      try {
-        const result = await appsScriptRequest('chatSync', { text });
-        chatMessages = Array.isArray(result.messages) ? result.messages : [];
-        renderChat(Array.isArray(result.online) ? result.online : []);
-      } catch (error) {
-        sent = false;
-        if (text) showAppNotice(error.message || 'Pesan gagal dikirim.');
-      } finally {
-        chatBusy = false;
-        scheduleChatSync();
-      }
-      return sent;
-    }
-
-    function renderChat(online) {
-      const myEmail = String(currentAuthProfile?.email || '').toLowerCase();
-      const lastRead = getChatLastRead();
-      const latest = chatMessages.reduce((max, message) => Math.max(max, message.createdAt), 0);
-      const unread = chatMessages.filter((message) =>
-        String(message.email).toLowerCase() !== myEmail && message.createdAt > lastRead).length;
-
-      document.getElementById('chatFabOnline').textContent = String(online.length);
-      const badge = document.getElementById('chatFabBadge');
-      badge.textContent = unread > 99 ? '99+' : String(unread);
-      badge.hidden = chatOpen || unread === 0;
-
-      document.getElementById('chatOnlineList').innerHTML = online.length
-        ? online.map((user) => `<span class="chat-online-chip">${escapeHtml(user.name || user.email)}${user.role ? ` <small>${escapeHtml(user.role)}</small>` : ''}</span>`).join('')
-        : '';
-
-      const list = document.getElementById('chatMessages');
-      const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 60;
-      list.innerHTML = chatMessages.length
-        ? chatMessages.map((message) => {
-          const mine = String(message.email).toLowerCase() === myEmail;
-          const time = new Date(message.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-          return `<div class="chat-message${mine ? ' mine' : ''}">
-            <div class="chat-meta">${mine ? '' : `${escapeHtml(message.name)} · `}${time}</div>
-            <div class="chat-bubble">${escapeHtml(message.text)}</div>
-          </div>`;
-        }).join('')
-        : '<div class="chat-empty">Belum ada percakapan.</div>';
-      if (chatOpen) {
-        if (nearBottom) list.scrollTop = list.scrollHeight;
-        if (latest) writeLocalStorage(CHAT_READ_KEY, String(latest));
-      }
-    }
-
-    function openChat() {
-      if (!isChatAvailable()) return;
-      chatOpen = true;
-      document.getElementById('modalChat').style.display = 'flex';
-      document.getElementById('chatFabBadge').hidden = true;
-      const latest = chatMessages.reduce((max, message) => Math.max(max, message.createdAt), 0);
-      if (latest) writeLocalStorage(CHAT_READ_KEY, String(latest));
-      const list = document.getElementById('chatMessages');
-      list.scrollTop = list.scrollHeight;
-      window.clearTimeout(chatTimerId);
-      syncChat();
-    }
-
-    function closeChat() {
-      chatOpen = false;
-      document.getElementById('modalChat').style.display = 'none';
-      scheduleChatSync();
-    }
-
-    async function sendChatMessage(event) {
-      event.preventDefault();
-      const input = document.getElementById('chatInput');
-      const text = input.value.trim();
-      if (!text) return;
-      const button = document.getElementById('chatSendButton');
-      button.disabled = true;
-      while (chatBusy) await new Promise((resolve) => window.setTimeout(resolve, 300));
-      window.clearTimeout(chatTimerId);
-      if (await syncChat(text)) {
-        input.value = '';
-        const list = document.getElementById('chatMessages');
-        list.scrollTop = list.scrollHeight;
-      }
-      button.disabled = false;
-      input.focus();
-    }
-
     function openSettingsModal() {
       const currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
       document.getElementById('themeLightButton').classList.toggle('active', currentTheme === 'light');
@@ -6167,7 +5910,6 @@
       showDashboard();
       renderProjectData();
       switchTab('material');
-      startChat();
     }
 
     async function loadAppsScriptProjectData() {
@@ -6368,7 +6110,6 @@
     }
 
     function logoutAppSession() {
-      stopChat();
       hideConnectionProblem();
       localStorage.removeItem('mep_user');
       currentGoogleCredential = '';
@@ -6391,7 +6132,6 @@
     function initializeModalCloseButtons() {
       const closeActions = {
         modalSettings: closeSettingsModal,
-        modalChat: closeChat,
         modalAppNotice: closeAppNotice,
         modalAssetForm: closeAssetForm,
         modalProjectFolder: closeProjectFolderModal,
