@@ -3795,7 +3795,8 @@
 
     function getSupabaseConfig() {
       const config = window.GOOGLE_CONFIG || {};
-      if (supabaseDisabled || !config.SUPABASE_URL || !config.SUPABASE_PUBLISHABLE_KEY) return null;
+      if (!config.SUPABASE_ENABLED || supabaseDisabled
+        || !config.SUPABASE_URL || !config.SUPABASE_PUBLISHABLE_KEY) return null;
       return config;
     }
 

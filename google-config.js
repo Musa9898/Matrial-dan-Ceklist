@@ -4,6 +4,8 @@ const GOOGLE_CONFIG = Object.freeze({
   WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbwGUCPjvrniCirFXt87JIqAClirDFiLMKPnAXA_Wx2duZV1o8NuO1L9EKMPBLnhcrnr/exec',
   // Cermin baca cepat. Data aslinya tetap di Sheets/Drive; Supabase hanya salinan
   // yang ditulis oleh Apps Script. Kunci di bawah aman di browser karena RLS aktif.
+  // Aktifkan hanya setelah tabel terisi dan Google provider selesai dikonfigurasi.
+  SUPABASE_ENABLED: false,
   SUPABASE_URL: 'https://ktmbunxnmdmrhpffjbxg.supabase.co',
   SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_3YfoTq54yicdJkqGCPBpmA_dMLBNlQF',
   SUPABASE_TIMEOUT_MS: 8000,
