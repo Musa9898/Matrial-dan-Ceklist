@@ -3953,6 +3953,7 @@
       const quiet = action === 'ping';
       const onSlow = quiet ? null : () => setAppsScriptStatus('server lambat, masih menunggu…');
       const repeatable = !['createProject', 'uploadFile'].includes(action);
+      const uploadUsesBridge = action === 'uploadFile';
 
       // Baca lewat cermin Supabase dulu; tulis tetap ke Apps Script.
       if ((action === 'login' || action === 'load') && getSupabaseConfig()) {
@@ -3964,7 +3965,7 @@
         }
       }
 
-      if (!appsScriptPreferBridge) {
+      if (!appsScriptPreferBridge && !uploadUsesBridge) {
         try {
           return await appsScriptFetch(request, timeoutMs, onSlow, method);
         } catch (error) {
