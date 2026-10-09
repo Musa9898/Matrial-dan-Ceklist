@@ -16,6 +16,42 @@ Contoh baris `Access`:
 user@gmail.com | sentral-tower | Proyek Sentral Tower | Logistik | TRUE
 ```
 
+## Akun Google pemilik website
+
+Seluruh identitas website memakai satu akun Google: **karyavictoryutama@gmail.com**. Akun itu harus memiliki semua aset berikut agar `CLIENT_ID` di `google-config.js` dan `GOOGLE_CLIENT_ID` di `Code.gs` tetap valid.
+
+| Aset | Nilai | Yang harus dipastikan |
+|---|---|---|
+| OAuth Client ID | `441116312261-fd5ofvrlm4dmad44o38n6c1sms31vq65.apps.googleusercontent.com` | Dibuat di Google Cloud project milik akun tersebut |
+| Spreadsheet | `SPREADSHEET_ID` di `Code.gs` | Akun tersebut Owner atau Editor |
+| Folder Drive | `FOLDER_ID` di `Code.gs` | Akun tersebut Owner atau Editor |
+| Proyek Apps Script | deployment `/exec` di `google-config.js` | Deploy **Execute as: Me** dijalankan dari akun tersebut |
+| Tab `Access` | baris `karyavictoryutama@gmail.com` | `role` = `admin`, `active` = `TRUE` |
+
+Langkah verifikasi di [Google Cloud Console](https://console.cloud.google.com/apis/credentials) (login sebagai akun tersebut):
+
+1. **APIs & Services > Credentials**: Client ID di atas harus muncul di daftar. Jika tidak muncul, berarti Client ID dibuat di akun lain dan harus dipindah atau dibuat ulang.
+2. Buka Client ID itu, lalu pastikan **Authorized JavaScript origins** berisi persis nilai `FRONTEND_ORIGINS` di `Code.gs`:
+   - `https://musa9898.github.io`
+   - `http://localhost:8000`
+   - `http://127.0.0.1:8000`
+3. **Authorized redirect URIs** berisi callback Supabase: `https://ktmbunxnmdmrhpffjbxg.supabase.co/auth/v1/callback`.
+4. **OAuth consent screen**: isi *User support email* dan *Developer contact* dengan `karyavictoryutama@gmail.com`. Jika status masih **Testing**, tambahkan semua email yang ada di tab `Access` sebagai **Test users**, atau ubah status ke **In production** agar siapa pun di tab `Access` bisa login.
+
+Setelah selesai, buka website dan login. Jika tombol Google menolak dengan `invalid_client` atau `origin_mismatch`, artinya langkah 1–3 belum cocok.
+
+## Menghubungkan Google ke Supabase
+
+Frontend menukar Google ID token menjadi sesi Supabase lewat `grant_type=id_token`, jadi Supabase harus mengenali Client ID yang sama.
+
+1. Supabase Dashboard > **Authentication > Sign In / Providers > Google** > aktifkan.
+2. **Client IDs**: isi `441116312261-fd5ofvrlm4dmad44o38n6c1sms31vq65.apps.googleusercontent.com`.
+3. **Client Secret**: ambil dari Client ID yang sama di Google Cloud Console.
+4. Aktifkan **Skip nonce check** karena token berasal dari Google Identity Services di browser, bukan dari alur redirect Supabase.
+5. Simpan, lalu hard refresh website (Ctrl+Shift+R).
+
+Client Secret hanya disimpan di dashboard Supabase dan Script Properties Apps Script; jangan pernah ditulis di `google-config.js`, `index.html`, atau file lain di repositori ini.
+
 Data operasional dipisah ke tab agar mudah difilter dan dianalisis:
 
 - `ProjectData`: snapshot JSON per proyek, termasuk chunk untuk snapshot besar.
