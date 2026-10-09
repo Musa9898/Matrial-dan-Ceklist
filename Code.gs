@@ -34,7 +34,6 @@ const PROJECT_FILE_HEADERS = [
   'Uploaded By', 'Created At', 'MIME Type', 'Payload JSON'
 ];
 const PROJECT_FOLDER_HEADERS = ['Folder ID', 'Project ID', 'Folder Name', 'Created At', 'Created By'];
-const BACKEND_VERSION = '2026-10-10-rbac';
 const FRONTEND_ORIGINS = [
   'https://musa9898.github.io',
   'http://localhost:8000',
@@ -48,11 +47,9 @@ const MONITORING_HEADERS = [
 function doGet(e) {
   const params = (e && e.parameter) || {};
   if (params.bridge === '1') return createBridgeOutput_(params.origin);
-  if (params.action === 'ping') return jsonOutput_(buildPingResponse_());
   try {
     const identity = verifyGoogleIdToken_(params.idToken);
-    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const projects = getAccessibleProjects_(identity.email, spreadsheet);
+    const projects = getAccessibleProjects_(identity.email);
     const requestedProjectId = String(params.projectId || '');
     const allowedProjects = requestedProjectId
       ? projects.filter((project) => project.projectId === requestedProjectId)
@@ -60,6 +57,7 @@ function doGet(e) {
     if (!allowedProjects.length) throw new Error('Akun tidak memiliki akses ke proyek ini.');
 
     const projectIds = new Set(allowedProjects.map((project) => project.projectId));
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
     const operationalRecords = readOperationalRecords_(spreadsheet);
     const records = readMonitoringRecords_(spreadsheet, operationalRecords)
       .filter((record) => projectIds.has(record.projectId));
@@ -86,7 +84,7 @@ function doGet(e) {
       status: 'success',
       email: identity.email,
       projects: allowedProjects,
-      records: records.filter((record) => record.recordType === 'file'),
+      records,
       snapshots,
       projectFolders: readProjectFolders_(spreadsheet, projectIds)
     });
@@ -98,10 +96,8 @@ function doGet(e) {
 function doPost(e) {
   const lock = LockService.getScriptLock();
   try {
-    const request = parseRequestBody_(e);
-    if (request.action === 'ping') return jsonOutput_(buildPingResponse_());
+    const request = JSON.parse(e?.postData?.contents || '{}');
     const identity = verifyGoogleIdToken_(request.idToken);
-    if (request.action === 'load') return doGet({ parameter: request });
     if (request.action === 'createProject') {
       lock.waitLock(20000);
       return jsonOutput_({
@@ -164,24 +160,9 @@ function doPost(e) {
   }
 }
 
-function parseRequestBody_(e) {
-  const raw = e && e.postData && e.postData.contents;
-  if (!raw) return {};
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch (error) {
-    throw new Error('Format permintaan tidak valid.');
-  }
-}
-
-function buildPingResponse_() {
-  return { status: 'success', ping: true, version: BACKEND_VERSION, serverTime: Date.now() };
-}
-
 function handleBridgeRequest(request) {
   try {
-    const output = request.action === 'load' || request.action === 'ping'
+    const output = request.action === 'load'
       ? doGet({ parameter: request })
       : doPost({ postData: { contents: JSON.stringify(request) } });
     return JSON.parse(output.getContent());
@@ -274,9 +255,9 @@ function withPermissions_(project) {
   return { ...project, permissions: permissions, readOnly: permissions.length === 0 };
 }
 
-function readActiveAccessRows_(spreadsheet) {
-  const book = spreadsheet || SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheet = book.getSheetByName(ACCESS_SHEET_NAME);
+function readActiveAccessRows_() {
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = spreadsheet.getSheetByName(ACCESS_SHEET_NAME);
   if (!sheet || sheet.getLastRow() < 2) throw new Error('Daftar undangan belum disiapkan di tab Access.');
 
   const values = sheet.getDataRange().getDisplayValues();
@@ -307,8 +288,8 @@ function getAuthorizedProjects_(email) {
     .map((row) => withPermissions_({ projectId: row.projectId, projectName: row.projectName, role: row.role }));
 }
 
-function getAccessibleProjects_(email, spreadsheet) {
-  const rows = readActiveAccessRows_(spreadsheet);
+function getAccessibleProjects_(email) {
+  const rows = readActiveAccessRows_();
   const ownProjects = rows.filter((row) => row.email === email)
     .map((row) => withPermissions_({ projectId: row.projectId, projectName: row.projectName, role: row.role }));
   if (!ownProjects.length) return [];
