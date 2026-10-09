@@ -5702,11 +5702,9 @@
       } else {
         applyProjectData(getEmptyProjectData());
       }
-      const cachedFolders = loadProjectFolders(activeProjectId);
       const serverFolders = Array.isArray(result.projectFolders)
         ? result.projectFolders.filter((folder) => folder.projectId === activeProjectId)
         : [];
-      const snapshotFolders = Array.isArray(snapshot?.projectFolders) ? snapshot.projectFolders : [];
       const fileFoldersById = new Map();
       remoteProjectFiles
         .filter((file) => file.projectId === activeProjectId && file.folderId)
@@ -5726,7 +5724,7 @@
         createdAt: file.addedAt || new Date().toISOString()
       }));
       const foldersById = new Map();
-      [...fileFolders, ...snapshotFolders, ...cachedFolders, ...serverFolders].forEach((folder) => {
+      [...fileFolders, ...serverFolders].forEach((folder) => {
         const id = String(folder?.id || '').trim();
         const name = String(folder?.name || '').trim();
         if (id && name) foldersById.set(id, { ...folder, id, name, projectId: activeProjectId });
