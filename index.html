@@ -3852,7 +3852,7 @@
         try {
           return await appsScriptFetch(request, timeoutMs, onSlow);
         } catch (error) {
-          const canFallback = repeatable && (error.code === 'network' || (error.code === 'timeout' && (action === 'load' || action === 'ping')));
+          const canFallback = repeatable && (error.code === 'network' || error.code === 'badresponse' || (error.code === 'timeout' && (action === 'load' || action === 'ping')));
           if (!canFallback) throw error;
         }
       }
