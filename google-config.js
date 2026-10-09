@@ -3,7 +3,7 @@ const GOOGLE_CONFIG = Object.freeze({
   // Satu-satunya tempat mengganti URL Web App (harus berakhiran /exec).
   WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbwGUCPjvrniCirFXt87JIqAClirDFiLMKPnAXA_Wx2duZV1o8NuO1L9EKMPBLnhcrnr/exec',
   // Batas waktu permintaan (milidetik).
-  REQUEST_TIMEOUT_MS: 45000,
+  REQUEST_TIMEOUT_MS: 25000,
   UPLOAD_TIMEOUT_MS: 120000,
   PING_TIMEOUT_MS: 30000
 });

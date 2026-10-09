@@ -3662,7 +3662,7 @@
       const config = window.GOOGLE_CONFIG || {};
       if (action === 'ping') return Number(config.PING_TIMEOUT_MS) || 30000;
       if (action === 'uploadFile') return Number(config.UPLOAD_TIMEOUT_MS) || 120000;
-      return Number(config.REQUEST_TIMEOUT_MS) || 45000;
+      return Number(config.REQUEST_TIMEOUT_MS) || 25000;
     }
 
     function isRoleRestrictionActive() {
@@ -3852,7 +3852,7 @@
         try {
           return await appsScriptFetch(request, timeoutMs, onSlow);
         } catch (error) {
-          const canFallback = repeatable && (error.code === 'network' || error.code === 'badresponse' || (error.code === 'timeout' && (action === 'load' || action === 'ping')));
+          const canFallback = repeatable && (error.code === 'network' || error.code === 'badresponse');
           if (!canFallback) throw error;
         }
       }
@@ -3889,18 +3889,13 @@
       const button = document.getElementById('connectionBannerRetry');
       button.disabled = true;
       button.textContent = 'Mencoba…';
+      hideConnectionProblem();
       try {
-        await appsScriptRequest('ping');
-      } catch (error) {
+        await handler();
+      } finally {
         button.disabled = false;
         button.textContent = 'Coba Lagi';
-        showConnectionProblem(error, handler);
-        return;
       }
-      button.disabled = false;
-      button.textContent = 'Coba Lagi';
-      hideConnectionProblem();
-      await handler();
     }
 
     async function reloadProjectDataWithRetry() {
@@ -4071,14 +4066,18 @@
         closeProjectManager();
         return;
       }
-      if (!await persistActiveProjectData()) return;
+      if (projectDataReady && !await persistActiveProjectData()) return;
       activeProjectId = projectId;
       writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
       if (getAppsScriptUrl() && currentGoogleCredential) {
+        loadProjectData(activeProjectId);
+        projectFolders = loadProjectFolders(activeProjectId);
+        renderProjectData();
         try {
           await loadAppsScriptProjectData();
         } catch (error) {
-          showAppNotice(error.message || 'Data proyek gagal dimuat.');
+          setAppsScriptStatus('gagal memuat');
+          showConnectionProblem(error, reloadProjectDataWithRetry);
           return;
         }
         closeProjectManager();
@@ -5937,7 +5936,8 @@
     async function loginAppsScript() {
       const result = await appsScriptRequest('login', {}, 'GET');
       applyAuthorizedProjects(result.projects);
-      applyProjectData(getEmptyProjectData());
+      loadProjectData(activeProjectId);
+      projectFolders = loadProjectFolders(activeProjectId);
       projectDataReady = false;
       return true;
     }
