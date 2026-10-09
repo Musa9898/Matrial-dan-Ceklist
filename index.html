@@ -3784,18 +3784,25 @@
 
     let appsScriptPreferBridge = false;
 
-    async function appsScriptFetch(request, timeoutMs, onSlow) {
+    async function appsScriptFetch(request, timeoutMs, onSlow, method = 'POST') {
       const controller = new AbortController();
       const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
       const slowId = onSlow ? window.setTimeout(onSlow, Math.min(8000, timeoutMs / 2)) : 0;
       try {
-        const response = await fetch(getAppsScriptUrl(), {
-          method: 'POST',
+        const isGet = method === 'GET';
+        const url = isGet
+          ? `${getAppsScriptUrl()}?${new URLSearchParams(request).toString()}`
+          : getAppsScriptUrl();
+        const options = {
+          method: isGet ? 'GET' : 'POST',
           redirect: 'follow',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(request),
           signal: controller.signal
-        });
+        };
+        if (!isGet) {
+          options.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+          options.body = JSON.stringify(request);
+        }
+        const response = await fetch(url, options);
         const text = await response.text();
         let result;
         try {
@@ -3850,7 +3857,7 @@
 
       if (!appsScriptPreferBridge) {
         try {
-          return await appsScriptFetch(request, timeoutMs, onSlow);
+          return await appsScriptFetch(request, timeoutMs, onSlow, method);
         } catch (error) {
           const canFallback = repeatable && (error.code === 'network' || error.code === 'badresponse');
           if (!canFallback) throw error;
