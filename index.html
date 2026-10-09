@@ -4059,6 +4059,15 @@
       document.getElementById('headerSessionLabel').textContent = `Victory Construction · ${userLabel} · ${message}`;
     }
 
+    // Menyimpan ulang snapshot yang tidak berubah hanya membuang waktu
+    // (doPost bisa 15 detik). Simpan sidik jari data terakhir yang sudah sinkron.
+    const syncedSnapshotFingerprints = new Map();
+
+    function markSnapshotSynced(projectId, snapshotJson) {
+      if (!projectId) return;
+      syncedSnapshotFingerprints.set(projectId, snapshotJson ?? JSON.stringify(getActiveProjectSnapshot()));
+    }
+
     async function persistActiveProjectData() {
       if (!activeProjectId) return false;
       if (isRoleRestrictionActive() && !projectDataReady) {
@@ -4067,9 +4076,10 @@
       }
       if (isRoleRestrictionActive() && authorizedProjects.find((entry) => entry.projectId === activeProjectId)?.readOnly) return true;
       const snapshot = JSON.parse(JSON.stringify(getActiveProjectSnapshot()));
+      const snapshotJson = JSON.stringify(snapshot);
       let localSaved = false;
       try {
-        localStorage.setItem(getProjectDataKey(activeProjectId), JSON.stringify(snapshot));
+        localStorage.setItem(getProjectDataKey(activeProjectId), snapshotJson);
         localSaved = true;
       } catch (error) {
         if (!getAppsScriptUrl()) {
@@ -4083,6 +4093,7 @@
         setAppsScriptStatus('lokal saja · masuk Google untuk sync');
         return Boolean(currentAuthProfile?.isPreview && localSaved);
       }
+      if (syncedSnapshotFingerprints.get(activeProjectId) === snapshotJson) return true;
 
       try {
         setAppsScriptStatus('menyimpan ke Sheets…');
@@ -4094,6 +4105,7 @@
           applyProjectData(result.snapshot);
           localStorage.setItem(getProjectDataKey(activeProjectId), JSON.stringify(result.snapshot));
         }
+        markSnapshotSynced(activeProjectId);
         setAppsScriptStatus('tersimpan di Sheets');
         hideConnectionProblem();
         return true;
@@ -4220,7 +4232,10 @@
         projectFolders = loadProjectFolders(activeProjectId);
         renderProjectData();
         try {
-          await loadAppsScriptProjectData();
+          await runWithAutoRetry(
+            () => loadAppsScriptProjectData(),
+            (attempt, total) => setAppsScriptStatus(`server lambat, mencoba ulang ${attempt}/${total}…`)
+          );
         } catch (error) {
           setAppsScriptStatus('gagal memuat');
           showConnectionProblem(error, reloadProjectDataWithRetry);
@@ -6152,6 +6167,7 @@
         }
       }
       projectDataReady = true;
+      markSnapshotSynced(activeProjectId);
       updateActiveProjectTitle();
       renderProjectData();
       setAppsScriptStatus('tersinkron dari Sheets');
