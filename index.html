@@ -906,6 +906,41 @@
       fill: currentColor;
     }
 
+    /* Connection problem banner (non-blocking) */
+    .connection-banner {
+      position: absolute;
+      left: 10px;
+      right: 70px;
+      bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: #fef3c7;
+      color: #78350f;
+      border: 1px solid #fcd34d;
+      font-size: 0.72rem;
+      line-height: 1.35;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
+    }
+    .connection-banner[hidden] { display: none; }
+    .connection-banner span { flex: 1; min-width: 0; }
+    .connection-banner button {
+      border: none;
+      border-radius: 8px;
+      padding: 6px 10px;
+      background: #4f46e5;
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .connection-banner button[hidden] { display: none; }
+    .connection-banner button:disabled { opacity: 0.6; }
+    .connection-banner .connection-banner-close { background: transparent; color: inherit; font-size: 1rem; padding: 2px 6px; }
+
     /* Chat & online users */
     .chat-fab {
       position: absolute;
@@ -3016,6 +3051,12 @@
       </div>
     </div>
 
+    <div class="connection-banner" id="connectionBanner" role="alert" hidden>
+      <span id="connectionBannerText"></span>
+      <button type="button" id="connectionBannerRetry" onclick="retryConnection()">Coba Lagi</button>
+      <button type="button" class="connection-banner-close" onclick="hideConnectionProblem()" aria-label="Tutup">×</button>
+    </div>
+
     <nav class="bottom-bar">
       <button class="nav-button active" id="navMat" onclick="switchTab('material')">
         <svg viewBox="0 0 20 20"><path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/><path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
@@ -3736,8 +3777,17 @@
     }
 
     function getAppsScriptUrl() {
-      const url = window.GOOGLE_CONFIG?.WEB_APP_URL?.trim() || '';
-      return !url || url.startsWith('ISI_') ? '' : url;
+      const url = (window.GOOGLE_CONFIG?.WEB_APP_URL || '').trim();
+      if (!url || url.startsWith('ISI_')) return '';
+      return url.replace(/\/dev(?=$|[?#])/, '/exec');
+    }
+
+    function getAppsScriptTimeout(action) {
+      const config = window.GOOGLE_CONFIG || {};
+      if (action === 'ping') return Number(config.PING_TIMEOUT_MS) || 12000;
+      if (action === 'uploadFile') return Number(config.UPLOAD_TIMEOUT_MS) || 120000;
+      if (action === 'chatSync') return 20000;
+      return Number(config.REQUEST_TIMEOUT_MS) || 45000;
     }
 
     function isRoleRestrictionActive() {
@@ -3849,19 +3899,144 @@
       return appsScriptBridgeReadyPromise;
     }
 
-    async function appsScriptRequest(action, payload = {}, method = 'POST') {
-      if (!currentGoogleCredential) throw new Error('Sesi Google tidak aktif. Masuk kembali untuk melanjutkan.');
-      await ensureAppsScriptBridge();
+    class AppsScriptError extends Error {
+      constructor(message, code) {
+        super(message);
+        this.name = 'AppsScriptError';
+        this.code = code || 'server';
+      }
+    }
+
+    let appsScriptPreferBridge = false;
+
+    async function appsScriptFetch(request, timeoutMs, onSlow) {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+      const slowId = onSlow ? window.setTimeout(onSlow, Math.min(8000, timeoutMs / 2)) : 0;
+      try {
+        const response = await fetch(getAppsScriptUrl(), {
+          method: 'POST',
+          redirect: 'follow',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(request),
+          signal: controller.signal
+        });
+        const text = await response.text();
+        let result;
+        try {
+          result = JSON.parse(text);
+        } catch (parseError) {
+          throw new AppsScriptError('Server mengirim respons yang bukan JSON. Pastikan Web App dideploy dengan akses "Anyone".', 'badresponse');
+        }
+        if (!result || result.status !== 'success') {
+          throw new AppsScriptError(result?.message || 'Apps Script gagal memproses permintaan.', 'server');
+        }
+        return result;
+      } catch (error) {
+        if (error instanceof AppsScriptError) throw error;
+        if (error?.name === 'AbortError') {
+          throw new AppsScriptError(`Server tidak merespons dalam ${Math.round(timeoutMs / 1000)} detik.`, 'timeout');
+        }
+        throw new AppsScriptError('Tidak dapat terhubung ke server.', 'network');
+      } finally {
+        window.clearTimeout(timeoutId);
+        window.clearTimeout(slowId);
+      }
+    }
+
+    async function appsScriptBridgeRequest(request, timeoutMs) {
+      try {
+        await ensureAppsScriptBridge();
+      } catch (error) {
+        throw new AppsScriptError(error.message, 'bridge');
+      }
       const requestId = `apps-script-${Date.now()}-${++appsScriptBridgeRequestId}`;
-      const request = { ...payload, action, idToken: currentGoogleCredential };
       return new Promise((resolve, reject) => {
         const timeoutId = window.setTimeout(() => {
           pendingAppsScriptRequests.delete(requestId);
-          reject(new Error('Apps Script tidak merespons dalam 30 detik.'));
-        }, 30000);
+          reject(new AppsScriptError(`Server tidak merespons dalam ${Math.round(timeoutMs / 1000)} detik.`, 'timeout'));
+        }, timeoutMs);
         pendingAppsScriptRequests.set(requestId, { resolve, reject, timeoutId });
         appsScriptBridgeWindow.postMessage({ type: 'request', requestId, request }, '*');
       });
+    }
+
+    async function appsScriptRequest(action, payload = {}, method = 'POST') {
+      if (!currentGoogleCredential && action !== 'ping') {
+        throw new AppsScriptError('Sesi Google tidak aktif. Masuk kembali untuk melanjutkan.', 'auth');
+      }
+      if (navigator.onLine === false) throw new AppsScriptError('Perangkat sedang offline.', 'offline');
+
+      const request = { ...payload, action, idToken: currentGoogleCredential };
+      const timeoutMs = getAppsScriptTimeout(action);
+      const quiet = action === 'ping' || action === 'chatSync';
+      const onSlow = quiet ? null : () => setAppsScriptStatus('server lambat, masih menunggu…');
+      const repeatable = !['createProject', 'uploadFile'].includes(action) && !(action === 'chatSync' && payload.text);
+
+      if (!appsScriptPreferBridge) {
+        try {
+          return await appsScriptFetch(request, timeoutMs, onSlow);
+        } catch (error) {
+          const canFallback = repeatable && (error.code === 'network' || (error.code === 'timeout' && (action === 'load' || action === 'ping')));
+          if (!canFallback) throw error;
+        }
+      }
+      const result = await appsScriptBridgeRequest(request, timeoutMs);
+      appsScriptPreferBridge = true;
+      return result;
+    }
+
+    function describeAppsScriptError(error) {
+      const base = error?.message || 'Koneksi ke server gagal.';
+      if (['timeout', 'network', 'bridge', 'badresponse'].includes(error?.code)) {
+        return `${base} Periksa koneksi internet. Jika berulang, pastikan Code.gs versi terbaru sudah dideploy sebagai Web App (akses "Anyone").`;
+      }
+      return base;
+    }
+
+    let connectionRetryHandler = null;
+
+    function showConnectionProblem(error, retryHandler) {
+      connectionRetryHandler = retryHandler || null;
+      document.getElementById('connectionBannerText').textContent = describeAppsScriptError(error);
+      document.getElementById('connectionBannerRetry').hidden = !connectionRetryHandler;
+      document.getElementById('connectionBanner').hidden = false;
+    }
+
+    function hideConnectionProblem() {
+      document.getElementById('connectionBanner').hidden = true;
+      connectionRetryHandler = null;
+    }
+
+    async function retryConnection() {
+      const handler = connectionRetryHandler;
+      if (!handler) return;
+      const button = document.getElementById('connectionBannerRetry');
+      button.disabled = true;
+      button.textContent = 'Mencoba…';
+      try {
+        await appsScriptRequest('ping');
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = 'Coba Lagi';
+        showConnectionProblem(error, handler);
+        return;
+      }
+      button.disabled = false;
+      button.textContent = 'Coba Lagi';
+      hideConnectionProblem();
+      await handler();
+    }
+
+    async function reloadProjectDataWithRetry() {
+      try {
+        await loadAppsScriptProjectData();
+        hideConnectionProblem();
+        startChat();
+      } catch (error) {
+        setAppsScriptStatus('gagal memuat');
+        showConnectionProblem(error, reloadProjectDataWithRetry);
+      }
     }
 
     function setAppsScriptStatus(message) {
@@ -3901,10 +4076,15 @@
           localStorage.setItem(getProjectDataKey(activeProjectId), JSON.stringify(result.snapshot));
         }
         setAppsScriptStatus('tersimpan di Sheets');
+        hideConnectionProblem();
         return true;
       } catch (error) {
         setAppsScriptStatus('gagal sync');
-        showAppNotice(error.message || 'Data gagal disimpan ke Google Sheets.');
+        if (['timeout', 'network', 'bridge', 'offline', 'badresponse'].includes(error.code)) {
+          showConnectionProblem(error, persistActiveProjectData);
+        } else {
+          showAppNotice(error.message || 'Data gagal disimpan ke Google Sheets.');
+        }
         return false;
       }
     }
@@ -6104,7 +6284,7 @@
           } catch (error) {
             setAppsScriptStatus('gagal memuat');
             openDashboardForUser(user);
-            showAppNotice(error.message || 'Data proyek gagal dimuat dari Apps Script.');
+            showConnectionProblem(error, reloadProjectDataWithRetry);
             return;
           }
         }
@@ -6189,6 +6369,7 @@
 
     function logoutAppSession() {
       stopChat();
+      hideConnectionProblem();
       localStorage.removeItem('mep_user');
       currentGoogleCredential = '';
       currentAuthUser = null;

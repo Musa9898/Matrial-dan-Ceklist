@@ -34,6 +34,7 @@ const PROJECT_FILE_HEADERS = [
   'Uploaded By', 'Created At', 'MIME Type', 'Payload JSON'
 ];
 const PROJECT_FOLDER_HEADERS = ['Folder ID', 'Project ID', 'Folder Name', 'Created At', 'Created By'];
+const BACKEND_VERSION = '2026-10-10-rbac-chat';
 const FRONTEND_ORIGINS = [
   'https://musa9898.github.io',
   'http://localhost:8000',
@@ -47,6 +48,7 @@ const MONITORING_HEADERS = [
 function doGet(e) {
   const params = (e && e.parameter) || {};
   if (params.bridge === '1') return createBridgeOutput_(params.origin);
+  if (params.action === 'ping') return jsonOutput_(buildPingResponse_());
   try {
     const identity = verifyGoogleIdToken_(params.idToken);
     const projects = getAccessibleProjects_(identity.email);
@@ -96,8 +98,10 @@ function doGet(e) {
 function doPost(e) {
   const lock = LockService.getScriptLock();
   try {
-    const request = JSON.parse(e?.postData?.contents || '{}');
+    const request = parseRequestBody_(e);
+    if (request.action === 'ping') return jsonOutput_(buildPingResponse_());
     const identity = verifyGoogleIdToken_(request.idToken);
+    if (request.action === 'load') return doGet({ parameter: request });
     if (request.action === 'createProject') {
       lock.waitLock(20000);
       return jsonOutput_({
@@ -164,9 +168,24 @@ function doPost(e) {
   }
 }
 
+function parseRequestBody_(e) {
+  const raw = e && e.postData && e.postData.contents;
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (error) {
+    throw new Error('Format permintaan tidak valid.');
+  }
+}
+
+function buildPingResponse_() {
+  return { status: 'success', ping: true, version: BACKEND_VERSION, serverTime: Date.now() };
+}
+
 function handleBridgeRequest(request) {
   try {
-    const output = request.action === 'load'
+    const output = request.action === 'load' || request.action === 'ping'
       ? doGet({ parameter: request })
       : doPost({ postData: { contents: JSON.stringify(request) } });
     return JSON.parse(output.getContent());
