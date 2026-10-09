@@ -51,7 +51,8 @@ function doGet(e) {
   if (params.action === 'ping') return jsonOutput_(buildPingResponse_());
   try {
     const identity = verifyGoogleIdToken_(params.idToken);
-    const projects = getAccessibleProjects_(identity.email);
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const projects = getAccessibleProjects_(identity.email, spreadsheet);
     const requestedProjectId = String(params.projectId || '');
     const allowedProjects = requestedProjectId
       ? projects.filter((project) => project.projectId === requestedProjectId)
@@ -59,7 +60,6 @@ function doGet(e) {
     if (!allowedProjects.length) throw new Error('Akun tidak memiliki akses ke proyek ini.');
 
     const projectIds = new Set(allowedProjects.map((project) => project.projectId));
-    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
     const operationalRecords = readOperationalRecords_(spreadsheet);
     const records = readMonitoringRecords_(spreadsheet, operationalRecords)
       .filter((record) => projectIds.has(record.projectId));
@@ -86,7 +86,7 @@ function doGet(e) {
       status: 'success',
       email: identity.email,
       projects: allowedProjects,
-      records,
+      records: records.filter((record) => record.recordType === 'file'),
       snapshots,
       projectFolders: readProjectFolders_(spreadsheet, projectIds)
     });
@@ -377,9 +377,9 @@ function withPermissions_(project) {
   return { ...project, permissions: permissions, readOnly: permissions.length === 0 };
 }
 
-function readActiveAccessRows_() {
-  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheet = spreadsheet.getSheetByName(ACCESS_SHEET_NAME);
+function readActiveAccessRows_(spreadsheet) {
+  const book = spreadsheet || SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = book.getSheetByName(ACCESS_SHEET_NAME);
   if (!sheet || sheet.getLastRow() < 2) throw new Error('Daftar undangan belum disiapkan di tab Access.');
 
   const values = sheet.getDataRange().getDisplayValues();
@@ -410,8 +410,8 @@ function getAuthorizedProjects_(email) {
     .map((row) => withPermissions_({ projectId: row.projectId, projectName: row.projectName, role: row.role }));
 }
 
-function getAccessibleProjects_(email) {
-  const rows = readActiveAccessRows_();
+function getAccessibleProjects_(email, spreadsheet) {
+  const rows = readActiveAccessRows_(spreadsheet);
   const ownProjects = rows.filter((row) => row.email === email)
     .map((row) => withPermissions_({ projectId: row.projectId, projectName: row.projectName, role: row.role }));
   if (!ownProjects.length) return [];
