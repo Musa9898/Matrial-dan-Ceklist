@@ -57,7 +57,10 @@ function doGet(e) {
     if (!allowedProjects.length) throw new Error('Akun tidak memiliki akses ke proyek ini.');
 
     const projectIds = new Set(allowedProjects.map((project) => project.projectId));
-    const records = readMonitoringRecords_().filter((record) => projectIds.has(record.projectId));
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const operationalRecords = readOperationalRecords_(spreadsheet);
+    const records = readMonitoringRecords_(spreadsheet, operationalRecords)
+      .filter((record) => projectIds.has(record.projectId));
     const snapshots = {};
     const snapshotChunks = {};
     records.forEach((record) => {
@@ -73,6 +76,9 @@ function doGet(e) {
         .join('');
       snapshots[projectId] = parseJson_(serialized);
     });
+    Object.keys(snapshots).forEach((projectId) => {
+      snapshots[projectId] = reconcileSnapshotWithRecords_(snapshots[projectId], operationalRecords, projectId);
+    });
 
     return jsonOutput_({
       status: 'success',
@@ -80,7 +86,7 @@ function doGet(e) {
       projects: allowedProjects,
       records,
       snapshots,
-      projectFolders: readProjectFolders_(SpreadsheetApp.openById(SPREADSHEET_ID), projectIds)
+      projectFolders: readProjectFolders_(spreadsheet, projectIds)
     });
   } catch (error) {
     return jsonOutput_({ status: 'error', message: error.message || 'Gagal membaca data.' });
@@ -381,7 +387,9 @@ function readTypedRecords_(spreadsheet, sheetName, headers, recordType, itemName
   if (sheet.getLastRow() < 2) return [];
   const headerIndexes = getSheetHeaderIndexes_(sheet);
   return sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues()
-    .filter((row) => getSheetCell_(row, headerIndexes, 'record_id'))
+    .filter((row) => getSheetCell_(row, headerIndexes, 'record_id')
+      && getSheetCell_(row, headerIndexes, 'project_id')
+      && String(getSheetCell_(row, headerIndexes, itemNameColumn) || '').trim())
     .map((row) => {
       const email = String(getSheetCell_(row, headerIndexes, 'email'));
       const updatedAt = String(getSheetCell_(row, headerIndexes, 'updated_at'));
@@ -512,17 +520,51 @@ function saveProjectFolders_(projectId, folders, email) {
   return folders.map((folder) => ({ ...folder, projectId: projectId, createdBy: email }));
 }
 
-function readMonitoringRecords_() {
-  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+function readOperationalRecords_(spreadsheet) {
   return [
-    ...readRecordRows_(getSchemaSheet_(spreadsheet, MONITORING_SHEET_NAME, MONITORING_HEADERS)),
-    ...readProjectDataRecords_(spreadsheet),
     ...readTypedRecords_(spreadsheet, MATERIALS_SHEET_NAME, MATERIAL_HEADERS, 'material', 'material_name'),
     ...readTypedRecords_(spreadsheet, ASSETS_SHEET_NAME, ASSET_HEADERS, 'asset', 'asset_name'),
     ...readTypedRecords_(spreadsheet, CHECKLISTS_SHEET_NAME, CHECKLIST_HEADERS, 'checklist', 'work'),
-    ...readTypedRecords_(spreadsheet, DAILY_REPORTS_SHEET_NAME, DAILY_REPORT_HEADERS, 'daily_report', 'report_title'),
+    ...readTypedRecords_(spreadsheet, DAILY_REPORTS_SHEET_NAME, DAILY_REPORT_HEADERS, 'daily_report', 'report_title')
+  ];
+}
+
+function readMonitoringRecords_(spreadsheet, operationalRecords) {
+  return [
+    ...readRecordRows_(getSchemaSheet_(spreadsheet, MONITORING_SHEET_NAME, MONITORING_HEADERS)),
+    ...readProjectDataRecords_(spreadsheet),
+    ...operationalRecords,
     ...readProjectFileRecords_(spreadsheet)
   ];
+}
+
+function reconcileSnapshotWithRecords_(snapshot, records, projectId) {
+  const survivingIds = new Map();
+  ['material', 'asset', 'checklist', 'daily_report'].forEach((recordType) => {
+    survivingIds.set(recordType, new Set(records
+      .filter((record) => record.projectId === projectId && record.recordType === recordType)
+      .map((record) => record.recordId)));
+  });
+
+  const reconciled = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  reconciled.materialItems = (Array.isArray(reconciled.materialItems) ? reconciled.materialItems : []).filter((item) =>
+    survivingIds.get('material').has('material:' + item.name));
+  reconciled.assetItems = (Array.isArray(reconciled.assetItems) ? reconciled.assetItems : []).filter((item) =>
+    survivingIds.get('asset').has('asset:' + item.id));
+  reconciled.checklistItems = (Array.isArray(reconciled.checklistItems) ? reconciled.checklistItems : []).filter((item) =>
+    survivingIds.get('checklist').has('checklist:' + item.id));
+  reconciled.dailyWorkPlans = (Array.isArray(reconciled.dailyWorkPlans) ? reconciled.dailyWorkPlans : []).filter((report, index) =>
+    survivingIds.get('daily_report').has('daily-report:' + (report.id || report.date || index)));
+
+  const materialNames = new Set(reconciled.materialItems.map((item) => item.name));
+  ['deliveryHistory', 'usageHistory'].forEach((historyName) => {
+    const history = reconciled[historyName] || {};
+    Object.keys(history).forEach((materialName) => {
+      if (!materialNames.has(materialName)) delete history[materialName];
+    });
+    reconciled[historyName] = history;
+  });
+  return reconciled;
 }
 
 function replaceBase64Images_(value, projectId, uploadedFiles, key) {
