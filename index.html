@@ -3879,6 +3879,7 @@
       const config = window.GOOGLE_CONFIG || {};
       if (action === 'ping') return Number(config.PING_TIMEOUT_MS) || 30000;
       if (action === 'uploadFile') return Number(config.UPLOAD_TIMEOUT_MS) || 120000;
+      if (action === 'saveSnapshot' || action === 'saveStatus') return Number(config.SAVE_TIMEOUT_MS) || 90000;
       return Number(config.REQUEST_TIMEOUT_MS) || 25000;
     }
 
@@ -3958,7 +3959,7 @@
       pendingAppsScriptRequests.delete(message.requestId);
       if (message.error) pending.reject(new Error(message.error));
       else if (!message.result || message.result.status !== 'success') {
-        pending.reject(new Error(message.result?.message || 'Apps Script gagal memproses permintaan.'));
+        pending.reject(new AppsScriptError(message.result?.message || 'Apps Script gagal memproses permintaan.', message.result?.code));
       } else {
         pending.resolve(message.result);
       }
@@ -4134,7 +4135,7 @@
           throw new AppsScriptError('Server mengirim respons yang bukan JSON. Pastikan Web App dideploy dengan akses "Anyone".', 'badresponse');
         }
         if (!result || result.status !== 'success') {
-          throw new AppsScriptError(result?.message || 'Apps Script gagal memproses permintaan.', 'server');
+          throw new AppsScriptError(result?.message || 'Apps Script gagal memproses permintaan.', result?.code || 'server');
         }
         return result;
       } catch (error) {
@@ -4218,6 +4219,9 @@
       if (navigator.onLine === false) throw new AppsScriptError('Perangkat sedang offline.', 'offline');
 
       const request = { ...payload, action, idToken: currentGoogleCredential };
+      if (action === 'saveSnapshot' && !request.mutationId) {
+        request.mutationId = globalThis.crypto?.randomUUID?.() || `save-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      }
       const timeoutMs = getAppsScriptTimeout(action);
       const quiet = action === 'ping';
       const onSlow = quiet ? null : () => setAppsScriptStatus('server lambat, masih menunggu…');
@@ -4259,7 +4263,7 @@
     // Apps Script kerap gagal pada percobaan pertama karena cold start,
     // lalu berhasil pada percobaan berikutnya. Ulangi sendiri agar pengguna
     // tidak perlu menekan "Coba Lagi" secara manual.
-    const AUTO_RETRY_ERROR_CODES = ['timeout', 'network', 'bridge', 'badresponse'];
+    const AUTO_RETRY_ERROR_CODES = ['timeout', 'network', 'bridge', 'badresponse', 'busy'];
     const AUTO_RETRY_ATTEMPTS = 3;
 
     function isTransientAppsScriptError(error) {
@@ -4367,24 +4371,54 @@
       }
       if (syncedSnapshotFingerprints.get(activeProjectId) === snapshotJson) return true;
 
+      const payload = {
+        projectId: activeProjectId,
+        snapshot,
+        mutationId: globalThis.crypto?.randomUUID?.() || `save-${Date.now()}-${Math.random().toString(16).slice(2)}`
+      };
       try {
-        setAppsScriptStatus('menyimpan ke Sheets…');
-        const result = await appsScriptRequest('saveSnapshot', {
-          projectId: activeProjectId,
-          snapshot
+        const result = await withSyncLoading('Menyimpan perubahan ke Spreadsheet...', async () => {
+          setAppsScriptStatus('menyimpan ke Sheets…');
+          try {
+            return await runWithAutoRetry(
+              () => appsScriptRequest('saveSnapshot', payload),
+              (attempt, total) => setAppsScriptStatus(`memeriksa penyimpanan, mencoba ulang ${attempt}/${total}…`)
+            );
+          } catch (error) {
+            if (!isTransientAppsScriptError(error)) throw error;
+            setAppsScriptStatus('memastikan hasil penyimpanan…');
+            try {
+              const status = await appsScriptRequest('saveStatus', {
+                projectId: payload.projectId,
+                mutationId: payload.mutationId
+              });
+              if (status.saved) return status;
+            } catch (statusError) {
+              projectDataReady = false;
+              throw new AppsScriptError(
+                `Hasil penyimpanan belum dapat dipastikan: ${describeAppsScriptError(statusError)} Data mungkin sudah masuk ke Sheets. Tekan Coba Lagi untuk memuat data server sebelum mengisi ulang.`,
+                'uncertain'
+              );
+            }
+            throw error;
+          }
         });
         if (result.snapshot) {
           applyProjectData(result.snapshot);
-          localStorage.setItem(getProjectDataKey(activeProjectId), JSON.stringify(result.snapshot));
+          try {
+            localStorage.setItem(getProjectDataKey(activeProjectId), JSON.stringify(result.snapshot));
+          } catch (error) {
+            showAppNotice('Data sudah tersimpan di Sheets, tetapi cache browser penuh. Data akan dimuat kembali dari Sheets saat masuk.');
+          }
         }
         markSnapshotSynced(activeProjectId);
         setAppsScriptStatus('tersimpan di Sheets');
         hideConnectionProblem();
         return true;
       } catch (error) {
-        setAppsScriptStatus('gagal sync');
-        if (['timeout', 'network', 'bridge', 'offline', 'badresponse'].includes(error.code)) {
-          showConnectionProblem(error, persistActiveProjectData);
+        setAppsScriptStatus(error.code === 'uncertain' ? 'hasil simpan belum terkonfirmasi' : 'gagal sync');
+        if (['timeout', 'network', 'bridge', 'offline', 'badresponse', 'busy', 'uncertain'].includes(error.code)) {
+          showConnectionProblem(error, reloadProjectDataWithRetry);
         } else {
           showAppNotice(error.message || 'Data gagal disimpan ke Google Sheets.');
         }
@@ -6506,9 +6540,9 @@
         }
       }
       projectDataReady = true;
-      markSnapshotSynced(activeProjectId);
       updateActiveProjectTitle();
       renderProjectData();
+      markSnapshotSynced(activeProjectId);
       setAppsScriptStatus('tersinkron dari Sheets');
       return true;
     }

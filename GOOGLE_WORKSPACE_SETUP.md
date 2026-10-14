@@ -73,7 +73,14 @@ Data operasional dipisah ke tab agar mudah difilter dan dianalisis:
 - `Monitoring`: dipertahankan sebagai sumber legacy. Saat snapshot proyek berhasil disimpan, record lama proyek tersebut dipindah ke tab masing-masing; proyek lain tidak ikut diubah.
 
 Record operasional menyertakan kolom terstruktur dan `payload_json` untuk mempertahankan data lengkap aplikasi. Foto Base64 diubah menjadi URL Drive sebelum disimpan.
+Penyimpanan snapshot memperbarui baris berdasarkan ID record: hanya item baru/berubah yang ditulis, dan item yang dihapus dikosongkan tanpa menggeser baris proyek lain. Baris yang tidak berubah mempertahankan metadata email/waktu pembaruannya. Login dan pemuatan data tidak menjalankan penyimpanan snapshot; tidak perlu mengirim ulang seluruh aset setelah masuk kembali.
+Setiap simpan dari frontend membawa `mutationId` yang sama saat request dicoba ulang atau dialihkan ke bridge. Backend menyimpan bukti keberhasilan untuk maksimal 30 request terakhir per proyek selama 6 jam, sehingga pengulangan request yang sudah berhasil tidak menulis ulang baris atau mengunggah foto lagi. Jika respons tetap terputus, frontend memeriksa `saveStatus`. Jika hasil belum bisa dipastikan, input diblokir sampai data server berhasil dimuat lewat **Coba Lagi**, bukan mengirim ulang snapshot lokal yang sudah dibatalkan.
+Batas waktu simpan (`SAVE_TIMEOUT_MS`) adalah 90 detik, terpisah dari baca biasa. Cache browser yang penuh setelah Sheets berhasil menyimpan ditampilkan sebagai peringatan cache, bukan kegagalan penyimpanan Sheets.
 Saat aplikasi memuat proyek, keberadaan record pada tab `Materials`, `Assets`, `Checklists`, dan `DailyReports` menjadi acuan untuk item terkait di snapshot. Hapus seluruh baris data (atau kosongkan kolom `record_id`, `project_id`, dan kolom nama/pekerjaan/judul) untuk menghapus item dari aplikasi pada pemuatan berikutnya. Jangan menghapus baris header. Perubahan kode Apps Script perlu dideploy sebagai versi baru.
+
+Jika cermin Supabase digunakan, penulisan Sheets hanya mengantrekan sinkronisasi cermin agar respons simpan tidak menunggu panggilan jaringan Supabase. Setelah memperbarui Apps Script, jalankan `installSupabaseSyncTrigger()` sekali untuk memasang worker `processSupabaseSyncQueue` setiap menit (menggantikan trigger akses lama). Jalankan `fullSyncToSupabase()` untuk pengisian awal. Jika Supabase tidak digunakan/tidak memiliki service key, antrean tidak dibuat. Cermin dapat tertinggal sampai worker selesai; gunakan `SUPABASE_ENABLED: false` untuk membaca langsung dari Sheets.
+
+Pengujian regresi backend lokal (Node.js, tanpa mengakses Sheets/Drive produksi): `node --test tests\spreadsheet-sync.test.js`. Pengujian mencakup jumlah baris yang ditulis, pemeliharaan metadata, penghapusan tanpa menggeser proyek lain, request simpan duplikat, login tanpa penulisan, dan server sibuk.
 
 ## Bridge Apps Script dan Keamanan
 

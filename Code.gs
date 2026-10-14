@@ -34,7 +34,7 @@ const PROJECT_FILE_HEADERS = [
   'Uploaded By', 'Created At', 'MIME Type', 'Payload JSON'
 ];
 const PROJECT_FOLDER_HEADERS = ['Folder ID', 'Project ID', 'Folder Name', 'Created At', 'Created By'];
-const BACKEND_VERSION = '2026-10-10-supabase';
+const BACKEND_VERSION = '2026-10-14-incremental-sync';
 const FRONTEND_ORIGINS = [
   'https://musa9898.github.io',
   'http://localhost:8000',
@@ -156,7 +156,7 @@ function cacheGetLarge_(key) {
   }
 }
 
-function cachePutLarge_(key, value) {
+function cachePutLarge_(key, value, ttlSeconds = LOAD_CACHE_TTL_SECONDS) {
   try {
     const text = JSON.stringify(value);
     const count = Math.ceil(text.length / CACHE_CHUNK_SIZE);
@@ -166,7 +166,7 @@ function cachePutLarge_(key, value) {
       entries[key + ':' + index] = text.slice(index * CACHE_CHUNK_SIZE, (index + 1) * CACHE_CHUNK_SIZE);
     }
     entries[key + ':n'] = String(count);
-    CacheService.getScriptCache().putAll(entries, LOAD_CACHE_TTL_SECONDS);
+    CacheService.getScriptCache().putAll(entries, ttlSeconds);
   } catch (error) {}
 }
 
@@ -180,20 +180,21 @@ function doPost(e) {
     if (request.action === 'ping') return jsonOutput_(buildPingResponse_());
     const identity = verifyGoogleIdToken_(request.idToken);
     if (request.action === 'load' || request.action === 'login') return doGet({ parameter: request });
-    mutated = true;
     if (request.action === 'createProject') {
-      lock.waitLock(20000);
+      acquireWriteLock_(lock);
+      mutated = true;
       return jsonOutput_({
         status: 'success',
         project: createProjectForUser_(request.projectName, identity.email)
       });
     }
     if (request.action === 'saveProjectFolders') {
-      lock.waitLock(20000);
+      acquireWriteLock_(lock);
       const projectId = String(request.projectId || '');
       const project = getAuthorizedProjects_(identity.email).find((entry) => entry.projectId === projectId);
       if (!project) throw new Error('Akun tidak memiliki akses ke proyek ini.');
       requireProjectPermission_(project, 'files');
+      mutated = true;
       return jsonOutput_({
         status: 'success',
         folders: saveProjectFolders_(projectId, request.folders, identity.email)
@@ -204,9 +205,16 @@ function doPost(e) {
     const project = getAuthorizedProjects_(identity.email).find((entry) => entry.projectId === projectId);
     if (!project) throw new Error('Akun tidak memiliki akses ke proyek ini.');
 
+    if (request.action === 'saveStatus') {
+      acquireWriteLock_(lock);
+      const saved = getSavedMutation_(projectId, identity.email, request.mutationId);
+      return jsonOutput_(saved || { status: 'success', saved: false });
+    }
+
     if (request.action === 'uploadFile') {
       requireProjectPermission_(project, 'files');
-      lock.waitLock(20000);
+      acquireWriteLock_(lock);
+      mutated = true;
       return jsonOutput_({
         status: 'success',
         file: saveDriveFile_(project, request.file, identity.email)
@@ -214,7 +222,8 @@ function doPost(e) {
     }
     if (request.action === 'deleteFile') {
       requireProjectPermission_(project, 'files');
-      lock.waitLock(20000);
+      acquireWriteLock_(lock);
+      mutated = true;
       deleteDriveFile_(projectId, String(request.fileId || ''));
       return jsonOutput_({ status: 'success' });
     }
@@ -223,28 +232,80 @@ function doPost(e) {
     }
     if (project.readOnly) throw new Error('Peran ' + (project.role || 'Anda') + ' hanya dapat melihat proyek ini.');
 
-    lock.waitLock(20000);
+    acquireWriteLock_(lock);
+    const saved = getSavedMutation_(projectId, identity.email, request.mutationId);
+    if (saved) return jsonOutput_(saved);
     const permittedSnapshot = mergeSnapshotByPermissions_(project, request.snapshot, projectId);
     const uploadedFiles = [];
     const cleanSnapshot = replaceBase64Images_(permittedSnapshot, projectId, uploadedFiles);
     const records = buildMonitoringRecords_(project, cleanSnapshot, identity.email, uploadedFiles);
+    mutated = true;
     replaceProjectRecords_(projectId, records);
 
-    return jsonOutput_({
+    const result = {
       status: 'success',
+      saved: true,
       fileUrl: uploadedFiles[0]?.url || '',
-      snapshot: cleanSnapshot,
-      records
-    });
+      snapshot: cleanSnapshot
+    };
+    SpreadsheetApp.flush();
+    rememberSavedMutation_(projectId, identity.email, request.mutationId, result);
+    return jsonOutput_(result);
   } catch (error) {
-    return jsonOutput_({ status: 'error', message: error.message || 'Gagal menyimpan data.' });
+    return jsonOutput_({ status: 'error', code: error.code || 'server', message: error.message || 'Gagal menyimpan data.' });
   } finally {
     if (mutated) {
       bumpDataVersion_();
-      syncSupabaseSafely_(syncProjectId);
+      queueSupabaseSync_(syncProjectId);
     }
     if (lock.hasLock()) lock.releaseLock();
   }
+}
+
+function acquireWriteLock_(lock) {
+  if (lock.tryLock(20000)) return;
+  const error = new Error('Penyimpanan lain masih diproses. Tunggu hingga server selesai.');
+  error.code = 'busy';
+  throw error;
+}
+
+const SAVE_RECEIPT_TTL_MS = 6 * 60 * 60 * 1000;
+
+function saveReceiptKey_(projectId) {
+  return 'save-receipts:' + projectId;
+}
+
+function readSaveReceipts_(projectId) {
+  return JSON.parse(PropertiesService.getScriptProperties().getProperty(saveReceiptKey_(projectId)) || '[]')
+    .filter((receipt) => Date.now() - receipt.at < SAVE_RECEIPT_TTL_MS);
+}
+
+function getSavedMutation_(projectId, email, mutationId) {
+  if (!mutationId) return null;
+  if (!/^[a-zA-Z0-9_-]{1,128}$/.test(String(mutationId))) throw new Error('ID penyimpanan tidak valid.');
+  const receipt = readSaveReceipts_(projectId).find((entry) => entry.id === mutationId && entry.email === email);
+  if (!receipt) return null;
+  const cached = cacheGetLarge_('saved:' + projectId + ':' + mutationId);
+  if (cached) return cached;
+  const chunks = readProjectDataRecords_(getSpreadsheet_(), new Set([projectId]))
+    .sort((first, second) => Number(first.status) - Number(second.status))
+    .map((record) => record.payload).join('');
+  if (!chunks) throw new Error('Bukti penyimpanan ada tetapi snapshot proyek tidak ditemukan.');
+  return { status: 'success', saved: true, snapshot: JSON.parse(chunks) };
+}
+
+function rememberSavedMutation_(projectId, email, mutationId, result) {
+  if (!mutationId) return;
+  const receipts = readSaveReceipts_(projectId);
+  receipts.push({ id: mutationId, email: email, at: Date.now() });
+  const recent = receipts.slice(-30);
+  let serialized = JSON.stringify(recent);
+  while (encodeURIComponent(serialized).replace(/%[0-9A-F]{2}/g, 'x').length > 8000 && recent.length > 1) {
+    recent.shift();
+    serialized = JSON.stringify(recent);
+  }
+  PropertiesService.getScriptProperties().setProperty(saveReceiptKey_(projectId), serialized);
+  cachePutLarge_('saved:' + projectId + ':' + mutationId, result, 600);
 }
 
 function parseRequestBody_(e) {
@@ -419,8 +480,9 @@ function requireProjectPermission_(project, permission) {
 
 function mergeSnapshotByPermissions_(project, requestedSnapshot, projectId) {
   const spreadsheet = getSpreadsheet_();
-  const operationalRecords = readOperationalRecords_(spreadsheet);
-  const storedChunks = readProjectDataRecords_(spreadsheet)
+  const projectIds = new Set([projectId]);
+  const operationalRecords = readOperationalRecords_(spreadsheet, projectIds);
+  const storedChunks = readProjectDataRecords_(spreadsheet, projectIds)
     .filter((record) => record.projectId === projectId)
     .sort((first, second) => Number(first.status) - Number(second.status))
     .map((record) => String(record.payload || ''))
@@ -891,8 +953,7 @@ function firstPhotoUrl_(photos) {
   return list.find((photo) => typeof photo === 'string' && /^https:\/\//i.test(photo)) || '';
 }
 
-function sheetRowFromObject_(sheet, values) {
-  const headers = getSheetHeaderIndexes_(sheet);
+function sheetRowFromObject_(sheet, values, headers = getSheetHeaderIndexes_(sheet)) {
   const row = Array(headers.length).fill('');
   Object.keys(values).forEach((key) => {
     const index = headers.indexOf(key.toLowerCase());
@@ -901,7 +962,7 @@ function sheetRowFromObject_(sheet, values) {
   return row;
 }
 
-function structuredRecordRow_(sheet, record) {
+function structuredRecordRow_(sheet, record, headers = getSheetHeaderIndexes_(sheet)) {
   const payload = record.payload || {};
   const values = {
     record_id: record.recordId,
@@ -946,29 +1007,91 @@ function structuredRecordRow_(sheet, record) {
     values.task_summary = record.notes;
   }
 
-  return sheetRowFromObject_(sheet, values);
+  return sheetRowFromObject_(sheet, values, headers);
 }
 
-function replaceProjectRows_(sheet, projectId, rows, projectIdHeader) {
+function comparableSheetCell_(value, header) {
+  if (value instanceof Date) return value.toISOString();
+  if (header === 'payload_json' || header === 'payload json') {
+    const canonicalize = (entry) => {
+      if (Array.isArray(entry)) return entry.map(canonicalize);
+      if (!entry || typeof entry !== 'object') return entry;
+      const sorted = {};
+      Object.keys(entry).sort().forEach((key) => { sorted[key] = canonicalize(entry[key]); });
+      return sorted;
+    };
+    return JSON.stringify(canonicalize(JSON.parse(String(value || '{}'))));
+  }
+  return String(value ?? '');
+}
+
+function writeRowBatches_(sheet, entries, width) {
+  const sorted = entries.slice().sort((first, second) => first.row - second.row);
+  for (let index = 0; index < sorted.length;) {
+    const start = sorted[index].row;
+    const values = [sorted[index++].values];
+    while (index < sorted.length && sorted[index].row === start + values.length) {
+      values.push(sorted[index++].values);
+    }
+    sheet.getRange(start, 1, values.length, width).setValues(values);
+  }
+}
+
+function replaceProjectRows_(sheet, projectId, rows, projectIdHeader, ignoredHeaders = []) {
   const headers = getSheetHeaderIndexes_(sheet);
   const projectIdIndex = headers.indexOf(projectIdHeader.toLowerCase());
   if (projectIdIndex < 0) throw new Error('Kolom project_id tidak ditemukan di tab ' + sheet.getName() + '.');
+  const keyHeader = ['record_id', 'file id', 'folder id', 'chunk index'].find((header) => headers.includes(header));
+  if (!keyHeader && rows.length) throw new Error('Kolom ID record tidak ditemukan di tab ' + sheet.getName() + '.');
+  const keyIndex = headers.indexOf(keyHeader);
   const lastRow = sheet.getLastRow();
-  if (lastRow > 1) {
-    const existingProjectIds = sheet.getRange(2, projectIdIndex + 1, lastRow - 1, 1).getDisplayValues();
-    for (let index = existingProjectIds.length - 1; index >= 0; index--) {
-      if (String(existingProjectIds[index][0]) === projectId) sheet.deleteRow(index + 2);
+  const existing = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, headers.length).getValues() : [];
+  const desired = new Map();
+  rows.forEach((row) => {
+    const key = String(row[keyIndex]);
+    if (desired.has(key)) throw new Error('ID record duplikat di tab ' + sheet.getName() + ': ' + key);
+    desired.set(key, row);
+  });
+  const changes = [];
+  const cleared = [];
+  const available = [];
+  existing.forEach((row, index) => {
+    const rowNumber = index + 2;
+    if (row.every((cell) => cell === '')) {
+      available.push(rowNumber);
+      return;
     }
+    if (String(row[projectIdIndex]) !== projectId) return;
+    const key = String(row[keyIndex]);
+    const next = desired.get(key);
+    if (!next) {
+      cleared.push(rowNumber);
+      available.push(rowNumber);
+      return;
+    }
+    desired.delete(key);
+    const changed = headers.some((header, cellIndex) => !ignoredHeaders.includes(header)
+      && comparableSheetCell_(row[cellIndex], header) !== comparableSheetCell_(next[cellIndex], header));
+    if (changed) changes.push({ row: rowNumber, values: next });
+  });
+  for (let index = 0; index < cleared.length;) {
+    const start = cleared[index++];
+    let count = 1;
+    while (index < cleared.length && cleared[index] === start + count) { count++; index++; }
+    sheet.getRange(start, 1, count, headers.length).clearContent();
   }
-  if (rows.length) {
-    sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, headers.length).setValues(rows);
-  }
+  let appendRow = lastRow + 1;
+  desired.forEach((row) => {
+    changes.push({ row: available.length ? available.shift() : appendRow++, values: row });
+  });
+  writeRowBatches_(sheet, changes, headers.length);
+  return changes.length + cleared.length;
 }
 
 function replaceProjectRecords_(projectId, records) {
   const spreadsheet = getSpreadsheet_();
   const monitoringSheet = getSchemaSheet_(spreadsheet, MONITORING_SHEET_NAME, MONITORING_HEADERS);
-  const legacyFiles = readRecordRows_(monitoringSheet)
+  const legacyFiles = readRecordRows_(monitoringSheet, new Set([projectId]))
     .filter((record) => record.projectId === projectId && record.recordType === 'file');
 
   const tableDefinitions = [
@@ -980,12 +1103,16 @@ function replaceProjectRecords_(projectId, records) {
 
   tableDefinitions.forEach((definition) => {
     const sheet = getSchemaSheet_(spreadsheet, definition.name, definition.headers);
+    const headers = getSheetHeaderIndexes_(sheet);
     const rows = records.filter((record) => record.recordType === definition.type)
-      .map((record) => structuredRecordRow_(sheet, record));
-    replaceProjectRows_(sheet, projectId, rows, 'project_id');
+      .map((record) => structuredRecordRow_(sheet, record, headers));
+    const ignoredHeaders = ['updated_at', 'email', 'reporter'];
+    if (definition.type === 'material') ignoredHeaders.push('date');
+    replaceProjectRows_(sheet, projectId, rows, 'project_id', ignoredHeaders);
   });
 
   const projectDataSheet = getSchemaSheet_(spreadsheet, PROJECT_DATA_SHEET_NAME, PROJECT_DATA_HEADERS);
+  const projectDataHeaders = getSheetHeaderIndexes_(projectDataSheet);
   const snapshotChunks = records.filter((record) => record.recordType === 'snapshot_chunk')
     .sort((first, second) => Number(first.status) - Number(second.status));
   const snapshotRows = snapshotChunks.map((record, index) => sheetRowFromObject_(projectDataSheet, {
@@ -994,11 +1121,12 @@ function replaceProjectRecords_(projectId, records) {
     'Updated By': record.email || record.reporter || '',
     'Updated At': record.updatedAt || record.date || new Date().toISOString(),
     'Chunk Index': Number(record.status) || index
-  }));
-  replaceProjectRows_(projectDataSheet, projectId, snapshotRows, 'Project ID');
+  }, projectDataHeaders));
+  replaceProjectRows_(projectDataSheet, projectId, snapshotRows, 'Project ID', ['updated by', 'updated at']);
 
   const projectFilesSheet = getSchemaSheet_(spreadsheet, PROJECT_FILES_SHEET_NAME, PROJECT_FILE_HEADERS);
-  const previousFiles = readProjectFileRecords_(spreadsheet).filter((record) => record.projectId === projectId);
+  const projectFileHeaders = getSheetHeaderIndexes_(projectFilesSheet);
+  const previousFiles = readProjectFileRecords_(spreadsheet, new Set([projectId]));
   const newFiles = records.filter((record) => record.recordType === 'file');
   const allFiles = new Map();
   [...previousFiles, ...legacyFiles, ...newFiles].forEach((record) => allFiles.set(record.recordId, record));
@@ -1015,7 +1143,7 @@ function replaceProjectRecords_(projectId, records) {
       'Created At': record.date || file.addedAt || '',
       'MIME Type': file.type || '',
       'Payload JSON': JSON.stringify(file)
-    });
+    }, projectFileHeaders);
   });
   replaceProjectRows_(projectFilesSheet, projectId, fileRows, 'Project ID');
 
@@ -1237,6 +1365,34 @@ function syncSupabaseSafely_(projectId) {
   }
 }
 
+function queueSupabaseSync_(projectId) {
+  if (!getSupabaseKey_()) return;
+  try {
+    PropertiesService.getScriptProperties().setProperty('supabase-pending:' + (projectId || 'access'), String(Date.now()));
+  } catch (error) {
+    console.warn('Antrean sinkronisasi Supabase gagal: ' + error.message);
+  }
+}
+
+function processSupabaseSyncQueue() {
+  if (!getSupabaseKey_()) return;
+  const properties = PropertiesService.getScriptProperties();
+  const pending = properties.getProperties();
+  const spreadsheet = getSpreadsheet_();
+  syncAccessToSupabase_(spreadsheet);
+  Object.keys(pending).filter((key) => key.indexOf('supabase-pending:') === 0).forEach((key) => {
+    const projectId = key.slice('supabase-pending:'.length);
+    if (projectId !== 'access') syncProjectCacheToSupabase_(projectId, spreadsheet);
+    const lock = LockService.getScriptLock();
+    lock.waitLock(20000);
+    try {
+      if (properties.getProperty(key) === pending[key]) properties.deleteProperty(key);
+    } finally {
+      lock.releaseLock();
+    }
+  });
+}
+
 // Jalankan manual dari editor Apps Script untuk mengisi cermin pertama kali.
 function fullSyncToSupabase() {
   if (!getSupabaseKey_()) throw new Error('Script Property ' + SUPABASE_KEY_PROPERTY + ' belum diisi.');
@@ -1257,8 +1413,8 @@ function syncAccessToSupabase() {
 // Jalankan sekali agar pencabutan akses tetap terpropagasi walau tanpa penulisan.
 function installSupabaseSyncTrigger() {
   ScriptApp.getProjectTriggers()
-    .filter((trigger) => trigger.getHandlerFunction() === 'syncAccessToSupabase')
+    .filter((trigger) => ['syncAccessToSupabase', 'processSupabaseSyncQueue'].includes(trigger.getHandlerFunction()))
     .forEach((trigger) => ScriptApp.deleteTrigger(trigger));
-  ScriptApp.newTrigger('syncAccessToSupabase').timeBased().everyMinutes(5).create();
-  return 'Trigger sinkronisasi akses aktif.';
+  ScriptApp.newTrigger('processSupabaseSyncQueue').timeBased().everyMinutes(1).create();
+  return 'Trigger sinkronisasi akses dan antrean proyek aktif.';
 }
