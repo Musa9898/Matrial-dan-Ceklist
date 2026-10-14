@@ -40,6 +40,14 @@ Langkah verifikasi di [Google Cloud Console](https://console.cloud.google.com/ap
 
 Setelah selesai, buka website dan login. Jika tombol Google menolak dengan `invalid_client` atau `origin_mismatch`, artinya langkah 1–3 belum cocok.
 
+## Pilihan proyek dan loading sinkronisasi
+
+1. Di halaman login, masuk dengan Google terlebih dahulu untuk memverifikasi akun dan mengambil daftar proyek dari `Access`.
+2. Pilih **Proyek yang akan dibuka**, lalu tekan **Masuk ke Proyek**. Proyek dengan akses baca saja diberi label **Lihat saja**. Daftar proyek tidak ditampilkan sebelum akun diverifikasi.
+3. Dashboard dibuka hanya setelah data proyek yang dipilih selesai dimuat. Jika gagal, halaman login tetap terbuka dan tombol **Masuk ke Proyek** dapat digunakan untuk mencoba lagi.
+4. Selama membaca, menyimpan, mengunggah, mengganti, atau membuat proyek, overlay loading mengunci klik dan input keyboard pada login/dashboard, termasuk modal. Kunci tetap aktif selama jeda percobaan ulang dan dilepas setelah berhasil atau gagal; pesan kesalahan tetap ditampilkan.
+5. Proyek yang tidak tersedia untuk akun tidak dialihkan otomatis ke proyek lain. Perbarui deployment `Code.gs` sebagai **New version** agar validasi pilihan proyek terbaru berlaku.
+
 ## Menghubungkan Google ke Supabase
 
 Frontend menukar Google ID token menjadi sesi Supabase lewat `grant_type=id_token`, jadi Supabase harus mengenali Client ID yang sama.

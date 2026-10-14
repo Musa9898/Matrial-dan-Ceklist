@@ -206,6 +206,11 @@
       flex: initial;
     }
 
+    .login-form-body > .btn-save {
+      width: 100%;
+      flex: initial;
+    }
+
     .login-footnote {
       margin-top: 12px;
       color: var(--text-muted);
@@ -264,6 +269,48 @@
 
     @keyframes loadingSpin {
       to { transform: rotate(360deg); }
+    }
+
+    .sync-loading-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(16, 24, 52, 0.72);
+      cursor: wait;
+    }
+
+    .sync-loading-overlay[hidden] {
+      display: none;
+    }
+
+    .sync-loading-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      max-width: 380px;
+      padding: 28px;
+      border-radius: 18px;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .sync-loading-card .loading-spinner {
+      width: 36px;
+      height: 36px;
+      flex-basis: 36px;
+      border-width: 3px;
+      color: var(--brand-navy);
+    }
+
+    .sync-loading-card small {
+      color: var(--text-muted);
     }
 
     .file-upload-status,
@@ -2158,6 +2205,14 @@
     </section>
     <div class="login-form-body">
       <div class="google-signin-container" id="googleSignInButton"></div>
+      <div class="form-row">
+        <label for="loginProjectSelect">Proyek yang akan dibuka</label>
+        <select id="loginProjectSelect" disabled onchange="updateLoginProjectButton()">
+          <option value="">Masuk Google terlebih dahulu</option>
+        </select>
+        <span class="form-hint">Daftar proyek mengikuti akses akun Google pada Spreadsheet.</span>
+      </div>
+      <button class="btn-save" id="loginProjectButton" type="button" onclick="enterSelectedProject()" disabled>Masuk ke Proyek</button>
       <button class="preview-mode-button" type="button" onclick="enterPreviewMode()" hidden>Preview Dashboard</button>
       <p class="login-status" id="loginStatus" role="status" aria-live="polite" aria-busy="false">
         <span class="loading-spinner" id="loginLoadingSpinner" hidden aria-hidden="true"></span>
@@ -2166,6 +2221,14 @@
       <p class="login-footnote">Gunakan akun Google yang terdaftar pada proyek untuk masuk.</p>
     </div>
   </main>
+
+  <div class="sync-loading-overlay" id="syncLoadingOverlay" tabindex="-1" hidden>
+    <div class="sync-loading-card" role="status" aria-live="polite">
+      <span class="loading-spinner" aria-hidden="true"></span>
+      <strong id="syncLoadingMessage">Menyinkronkan data dengan Spreadsheet...</strong>
+      <small>Tunggu hingga selesai. Pengisian data dan pilihan lain dikunci sementara.</small>
+    </div>
+  </div>
 
   <div class="app-container" id="dashboardApp" hidden>
     <header class="app-header">
@@ -3676,6 +3739,10 @@
     }
 
     function requireAccess(permission) {
+      if (isRoleRestrictionActive() && !projectDataReady) {
+        showAppNotice('Data proyek belum selesai dimuat. Coba lagi sinkronisasi sebelum mengisi data.');
+        return false;
+      }
       if (canAccess(permission)) return true;
       const project = authorizedProjects.find((entry) => entry.projectId === activeProjectId);
       const roleLabel = project?.readOnly ? 'hanya dapat melihat proyek ini' : `dengan peran ${project?.role || 'Anda'} tidak memiliki izin untuk aksi ini`;
@@ -3871,7 +3938,8 @@
       if (action === 'login') return { status: 'success', projects };
 
       const projectIds = new Set(projects.map((project) => project.projectId));
-      const preferredId = projectIds.has(payload.dataProjectId) ? payload.dataProjectId : projects[0].projectId;
+      const preferredId = payload.dataProjectId || projects[0].projectId;
+      if (!projectIds.has(preferredId)) throw new Error('Akun tidak memiliki akses ke proyek yang dipilih.');
       const rows = await supabaseSelect(`project_cache?select=data&project_id=eq.${encodeURIComponent(preferredId)}`);
       const data = Array.isArray(rows) && rows.length ? rows[0].data : null;
       if (!data) throw new Error('Cermin Supabase belum berisi data proyek ini.');
@@ -3943,7 +4011,52 @@
       });
     }
 
+    let syncLoadingCount = 0;
+    let syncLoadingPreviousFocus = null;
+
+    async function withSyncLoading(message, task) {
+      const overlay = document.getElementById('syncLoadingOverlay');
+      const screens = [document.getElementById('loginScreen'), document.getElementById('dashboardApp')];
+      if (syncLoadingCount === 0) {
+        syncLoadingPreviousFocus = document.activeElement;
+        screens.forEach((screen) => {
+          screen.inert = true;
+          screen.setAttribute('aria-busy', 'true');
+        });
+        document.getElementById('syncLoadingMessage').textContent = message;
+        overlay.hidden = false;
+        overlay.focus();
+      }
+      syncLoadingCount++;
+      try {
+        return await task();
+      } finally {
+        syncLoadingCount--;
+        if (syncLoadingCount === 0) {
+          overlay.hidden = true;
+          screens.forEach((screen) => {
+            screen.inert = false;
+            screen.setAttribute('aria-busy', 'false');
+          });
+          if (syncLoadingPreviousFocus?.isConnected && !syncLoadingPreviousFocus.closest('[hidden]')) {
+            syncLoadingPreviousFocus.focus();
+          }
+          syncLoadingPreviousFocus = null;
+        }
+      }
+    }
+
     async function appsScriptRequest(action, payload = {}, method = 'POST') {
+      if (action === 'ping') return performAppsScriptRequest(action, payload, method);
+      const message = action === 'login'
+        ? 'Memverifikasi akun dan memuat daftar proyek...'
+        : action === 'load'
+          ? 'Memuat data proyek dari Spreadsheet...'
+          : 'Menyimpan dan menyinkronkan data dengan Spreadsheet...';
+      return withSyncLoading(message, () => performAppsScriptRequest(action, payload, method));
+    }
+
+    async function performAppsScriptRequest(action, payload = {}, method = 'POST') {
       if (!currentGoogleCredential && action !== 'ping') {
         throw new AppsScriptError('Sesi Google tidak aktif. Masuk kembali untuk melanjutkan.', 'auth');
       }
@@ -4003,15 +4116,17 @@
     }
 
     async function runWithAutoRetry(task, onRetry) {
-      for (let attempt = 1; ; attempt++) {
-        try {
-          return await task();
-        } catch (error) {
-          if (attempt >= AUTO_RETRY_ATTEMPTS || !isTransientAppsScriptError(error)) throw error;
-          if (onRetry) onRetry(attempt + 1, AUTO_RETRY_ATTEMPTS);
-          await waitMs(attempt * 1500);
+      return withSyncLoading('Menyinkronkan data dengan Spreadsheet...', async () => {
+        for (let attempt = 1; ; attempt++) {
+          try {
+            return await task();
+          } catch (error) {
+            if (attempt >= AUTO_RETRY_ATTEMPTS || !isTransientAppsScriptError(error)) throw error;
+            if (onRetry) onRetry(attempt + 1, AUTO_RETRY_ATTEMPTS);
+            await waitMs(attempt * 1500);
+          }
         }
-      }
+      });
     }
 
     let connectionRetryHandler = null;
@@ -4218,6 +4333,11 @@
     }
 
     async function switchProject(projectId) {
+      if (syncLoadingCount) return;
+      return withSyncLoading('Mengganti proyek dan menyinkronkan data...', () => switchProjectData(projectId));
+    }
+
+    async function switchProjectData(projectId) {
       if (authorizedProjectIds.size && !authorizedProjectIds.has(projectId)) {
         showAppNotice('Akun ini tidak memiliki akses ke proyek tersebut.');
         return;
@@ -4230,8 +4350,12 @@
       activeProjectId = projectId;
       writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
       if (getAppsScriptUrl() && currentGoogleCredential) {
-        loadProjectData(activeProjectId);
-        projectFolders = loadProjectFolders(activeProjectId);
+        projectDataReady = false;
+        applyProjectData(getEmptyProjectData());
+        remoteProjectFiles = [];
+        activeFileFolderId = null;
+        updateActiveProjectTitle();
+        closeProjectManager();
         renderProjectData();
         try {
           await runWithAutoRetry(
@@ -4256,6 +4380,11 @@
     }
 
     async function createProject() {
+      if (syncLoadingCount) return;
+      return withSyncLoading('Membuat proyek dan menyinkronkan data...', createProjectData);
+    }
+
+    async function createProjectData() {
       const name = document.getElementById('newProjectName').value.trim();
       if (!name) {
         alert('Nama proyek wajib diisi.');
@@ -6074,9 +6203,10 @@
     function openDashboardForUser(user) {
       currentAuthUser = user;
       currentAuthProfile = user;
-      authorizedProjectId = user.isPreview ? null : user.sub;
+      authorizedProjectId = user.isPreview ? null : activeProjectId;
       updateAccountProfile(user);
       if (!getAppsScriptUrl() || user.isPreview) setAppsScriptStatus('penyimpanan lokal');
+      else if (projectDataReady) setAppsScriptStatus('tersinkron dari Sheets');
       showDashboard();
       renderProjectData();
       switchTab('material');
@@ -6084,12 +6214,15 @@
 
     let projectDataReady = false;
 
-    function applyAuthorizedProjects(projects) {
+    function applyAuthorizedProjects(projects, requestedProjectId = '') {
       authorizedProjects = Array.isArray(projects) ? projects : [];
       authorizedProjectIds = new Set(authorizedProjects.map((project) => project.projectId));
       if (!authorizedProjects.length) throw new Error('Akun ini belum diberi akses proyek pada tab Access.');
       projectRegistry = authorizedProjects.map((project) => ({ id: project.projectId, name: project.projectName }));
-      const candidateProjectId = readLocalStorage(ACTIVE_PROJECT_KEY) || activeProjectId;
+      if (requestedProjectId && !authorizedProjectIds.has(requestedProjectId)) {
+        throw new Error('Akun tidak memiliki akses ke proyek yang dipilih. Pilih kembali proyek pada halaman login.');
+      }
+      const candidateProjectId = requestedProjectId || readLocalStorage(ACTIVE_PROJECT_KEY) || activeProjectId;
       activeProjectId = authorizedProjectIds.has(candidateProjectId) ? candidateProjectId : authorizedProjects[0].projectId;
       authorizedProjectId = activeProjectId;
       writeLocalStorage(ACTIVE_PROJECT_KEY, activeProjectId);
@@ -6099,8 +6232,6 @@
     async function loginAppsScript() {
       const result = await appsScriptRequest('login', {}, 'GET');
       applyAuthorizedProjects(result.projects);
-      loadProjectData(activeProjectId);
-      projectFolders = loadProjectFolders(activeProjectId);
       projectDataReady = false;
       return true;
     }
@@ -6109,9 +6240,9 @@
       if (!getAppsScriptUrl() || !currentGoogleCredential) return false;
       projectDataReady = false;
       setAppsScriptStatus('memuat dari Sheets…');
-      const preferredProjectId = readLocalStorage(ACTIVE_PROJECT_KEY) || activeProjectId;
+      const preferredProjectId = activeProjectId;
       const result = await appsScriptRequest('load', { dataProjectId: preferredProjectId }, 'GET');
-      applyAuthorizedProjects(result.projects);
+      applyAuthorizedProjects(result.projects, preferredProjectId);
       remoteProjectFiles = (result.records || [])
         .filter((record) => record.recordType === 'file' && record.payload)
         .map((record) => record.payload);
@@ -6200,21 +6331,69 @@
       };
     }
 
-    async function retryLoginAndLoad() {
-      try {
-        await runWithAutoRetry(
-          () => loginAppsScript(),
-          (attempt, total) => setAppsScriptStatus(`server lambat, mencoba ulang ${attempt}/${total}…`)
-        );
-      } catch (error) {
-        showConnectionProblem(error, retryLoginAndLoad);
+    function resetLoginProjectSelection() {
+      document.getElementById('loginProjectSelect').replaceChildren(
+        new Option('Masuk Google terlebih dahulu', '')
+      );
+      document.getElementById('loginProjectSelect').disabled = true;
+      document.getElementById('loginProjectButton').disabled = true;
+    }
+
+    function updateLoginProjectButton() {
+      const projectId = document.getElementById('loginProjectSelect').value;
+      document.getElementById('loginProjectButton').disabled = !currentAuthUser
+        || !authorizedProjectIds.has(projectId);
+    }
+
+    function renderLoginProjects() {
+      const select = document.getElementById('loginProjectSelect');
+      select.replaceChildren(
+        new Option('Pilih proyek', ''),
+        ...authorizedProjects.map((project) => new Option(
+          `${project.projectName}${project.readOnly ? ' (Lihat saja)' : ''}`,
+          project.projectId
+        ))
+      );
+      select.value = authorizedProjectIds.has(activeProjectId) ? activeProjectId : '';
+      select.disabled = false;
+      updateLoginProjectButton();
+    }
+
+    async function enterSelectedProject() {
+      if (syncLoadingCount) return;
+      const projectId = document.getElementById('loginProjectSelect').value;
+      if (!currentAuthUser || !authorizedProjectIds.has(projectId)) {
+        setLoginStatus('Masuk dengan Google dan pilih proyek yang tersedia terlebih dahulu.');
         return;
       }
-      updateActiveProjectTitle();
-      await reloadProjectDataWithRetry();
+      setLoginLoading(true, 'Memuat data proyek yang dipilih...');
+      try {
+        await withSyncLoading('Memuat data proyek yang dipilih dari Spreadsheet...', async () => {
+          activeProjectId = projectId;
+          authorizedProjectId = projectId;
+          activeFileFolderId = null;
+          writeLocalStorage(ACTIVE_PROJECT_KEY, projectId);
+          await runWithAutoRetry(
+            () => loadAppsScriptProjectData(),
+            (attempt, total) => setLoginStatus(`Server lambat, mencoba ulang ${attempt}/${total}...`)
+          );
+          hideConnectionProblem();
+          openDashboardForUser(currentAuthUser);
+        });
+      } catch (error) {
+        renderLoginProjects();
+        setLoginStatus(`${describeAppsScriptError(error)} Tekan Masuk ke Proyek untuk mencoba lagi.`);
+      } finally {
+        setLoginLoading(false);
+      }
     }
 
     async function handleGoogleCredential(response) {
+      if (syncLoadingCount) return;
+      resetLoginProjectSelection();
+      authorizedProjects = [];
+      authorizedProjectIds = new Set();
+      projectDataReady = false;
       setLoginLoading(true, 'Memverifikasi akun Google…');
       try {
         const user = decodeGoogleCredential(response.credential);
@@ -6226,25 +6405,17 @@
         updateAccountProfile(user);
         if (getAppsScriptUrl()) {
           setLoginLoading(true, 'Memverifikasi akun…');
-          try {
-            await runWithAutoRetry(
-              () => loginAppsScript(),
-              (attempt, total) => setLoginLoading(true, `Server lambat, mencoba ulang ${attempt}/${total}…`)
-            );
-          } catch (error) {
-            setAppsScriptStatus('gagal masuk');
-            openDashboardForUser(user);
-            showConnectionProblem(error, retryLoginAndLoad);
-            return;
-          }
-          openDashboardForUser(user);
-          updateActiveProjectTitle();
-          reloadProjectDataWithRetry();
+          await runWithAutoRetry(
+            () => loginAppsScript(),
+            (attempt, total) => setLoginLoading(true, `Server lambat, mencoba ulang ${attempt}/${total}…`)
+          );
+          renderLoginProjects();
+          setLoginStatus(`Akun ${user.email} terverifikasi. Pilih proyek lalu tekan Masuk ke Proyek.`);
           return;
         }
         openDashboardForUser(user);
       } catch (error) {
-        setLoginStatus(error.message || 'Login Google gagal. Coba kembali.');
+        setLoginStatus(describeAppsScriptError(error));
       } finally {
         setLoginLoading(false);
       }
@@ -6280,6 +6451,9 @@
       currentGoogleCredential = '';
       currentAuthUser = null;
       currentAuthProfile = null;
+      authorizedProjects = [];
+      authorizedProjectIds = new Set();
+      resetLoginProjectSelection();
       showLoginScreen();
       updateAccountProfile(null);
       const previewButton = document.querySelector('.preview-mode-button');
@@ -6313,11 +6487,11 @@
         size: 'large',
         text: 'signin_with',
         shape: 'rectangular',
-        width: Math.min(360, document.querySelector('.login-form-body').clientWidth)
+        width: Math.min(360, document.getElementById('googleSignInButton').clientWidth)
       });
       setLoginStatus(savedUser?.email
         ? `Akun ${savedUser.email} tersimpan. Masuk dengan Google lagi untuk memuat data Sheets.`
-        : 'Masuk dengan akun Google untuk membuka dashboard.');
+        : 'Masuk dengan akun Google, lalu pilih proyek yang akan dibuka.');
       if (savedUser?.email) window.google.accounts.id.prompt();
     }
 
@@ -6328,6 +6502,10 @@
       currentAuthUser = null;
       currentAuthProfile = null;
       authorizedProjectId = null;
+      authorizedProjects = [];
+      authorizedProjectIds = new Set();
+      projectDataReady = false;
+      resetLoginProjectSelection();
       if (window.google?.accounts?.id) window.google.accounts.id.disableAutoSelect();
       closeSettingsModal();
       updateAccountProfile(null);

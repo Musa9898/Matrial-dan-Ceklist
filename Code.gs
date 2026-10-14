@@ -65,8 +65,11 @@ function doGet(e) {
 
     // Data berat hanya dibaca untuk proyek aktif; daftar proyek tetap lengkap.
     const dataProjectId = String(params.dataProjectId || '');
+    if (dataProjectId && !allowedProjects.some((project) => project.projectId === dataProjectId)) {
+      throw new Error('Akun tidak memiliki akses ke proyek yang dipilih.');
+    }
     const dataProjects = dataProjectId
-      ? [allowedProjects.find((project) => project.projectId === dataProjectId) || allowedProjects[0]]
+      ? [allowedProjects.find((project) => project.projectId === dataProjectId)]
       : allowedProjects;
     const projectIds = new Set(dataProjects.map((project) => project.projectId));
     const cacheKey = 'load:' + getDataVersion_() + ':' + Array.from(projectIds).sort().join(',');
