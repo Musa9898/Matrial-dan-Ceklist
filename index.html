@@ -1643,6 +1643,72 @@
       object-fit: contain;
     }
 
+    .project-photo-button {
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      cursor: zoom-in;
+    }
+
+    .project-photo-button[hidden],
+    #assetDetailActions[hidden] {
+      display: none;
+    }
+
+    .asset-item {
+      cursor: pointer;
+    }
+
+    .asset-item .item-card-meta,
+    #assetDetailLocation,
+    #modalAssetDetail .detail-stat strong {
+      overflow-wrap: anywhere;
+    }
+
+    body.theme-dark #modalAssetDetail .detail-stat strong {
+      color: var(--text-dark);
+    }
+
+    .photo-preview-dialog {
+      width: min(1000px, calc(100vw - 32px));
+      max-height: calc(100dvh - 32px);
+      margin: auto;
+      padding: 18px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      background: var(--bg-light);
+      color: var(--text-dark);
+    }
+
+    .photo-preview-dialog::backdrop {
+      background: rgba(15, 23, 42, 0.85);
+    }
+
+    .photo-preview-dialog h3 {
+      padding-right: 42px;
+      margin-bottom: 16px;
+      overflow-wrap: anywhere;
+    }
+
+    .photo-preview-image {
+      display: block;
+      width: 100%;
+      max-height: calc(100dvh - 160px);
+      object-fit: contain;
+    }
+
+    .photo-preview-image[hidden] {
+      display: none;
+    }
+
+    .project-photo-button:focus-visible,
+    .asset-item:focus-visible {
+      outline: 3px solid var(--brand-gold);
+      outline-offset: 3px;
+    }
+
     .checklist-photo-selection {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2090,6 +2156,7 @@
       }
 
       #materialCardList,
+      #assetCardList,
       #checklistCardList {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2097,6 +2164,7 @@
       }
 
       #materialCardList .item-card,
+      #assetCardList .item-card,
       #checklistCardList .item-card {
         margin-bottom: 0;
       }
@@ -2155,6 +2223,7 @@
       }
 
       #materialCardList,
+      #assetCardList,
       #checklistCardList {
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
@@ -2502,6 +2571,48 @@
       </section>
     </main>
 
+    <div class="modal-backdrop" id="modalAssetDetail" role="dialog" aria-modal="true" aria-labelledby="assetDetailTitle">
+      <div class="detail-modal-sheet">
+        <h3 id="assetDetailTitle">Detail Aset Alat Kerja</h3>
+        <div class="detail-title" id="assetDetailName"></div>
+        <div class="detail-grid">
+          <div class="detail-stat"><span>Kode Aset</span><strong id="assetDetailCode"></strong></div>
+          <div class="detail-stat"><span>Jumlah</span><strong id="assetDetailQuantity"></strong></div>
+          <div class="detail-stat"><span>Kondisi</span><strong id="assetDetailStatus"></strong></div>
+        </div>
+        <div class="detail-section">
+          <h4>Kategori</h4>
+          <div id="assetDetailCategory"></div>
+        </div>
+        <div class="detail-section">
+          <h4>Lokasi / Pemegang</h4>
+          <div id="assetDetailLocation"></div>
+        </div>
+        <div class="detail-section">
+          <h4>Foto Alat</h4>
+          <div id="assetDetailPhoto"></div>
+        </div>
+        <div class="detail-section">
+          <h4>Terakhir Diperbarui</h4>
+          <div id="assetDetailUpdatedAt"></div>
+        </div>
+        <div class="detail-actions" id="assetDetailActions">
+          <button class="btn-primary-small" type="button" onclick="openAssetForm(selectedAssetDetailId)">Ubah Aset</button>
+          <button class="btn-primary-small" type="button" onclick="deleteAssetItem(selectedAssetDetailId)">Hapus Aset</button>
+        </div>
+        <div class="btn-group">
+          <button class="btn-cancel" type="button" onclick="closeAssetDetail()">Tutup</button>
+        </div>
+      </div>
+    </div>
+
+    <dialog class="photo-preview-dialog" id="photoPreviewDialog" aria-labelledby="photoPreviewTitle">
+      <button class="modal-close-button" type="button" onclick="closePhotoPreview()" aria-label="Tutup preview foto">×</button>
+      <h3 id="photoPreviewTitle">Preview Foto</h3>
+      <img class="photo-preview-image" id="photoPreviewImage" alt="" onerror="showPhotoPreviewError()">
+      <p id="photoPreviewError" role="alert" hidden>Foto tidak dapat dimuat. Periksa koneksi internet dan izin berbagi file Drive, lalu buka preview kembali.</p>
+    </dialog>
+
     <div class="modal-backdrop" id="modalAssetForm">
       <div class="modal-sheet">
         <h3 id="assetFormTitle">Tambah Aset Alat Kerja</h3>
@@ -2528,7 +2639,9 @@
         <div class="form-row">
           <label for="assetPhotoInput">Foto Alat (opsional)</label>
           <input id="assetPhotoInput" type="file" accept="image/*" onchange="previewAssetPhoto(this.files[0])">
-          <img class="asset-photo" id="assetPhotoPreview" alt="Pratinjau foto aset" hidden>
+          <button class="project-photo-button" id="assetPhotoPreviewButton" type="button" aria-label="Buka preview foto aset" hidden>
+            <img class="asset-photo" id="assetPhotoPreview" alt="Pratinjau foto aset" hidden>
+          </button>
           <div class="photo-upload-status" id="assetPhotoUploadStatus" role="status" aria-live="polite" aria-busy="false" hidden>
             <span class="loading-spinner" id="assetPhotoUploadSpinner" hidden aria-hidden="true"></span>
             <span id="assetPhotoUploadMessage"></span>
@@ -3029,6 +3142,7 @@
     let selectedChecklistDetailId = '';
     let selectedChecklistPhotoFiles = [];
     let editingAssetId = '';
+    let selectedAssetDetailId = '';
     const CHECKLIST_STORAGE_KEY = 'project-monitor-checklists';
     const PROJECT_REGISTRY_KEY = 'project-monitor-projects';
     const ACTIVE_PROJECT_KEY = 'project-monitor-active-project';
@@ -3400,24 +3514,59 @@
       document.getElementById('assetSummary').textContent = `${filteredAssets.length} jenis aset · ${totalUnits} unit`;
       list.innerHTML = filteredAssets.length ? filteredAssets.map((asset) => {
         const statusClass = asset.status === 'Tersedia' ? 'text-komplit' : asset.status === 'Rusak' ? 'text-danger' : 'text-kurang';
-        const photo = asset.photo ? `<img class="asset-photo" src="${escapeHtml(getPreviewImageUrl(asset.photo))}" alt="Foto ${escapeHtml(asset.name)}">` : '';
         return `
-          <article class="item-card">
+          <article class="item-card asset-item" data-asset-id="${escapeHtml(asset.id)}" tabindex="0" role="button" aria-label="Buka detail ${escapeHtml(asset.name)}">
             <div class="item-card-top">
               <span class="badge-category badge-electrical">${escapeHtml(asset.category || 'ALAT KERJA')}</span>
               <span class="status-text ${statusClass}">${escapeHtml(asset.status)}</span>
             </div>
             <div class="item-card-name">${escapeHtml(asset.name)}</div>
-            ${photo}
             <div class="item-card-meta"><span>Kode: <b>${escapeHtml(asset.code)}</b></span><b>${escapeHtml(asset.quantity)} unit</b></div>
             <div class="item-card-meta"><span>Lokasi / pemegang</span><b>${escapeHtml(asset.location || '-')}</b></div>
-            ${canAccess('asset') ? `<div class="btn-group">
-              <button class="btn-cancel" type="button" onclick="openAssetForm('${escapeHtml(asset.id)}')">Ubah</button>
-              <button class="btn-cancel" type="button" onclick="deleteAssetItem('${escapeHtml(asset.id)}')">Hapus</button>
-            </div>` : ''}
           </article>
         `;
       }).join('') : '<div class="history-placeholder">Belum ada aset alat kerja. Tambahkan aset untuk memulai.</div>';
+      list.querySelectorAll('.asset-item').forEach((card) => {
+        card.addEventListener('click', () => openAssetDetail(card.dataset.assetId));
+        card.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openAssetDetail(card.dataset.assetId);
+          }
+        });
+      });
+    }
+
+    function openAssetDetail(assetId) {
+      const asset = assetItems.find((entry) => entry.id === assetId);
+      if (!asset) {
+        showAppNotice('Aset tidak ditemukan di proyek aktif.');
+        return;
+      }
+      selectedAssetDetailId = asset.id;
+      document.getElementById('assetDetailName').textContent = asset.name;
+      document.getElementById('assetDetailCode').textContent = asset.code || '-';
+      document.getElementById('assetDetailQuantity').textContent = `${asset.quantity} unit`;
+      document.getElementById('assetDetailStatus').textContent = asset.status || '-';
+      document.getElementById('assetDetailCategory').textContent = asset.category || 'ALAT KERJA';
+      document.getElementById('assetDetailLocation').textContent = asset.location || '-';
+      document.getElementById('assetDetailPhoto').innerHTML = asset.photo
+        ? projectPhotoMarkup(asset.photo, `Foto ${asset.name}`, 'asset-photo')
+        : '<div class="history-placeholder">Foto alat belum tersedia.</div>';
+      const updatedAt = asset.updatedAt ? new Date(asset.updatedAt) : null;
+      document.getElementById('assetDetailUpdatedAt').textContent = updatedAt && !Number.isNaN(updatedAt.getTime())
+        ? updatedAt.toLocaleString('id-ID')
+        : 'Belum tercatat';
+      document.getElementById('assetDetailActions').hidden = !canAccess('asset');
+      document.getElementById('modalAssetDetail').style.display = 'flex';
+      document.querySelector('#modalAssetDetail .modal-close-button').focus();
+    }
+
+    function closeAssetDetail() {
+      const assetId = selectedAssetDetailId;
+      document.getElementById('modalAssetDetail').style.display = 'none';
+      selectedAssetDetailId = '';
+      [...document.querySelectorAll('.asset-item')].find((card) => card.dataset.assetId === assetId)?.focus();
     }
 
     function clearAssetFilters() {
@@ -3430,6 +3579,7 @@
     function openAssetForm(assetId = '') {
       if (!requireAccess('asset')) return;
       const asset = assetItems.find((entry) => entry.id === assetId);
+      closeAssetDetail();
       editingAssetId = asset?.id || '';
       setPhotoUploadStatus('asset', 'idle', '');
       document.getElementById('assetFormTitle').textContent = asset ? 'Ubah Aset Alat Kerja' : 'Tambah Aset Alat Kerja';
@@ -3448,6 +3598,7 @@
 
     function previewAssetPhoto(file, existingPhoto = '') {
       const preview = document.getElementById('assetPhotoPreview');
+      const button = document.getElementById('assetPhotoPreviewButton');
       if (assetPhotoPreviewObjectUrl) URL.revokeObjectURL(assetPhotoPreviewObjectUrl);
       assetPhotoPreviewObjectUrl = null;
       if (file) {
@@ -3461,6 +3612,8 @@
         preview.removeAttribute('src');
         preview.hidden = true;
       }
+      button.hidden = preview.hidden;
+      button.dataset.photo = preview.hidden ? '' : preview.src;
     }
 
     function closeAssetForm() {
@@ -3548,6 +3701,7 @@
         return;
       }
       renderAssetCards();
+      if (selectedAssetDetailId === assetId) closeAssetDetail();
     }
 
     function getDeliveryDateKey(dateValue) {
@@ -3765,6 +3919,7 @@
       toggle('button[onclick^="addNewDeliveryForSelectedMaterial"]', 'material');
       toggle('button[onclick^="openIssueModal"]', 'material');
       toggle('button[onclick^="openAssetForm"]', 'asset');
+      toggle('button[onclick^="deleteAssetItem"]', 'asset');
       toggle('button[onclick^="openChecklistModal"]', 'checklist');
       toggle('button[onclick^="saveChecklistStatusUpdate"]', 'checklist');
       toggle('button[onclick^="openDailyWorkReportForm"]', 'daily_report');
@@ -5036,8 +5191,59 @@
 
     function projectPhotoMarkup(photo, alt, className = 'history-photo') {
       return photo
-        ? `<img class="${className}" src="${escapeHtml(getPreviewImageUrl(photo))}" alt="${escapeHtml(alt)}">`
+        ? `<button class="project-photo-button" type="button" data-photo="${escapeHtml(photo)}" aria-label="Buka preview ${escapeHtml(alt)}"><img class="${className}" src="${escapeHtml(getPreviewImageUrl(photo))}" alt="${escapeHtml(alt)}"></button>`
         : '';
+    }
+
+    function openPhotoPreview(source, title) {
+      const image = document.getElementById('photoPreviewImage');
+      document.getElementById('photoPreviewTitle').textContent = title || 'Preview Foto';
+      document.getElementById('photoPreviewError').hidden = true;
+      image.hidden = false;
+      image.alt = title || 'Preview Foto';
+      image.src = getPreviewImageUrl(source);
+      const dialog = document.getElementById('photoPreviewDialog');
+      if (!dialog.open) dialog.showModal();
+    }
+
+    function closePhotoPreview() {
+      document.getElementById('photoPreviewDialog').close();
+    }
+
+    function showPhotoPreviewError() {
+      document.getElementById('photoPreviewImage').hidden = true;
+      document.getElementById('photoPreviewError').hidden = false;
+    }
+
+    function initializePhotoPreview() {
+      const dashboard = document.getElementById('dashboardApp');
+      dashboard.addEventListener('click', (event) => {
+        const button = event.target.closest('.project-photo-button');
+        if (!button?.dataset.photo) return;
+        event.stopPropagation();
+        openPhotoPreview(button.dataset.photo, button.querySelector('img')?.alt);
+      }, true);
+      dashboard.addEventListener('keydown', (event) => {
+        if (event.target.closest('.project-photo-button') && (event.key === 'Enter' || event.key === ' ')) {
+          event.stopPropagation();
+        }
+      }, true);
+      const dialog = document.getElementById('photoPreviewDialog');
+      dialog.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          closePhotoPreview();
+        }
+      });
+      dialog.addEventListener('click', (event) => {
+        if (event.target !== dialog) return;
+        const bounds = dialog.getBoundingClientRect();
+        if (event.clientX < bounds.left || event.clientX > bounds.right
+          || event.clientY < bounds.top || event.clientY > bounds.bottom) closePhotoPreview();
+      });
+      dialog.addEventListener('close', () => {
+        document.getElementById('photoPreviewImage').removeAttribute('src');
+      });
     }
 
     function getDriveDownloadUrl(file) {
@@ -6524,6 +6730,7 @@
         modalSettings: closeSettingsModal,
         modalAppNotice: closeAppNotice,
         modalAssetForm: closeAssetForm,
+        modalAssetDetail: closeAssetDetail,
         modalProjectFolder: closeProjectFolderModal,
         modalConfirmFileDelete: closeProjectFileDeleteDialog,
         modalDailyWorkForm: closeDailyWorkReportForm,
@@ -6787,6 +6994,7 @@
 
     initializeAppTheme();
     initializeModalCloseButtons();
+    initializePhotoPreview();
     initializeProjectManager();
     closeSearchFilterPopovers();
     window.addEventListener('message', handleAppsScriptBridgeMessage);

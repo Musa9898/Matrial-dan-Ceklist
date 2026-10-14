@@ -87,6 +87,8 @@ Script membagikan foto sebagai **Anyone with the link – Viewer**, sesuai permi
 
 ## Hak akses per role
 
+Daftar aset menggunakan kartu ringkas seperti material (kategori, kondisi, nama, kode, jumlah, lokasi/pemegang). Klik kartu atau tekan Enter/Spasi untuk membuka detail aset, termasuk foto dan waktu pembaruan. Tombol Ubah/Hapus berada di detail dan tetap mengikuti izin role. Klik foto aset, foto surat jalan material, atau foto ceklist untuk membuka preview ukuran besar; tutup dengan tombol silang, Escape, atau klik di luar preview. Preview tidak mengubah data/foto yang tersimpan.
+
 Kolom `role` pada tab `Access` menentukan apa yang boleh dilakukan pengguna di proyeknya:
 
 | Role | Material | Aset | Ceklis | Laporan Harian | Upload File/Folder | Buat Proyek |
