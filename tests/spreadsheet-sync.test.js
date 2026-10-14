@@ -81,6 +81,109 @@ const headers = ['record_id', 'project_id', 'asset_name', 'payload_json', 'updat
 const row = (id, name = id) => [id, 'project-a', name, JSON.stringify({ id, name }), 'old-date', 'old-user', 'old-user'];
 const ignored = ['updated_at', 'email', 'reporter'];
 
+function materialFrontend(snapshot) {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const helpers = html.slice(html.indexOf('    function parseNonNegativeNumber('), html.indexOf('    function validateNewMaterialInput('));
+  const context = vm.createContext({
+    materialItems: snapshot.materialItems,
+    deliveryHistory: snapshot.deliveryHistory,
+    usageHistory: snapshot.usageHistory
+  });
+  vm.runInContext(helpers, context);
+  return context;
+}
+
+test('loading unique legacy materials does not normalize quantities or create empty histories', () => {
+  const snapshot = {
+    materialItems: [
+      { name: 'Pipa PVC aw dia.100 mm', category: 'PLUMBING', received: '50', target: '50', unit: 'Batang' },
+      { name: 'TEST', category: 'PLUMBING', received: 24, issued: 0, target: 24, unit: 'Pcs' }
+    ],
+    deliveryHistory: {}, usageHistory: {}
+  };
+  const before = JSON.stringify(snapshot);
+  const context = materialFrontend(snapshot);
+  for (let index = 0; index < 3; index++) context.mergeDuplicateMaterials();
+  assert.equal(JSON.stringify({
+    materialItems: context.materialItems, deliveryHistory: context.deliveryHistory, usageHistory: context.usageHistory
+  }), before);
+});
+
+test('merging genuine duplicate materials preserves totals and histories and is idempotent', () => {
+  const context = materialFrontend({
+    materialItems: [
+      { name: 'Pipa PVC aw dia.100 mm', received: 5, issued: 1, target: 10, unit: 'Batang' },
+      { name: 'Pipa PVC aw dia 100mm', received: 7, issued: 2, target: 15, unit: 'Batang' }
+    ],
+    deliveryHistory: {
+      'Pipa PVC aw dia.100 mm': [{ qty: 5, sj: 'SJ-1' }],
+      'Pipa PVC aw dia 100mm': [{ qty: 7, sj: 'SJ-2' }]
+    },
+    usageHistory: {
+      'Pipa PVC aw dia.100 mm': [{ qty: 1 }],
+      'Pipa PVC aw dia 100mm': [{ qty: 2 }]
+    }
+  });
+  context.mergeDuplicateMaterials();
+  assert.equal(context.materialItems.length, 1);
+  const item = context.materialItems[0];
+  assert.equal(item.received, 12);
+  assert.equal(item.issued, 3);
+  assert.equal(item.target, 25);
+  assert.equal(context.deliveryHistory[item.name].length, 2);
+  assert.equal(context.usageHistory[item.name].length, 2);
+  const before = JSON.stringify([context.materialItems, context.deliveryHistory, context.usageHistory]);
+  context.mergeDuplicateMaterials();
+  assert.equal(JSON.stringify([context.materialItems, context.deliveryHistory, context.usageHistory]), before);
+});
+
+test('adding material after a frontend load writes only the new material and preserves legacy metadata', () => {
+  const { context } = backend();
+  const sheets = new Map();
+  context.getSpreadsheet_ = () => ({});
+  context.getSchemaSheet_ = (spreadsheet, name, columns) => {
+    if (!sheets.has(name)) sheets.set(name, sheet([...columns], []));
+    return sheets.get(name);
+  };
+  const snapshot = {
+    materialItems: [
+      { name: 'Pipa PVC aw dia.100 mm', category: 'PLUMBING', received: '50', target: '50', unit: 'Batang' },
+      { name: 'TEST', category: 'PLUMBING', received: 24, issued: 0, target: 24, unit: 'Pcs' }
+    ],
+    assetItems: [], checklistItems: [], dailyWorkPlans: [], deliveryHistory: {}, usageHistory: {}
+  };
+  const project = { projectId: 'project-a' };
+  context.replaceProjectRecords_('project-a', context.buildMonitoringRecords_(project, snapshot, 'old@example.test', []));
+  const oldRows = sheets.get('Materials').data.slice(1).map((values) => [...values]);
+  const frontend = materialFrontend(snapshot);
+  frontend.mergeDuplicateMaterials();
+  frontend.materialItems.unshift({ name: 'Material Baru', category: 'PLUMBING', received: 4, issued: 0, target: 4, unit: 'Pcs' });
+  snapshot.materialItems = frontend.materialItems;
+  frontend.mergeDuplicateMaterials();
+  for (const book of sheets.values()) { book.writes.length = 0; book.clears.length = 0; }
+  context.replaceProjectRecords_('project-a', context.buildMonitoringRecords_(project, snapshot, 'new@example.test', []));
+  assert.deepEqual(sheets.get('Materials').writes, [{ row: 4, height: 1 }]);
+  assert.deepEqual(sheets.get('Materials').data.slice(1, 3), oldRows);
+  assert.equal(sheets.get('Materials').clears.length, 0);
+  for (const book of sheets.values()) { book.writes.length = 0; book.clears.length = 0; }
+  frontend.mergeDuplicateMaterials();
+  context.replaceProjectRecords_('project-a', context.buildMonitoringRecords_(project, snapshot, 'new@example.test', []));
+  assert.equal(sheets.get('Materials').writes.length, 0);
+  snapshot.materialItems[0].received += 2;
+  snapshot.deliveryHistory['Material Baru'] = [{ qty: 2, date: '14/10/2026', sj: 'SJ-2' }];
+  context.replaceProjectRecords_('project-a', context.buildMonitoringRecords_(project, snapshot, 'new@example.test', []));
+  assert.deepEqual(sheets.get('Materials').writes, [{ row: 4, height: 1 }]);
+  assert.deepEqual(sheets.get('Materials').data.slice(1, 3), oldRows);
+  assert.equal(sheets.get('Materials').data[3][4], 6);
+  for (const book of sheets.values()) { book.writes.length = 0; book.clears.length = 0; }
+  snapshot.materialItems[0].issued = 1;
+  context.replaceProjectRecords_('project-a', context.buildMonitoringRecords_(project, snapshot, 'new@example.test', []));
+  assert.deepEqual(sheets.get('Materials').writes, [{ row: 4, height: 1 }]);
+  assert.deepEqual(sheets.get('Materials').data.slice(1, 3), oldRows);
+  assert.equal(sheets.get('Materials').data[3][5], 1);
+  assert.equal(sheets.get('Materials').data[3][6], 5);
+});
+
 test('adding one asset to 27 assets writes exactly one row and preserves all existing metadata', () => {
   const { context } = backend();
   const existing = Array.from({ length: 27 }, (_, index) => row(`asset-${index}`));

@@ -3345,6 +3345,10 @@
 
       const mergedItems = [];
       groups.forEach((group) => {
+        if (group.length === 1) {
+          mergedItems.push(group[0]);
+          return;
+        }
         const canonicalItem = group.find((item) => getTrailingMaterialSize(item.name)) || group[0];
         const names = [...new Set(group.map((item) => item.name))];
         canonicalItem.received = group.reduce((total, item) => total + (parseNonNegativeNumber(item.received) ?? 0), 0);
@@ -3441,8 +3445,6 @@
     function renderMaterialCards() {
       const list = document.getElementById('materialCardList');
       if (!list) return;
-
-      mergeDuplicateMaterials();
 
       list.innerHTML = materialItems.map((item) => {
         const stock = getMaterialStock(item);
@@ -3855,6 +3857,7 @@
       checklistItems = Array.isArray(safeData.checklistItems) ? safeData.checklistItems : [];
       dailyWorkPlans = Array.isArray(safeData.dailyWorkPlans) ? safeData.dailyWorkPlans : [];
       projectFolders = Array.isArray(safeData.projectFolders) ? safeData.projectFolders : [];
+      mergeDuplicateMaterials();
     }
 
     function getActiveProjectSnapshot() {
@@ -4351,6 +4354,7 @@
         return false;
       }
       if (isRoleRestrictionActive() && authorizedProjects.find((entry) => entry.projectId === activeProjectId)?.readOnly) return true;
+      mergeDuplicateMaterials();
       const snapshot = JSON.parse(JSON.stringify(getActiveProjectSnapshot()));
       const snapshotJson = JSON.stringify(snapshot);
       let localSaved = false;
