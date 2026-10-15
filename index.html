@@ -2302,6 +2302,49 @@
       background: #ffffff0a;
       color: #e4eaff;
       font-size: 0.7rem;
+      animation: loginBadgeFloat 7s ease-in-out infinite;
+    }
+
+    .login-feature-tags li:nth-child(2) {
+      animation-delay: -2.3s;
+    }
+
+    .login-feature-tags li:nth-child(3) {
+      animation-delay: -4.6s;
+    }
+
+    .login-brand::before {
+      position: absolute;
+      inset: -24px;
+      z-index: -1;
+      background:
+        radial-gradient(ellipse at 25% 65%, #92b5ff26, transparent 45%),
+        radial-gradient(circle at 18% 25%, #ffe28a66 0 1px, transparent 3px),
+        radial-gradient(circle at 72% 48%, #c5d1f455 0 1px, transparent 3px),
+        radial-gradient(circle at 45% 85%, #ffe28a44 0 1px, transparent 3px);
+      content: "";
+      pointer-events: none;
+      animation: loginAmbientFloat 18s ease-in-out infinite;
+    }
+
+    .login-brand::after {
+      filter: drop-shadow(0 0 12px #ffe28a55);
+      animation: loginWatermarkGlow 10s ease-in-out infinite;
+    }
+
+    @keyframes loginBadgeFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+
+    @keyframes loginAmbientFloat {
+      0%, 100% { transform: translate3d(-8px, 8px, 0); opacity: 0.35; }
+      50% { transform: translate3d(10px, -12px, 0); opacity: 0.7; }
+    }
+
+    @keyframes loginWatermarkGlow {
+      0%, 100% { transform: translateY(0) scale(1); opacity: 0.16; }
+      50% { transform: translateY(-3px) scale(1.025); opacity: 0.3; }
     }
 
     .login-blueprint {
@@ -2309,6 +2352,47 @@
       width: 100%;
       margin: 30px 0 20px;
       color: #a7b8ed;
+    }
+
+    .login-blueprint .login-buildings {
+      transform-box: fill-box;
+      transform-origin: center bottom;
+      animation: loginBuildingBreathe 9s ease-in-out infinite;
+    }
+
+    .login-blueprint .login-graph-line {
+      stroke-dasharray: 1;
+      animation: loginGraphDraw 2.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .login-blueprint .login-node-glow {
+      transform-box: fill-box;
+      transform-origin: center;
+      opacity: 0.2;
+      animation: loginNodePulse 4s ease-in-out infinite;
+    }
+
+    .login-blueprint .login-node-glow:nth-of-type(2) {
+      animation-delay: -1.3s;
+    }
+
+    .login-blueprint .login-node-glow:nth-of-type(3) {
+      animation-delay: -2.6s;
+    }
+
+    @keyframes loginGraphDraw {
+      from { stroke-dashoffset: 1; opacity: 0; }
+      to { stroke-dashoffset: 0; opacity: 1; }
+    }
+
+    @keyframes loginBuildingBreathe {
+      0%, 100% { transform: scale(1); opacity: 0.65; }
+      50% { transform: scale(1.008); opacity: 0.95; }
+    }
+
+    @keyframes loginNodePulse {
+      0%, 100% { transform: scale(0.85); opacity: 0.12; }
+      50% { transform: scale(1.6); opacity: 0.35; }
     }
 
     .login-brand-footer {
@@ -2366,6 +2450,48 @@
     .login-form-body .google-signin-container {
       margin: 0 0 24px;
       min-height: 44px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 5px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .login-form-body .google-signin-container:has(iframe):hover {
+      transform: translateY(-1px) scale(1.015);
+      box-shadow: 0 6px 18px #4285f426;
+    }
+
+    .login-form-body .google-signin-container:focus-within {
+      outline: 3px solid var(--brand-gold);
+      outline-offset: 4px;
+    }
+
+    /* Google's cross-origin button stays untouched; this overlay never intercepts clicks. */
+    .login-form-body .google-signin-container:has(iframe)::after,
+    .login-form-body > #loginProjectButton:not(:disabled)::after {
+      position: absolute;
+      inset: 0;
+      content: "";
+      border-radius: inherit;
+      background: linear-gradient(110deg, transparent 35%, #ffffff2e 50%, transparent 65%);
+      pointer-events: none;
+      animation: loginButtonShimmer 9s ease-in-out infinite;
+    }
+
+    .login-form-body > #loginProjectButton:not(:disabled)::after {
+      animation-delay: 2s;
+    }
+
+    .login-form-body.is-loading .google-signin-container::after,
+    .login-screen[inert] .google-signin-container::after,
+    .login-screen[inert] #loginProjectButton::after {
+      display: none;
+    }
+
+    @keyframes loginButtonShimmer {
+      0%, 65% { transform: translateX(-110%); opacity: 0; }
+      70% { opacity: 0.7; }
+      85%, 100% { transform: translateX(110%); opacity: 0; }
     }
 
     .login-form-body .form-row label {
@@ -2412,6 +2538,8 @@
     }
 
     .login-form-body > #loginProjectButton {
+      position: relative;
+      overflow: hidden;
       min-height: 48px;
       margin-top: 4px;
       border-radius: 12px;
@@ -2419,8 +2547,8 @@
     }
 
     .login-form-body > #loginProjectButton:not(:disabled):hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 18px #29377d30;
+      transform: translateY(-2px) scale(1.015);
+      box-shadow: 0 8px 22px #29377d40, 0 0 14px #f0b51b1a;
     }
 
     .login-form-body > #loginProjectButton:not(:disabled):active {
@@ -2542,12 +2670,30 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
+      .login-brand::before,
+      .login-brand::after,
+      .login-feature-tags li,
+      .login-blueprint .login-buildings,
+      .login-blueprint .login-graph-line,
+      .login-blueprint .login-node-glow,
+      .login-form-body .google-signin-container:has(iframe)::after,
+      .login-form-body > #loginProjectButton:not(:disabled)::after {
+        animation: none;
+      }
+
+      .login-form-body .google-signin-container:has(iframe)::after,
+      .login-form-body > #loginProjectButton:not(:disabled)::after {
+        display: none;
+      }
+
+      .login-form-body .google-signin-container,
       .login-form-body > #loginProjectButton,
       .login-form-body .form-row select {
         transition: none;
       }
 
-      .login-form-body > #loginProjectButton:not(:disabled):hover {
+      .login-form-body > #loginProjectButton:not(:disabled):hover,
+      .login-form-body .google-signin-container:has(iframe):hover {
         transform: none;
       }
     }
@@ -2579,9 +2725,16 @@
       </ul>
       <svg class="login-blueprint" viewBox="0 0 360 170" fill="none" aria-hidden="true">
         <path d="M0 155h360M20 30h320M20 70h320M20 110h320M40 10v150M120 10v150M200 10v150M280 10v150" stroke="currentColor" opacity=".12"/>
-        <path d="M34 155V78h68v77m12 0V30h108v125m12 0V60h88v95" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M130 46h76M130 64h76M130 82h76M130 100h76M130 118h76M50 95h36M50 113h36M250 78h56M250 96h56M250 114h56" stroke="currentColor" opacity=".5"/>
-        <path d="m28 61 57-22 56-13 54-10 87 28 46-17" stroke="#f0b51b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <g class="login-buildings">
+          <path d="M34 155V78h68v77m12 0V30h108v125m12 0V60h88v95" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M130 46h76M130 64h76M130 82h76M130 100h76M130 118h76M50 95h36M50 113h36M250 78h56M250 96h56M250 114h56" stroke="currentColor" opacity=".5"/>
+        </g>
+        <path class="login-graph-line" pathLength="1" d="m28 61 57-22 56-13 54-10 87 28 46-17" stroke="#f0b51b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <g fill="#ffe28a">
+          <circle class="login-node-glow" cx="141" cy="26" r="8"/>
+          <circle class="login-node-glow" cx="282" cy="44" r="8"/>
+          <circle class="login-node-glow" cx="328" cy="27" r="9"/>
+        </g>
         <circle cx="141" cy="26" r="4" fill="#f0b51b"/>
         <circle cx="282" cy="44" r="4" fill="#f0b51b"/>
         <circle cx="328" cy="27" r="5" fill="#ffe28a"/>
