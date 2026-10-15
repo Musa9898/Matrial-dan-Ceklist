@@ -291,10 +291,11 @@ function askGeminiMEP_(request, email) {
   const rateKey = 'mep-ai:' + email;
   if (cache.get(rateKey)) throw new Error('Tunggu 15 detik sebelum konsultasi AI berikutnya.');
   cache.put(rateKey, '1', 15);
+  const model = 'gemini-3.8-flash';
   let response;
   try {
     response = UrlFetchApp.fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(apiKey.trim()),
+      'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(apiKey.trim()),
       {
         method: 'post',
         contentType: 'application/json',
@@ -313,9 +314,23 @@ function askGeminiMEP_(request, email) {
   }
   const status = response.getResponseCode();
   if (status < 200 || status >= 300) {
-    if (status === 429) throw new Error('Kuota/rate limit Gemini tercapai. Periksa kuota dan billing API, lalu coba lagi nanti.');
-    if (status === 400 || status === 401 || status === 403) throw new Error('Konfigurasi atau izin Gemini/Google Search ditolak. Periksa API key, akses model, dan billing di server.');
-    throw new Error('Layanan Gemini gagal (HTTP ' + status + '). Coba lagi nanti.');
+    let upstreamStatus = '';
+    try {
+      const failure = JSON.parse(response.getContentText());
+      const knownStatuses = ['INVALID_ARGUMENT', 'UNAUTHENTICATED', 'PERMISSION_DENIED', 'NOT_FOUND', 'RESOURCE_EXHAUSTED', 'FAILED_PRECONDITION', 'INTERNAL', 'UNAVAILABLE', 'DEADLINE_EXCEEDED'];
+      if (failure && failure.error && knownStatuses.includes(failure.error.status)) upstreamStatus = failure.error.status;
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) throw new Error('Gagal membaca respons error Gemini (HTTP ' + status + ').');
+      upstreamStatus = 'RESPONS_NON_JSON';
+    }
+    // Only expose a known status, never raw upstream messages, URLs, or API keys.
+    const prefix = 'Gemini HTTP ' + status + (upstreamStatus ? ' (' + upstreamStatus + ')' : '') + ': ';
+    if (status === 404) throw new Error(prefix + 'model ' + model + ' tidak ditemukan atau tidak tersedia untuk API key ini pada v1beta. Periksa ListModels/akses model di Google AI Studio dan deploy Code.gs terbaru; mengulang request yang sama belum tentu memperbaikinya.');
+    if (status === 429) throw new Error(prefix + 'kuota/rate limit tercapai. Periksa kuota dan billing API, lalu coba lagi nanti.');
+    if (status === 400) throw new Error(prefix + 'request ditolak. Periksa validitas API key, dukungan Google Search grounding, dan persyaratan billing/wilayah.');
+    if (status === 401) throw new Error(prefix + 'autentikasi ditolak. Periksa GEMINI_API_KEY di Script Properties.');
+    if (status === 403) throw new Error(prefix + 'izin ditolak. Periksa pembatasan API key, akses model/API, dan billing di server.');
+    throw new Error(prefix + (status >= 500 ? 'layanan mengalami gangguan. Coba lagi nanti.' : 'request gagal. Periksa konfigurasi layanan Gemini.'));
   }
   let data;
   try {

@@ -62,12 +62,42 @@ test('authenticated Gemini action uses server key, search grounding and returns 
   assert.equal(response.sources[0].index, 1);
   assert.deepEqual(Array.from(response.citations[0].sourceIndexes), [1]);
   assert.equal(calls.length, 1);
-  assert.match(calls[0].url, /gemini-2\.5-flash:generateContent\?key=server-test-key$/);
+  assert.match(calls[0].url, /^https:\/\/generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-3\.8-flash:generateContent\?key=server-test-key$/);
+  assert.equal(calls[0].options.method, 'post');
+  assert.equal(calls[0].options.contentType, 'application/json');
+  assert.equal(calls[0].options.muteHttpExceptions, true);
   const payload = JSON.parse(calls[0].options.payload);
   assert.deepEqual(payload.tools, [{ google_search: {} }]);
   assert.match(payload.systemInstruction.parts[0].text, /Senior MEP Engineer Indonesia/);
   assert.equal(JSON.parse(payload.contents[0].parts[0].text).summary.tab, 'electric');
   assert.doesNotMatch(JSON.stringify(response), /server-test-key|user@example/);
+});
+
+test('404 identifies model/version and preserves safe upstream status without leaking raw details', () => {
+  const { request, calls } = backend({ status: 404, body: JSON.stringify({
+    error: { code: 404, status: 'NOT_FOUND', message: 'secret server-test-key https://private.example/resource' }
+  }) });
+  const result = request();
+  assert.equal(result.status, 'error');
+  assert.match(result.message, /HTTP 404 \(NOT_FOUND\)/);
+  assert.match(result.message, /gemini-3\.8-flash/);
+  assert.match(result.message, /ListModels/);
+  assert.doesNotMatch(result.message, /server-test-key|private\.example|secret/);
+  assert.equal(calls.length, 1);
+});
+
+test('HTTP errors with malformed or unexpected bodies stay explicit without trusting arbitrary status text', () => {
+  for (const body of ['not JSON server-test-key', 'null', JSON.stringify({ error: { status: 'secret-server-test-key' } })]) {
+    const { request } = backend({ status: 404, body });
+    const result = request();
+    assert.equal(result.status, 'error');
+    assert.match(result.message, /HTTP 404/);
+    assert.doesNotMatch(result.message, /server-test-key/);
+  }
+  for (const [status, expected] of [[400, /request ditolak/], [401, /autentikasi ditolak/], [403, /izin ditolak/], [429, /kuota\/rate limit/], [503, /gangguan/]]) {
+    const { request } = backend({ status, body: JSON.stringify({ error: { status: 'PERMISSION_DENIED' } }) });
+    assert.match(request().message, expected);
+  }
 });
 
 test('missing API key is explicit and makes no Gemini request', () => {
