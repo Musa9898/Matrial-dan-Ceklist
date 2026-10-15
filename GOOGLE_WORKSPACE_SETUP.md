@@ -40,6 +40,28 @@ Langkah verifikasi di [Google Cloud Console](https://console.cloud.google.com/ap
 
 Setelah selesai, buka website dan login. Jika tombol Google menolak dengan `invalid_client` atau `origin_mismatch`, artinya langkah 1–3 belum cocok.
 
+## Kalkulator Master MEP
+
+Tombol **Kalkulator MEP** di header, sebelah pengaturan, membuka enam tab kalkulasi lokal: listrik/kapasitor, pipa/pompa/hujan, HVAC/ducting, pencahayaan, fire fighting, dan utilitas. Perubahan input langsung menghitung ulang tanpa Apps Script, Supabase, jaringan, atau penyimpanan lokal; nilai hanya bertahan selama halaman terbuka. Modal dapat ditutup dengan X, backdrop, atau Escape; tab mendukung panah kiri/kanan dan Home/End.
+
+Hasil adalah estimasi awal, bukan sertifikasi PUIL/SNI atau desain final. Tabel kabel menggunakan estimasi Cu/PVC 70°C, pendekatan B2, tiga konduktor berbeban, suhu udara 30°C, tanpa derating kelompok; R20 dikoreksi ke 70°C dan X diasumsikan 0,08 Ω/km. Verifikasi nilai KHA/impedansi terhadap instalasi dan datasheet. Rating breaker di atas KHA ditandai merah; kebutuhan di atas 630 A meminta pemilihan manual. Ambang indikator mengikuti parameter kalkulator, termasuk voltage drop 4%/5%, aliran air 2/2,5 m/s, duct 5,5/8,5 m/s, dan pencahayaan 10 W/m².
+
+Fire fighting selalu berstatus perhatian: asumsi 6–12 sprinkler × 20 GPM dan tangki berdasarkan debit pompa utama saja tidak membuktikan kecukupan desain kebakaran. Asumsi/konversi lainnya ditampilkan pada setiap tab. Input kosong, tidak valid, atau di luar rentang menampilkan pesan kesalahan dan menghapus hasil lama agar tidak terbaca sebagai hasil baru.
+
+Validasi: `node --test tests\spreadsheet-sync.test.js tests\mep-calculator.test.js`.
+
+### Konsultasi Gemini & Google Search (opsional)
+
+Perhitungan kalkulator tetap 100% lokal. Panel konsultasi di bawah hasil setiap tab baru melakukan request setelah **Analisis Hasil & Cari di Google** ditekan. Input, asumsi, hasil tab aktif dan pertanyaan opsional dikirim ke Google Gemini melalui Apps Script. Jangan masukkan informasi rahasia. Tidak ada snapshot, nama proyek, email atau token login yang dikirim ke Gemini oleh handler; token Google hanya untuk autentikasi ke Apps Script. AI memerlukan sesi Google dan akses ke proyek aktif; Preview Mode tidak dapat menggunakan layanan AI.
+
+1. Pada Apps Script → **Project Settings → Script Properties**, tambahkan `GEMINI_API_KEY` dengan API key Gemini milik Anda. Jangan simpan key di frontend/repository. Pastikan model `gemini-2.5-flash` dan Google Search grounding tersedia bagi akun/key serta kuota/billing memadai.
+2. Salin `Code.gs` terbaru, deploy Web App sebagai **New version** dengan URL deployment yang sama. Tidak perlu mengubah konfigurasi Supabase. Izinkan akses UrlFetch bila diminta.
+3. Login Google, buka kalkulator, hitung lalu tekan tombol konsultasi. API key kosong, penolakan izin, rate limit, jawaban kosong/blokir, dan gangguan jaringan ditampilkan sebagai error tanpa mengubah data kalkulator/proyek. Timeout frontend 90 detik; tidak ada retry/fallback otomatis untuk mencegah tagihan ganda setelah respons tidak pasti. Server menerapkan cooldown best-effort 15 detik per email; ini bukan hard billing quota (atur quota/budget di Google Cloud).
+
+Jawaban dirender sebagai teks (bukan HTML dari model), dengan daftar tautan HTTP(S) grounding dan kutipan yang tersedia. Jika grounding kosong atau jawaban terpotong, UI memberi keterangan. Mengubah input menghapus analisis sebelumnya; respons untuk input/proyek/sesi yang berubah tidak ditampilkan sebagai analisis terbaru. Klaim standar, edisi, produk, dan harga AI tetap perlu diverifikasi; bukan pengesahan desain engineer.
+
+Tes seluruh fitur terkait: `node --test tests\spreadsheet-sync.test.js tests\mep-calculator.test.js tests\mep-gemini.test.js`. Tes Gemini memakai mock, tidak menghabiskan kuota API.
+
 ## Pilihan proyek dan loading sinkronisasi
 
 Halaman login menggunakan panel identitas proyek dan form dua langkah; dua kolom di desktop dan susunan vertikal yang dapat digulir di ponsel. Hover/fokus tombol, mode gelap, serta preferensi reduced-motion didukung. Perubahan tampilan tidak mengubah autentikasi, hak akses, pilihan proyek, atau penguncian sinkronisasi.

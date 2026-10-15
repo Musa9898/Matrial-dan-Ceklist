@@ -2697,6 +2697,140 @@
         transform: none;
       }
     }
+    .mep-calc-trigger {
+      position: relative;
+      z-index: 1;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 8px;
+      padding: 9px 10px;
+      border: 1px solid #ffe28a80;
+      border-radius: 10px;
+      background: #ffffff14;
+      color: #fff;
+      font: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .mep-calc-trigger:hover { background: #ffffff28; }
+    .mep-calc-trigger svg { width: 18px; height: 18px; }
+    .mep-calc-dialog {
+      width: min(1040px, calc(100% - 24px));
+      max-width: none;
+      max-height: calc(100dvh - 24px);
+      margin: auto;
+      padding: 0;
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      overflow: auto;
+      overscroll-behavior: contain;
+      box-shadow: 0 24px 80px #00000066;
+    }
+
+    .mep-calc-dialog::backdrop { background: #0f172acc; }
+    .mep-calc-header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 22px;
+      background: #1e293b;
+      border-bottom: 3px solid #f0b51b;
+      color: #fff;
+    }
+
+    .mep-calc-header h2 { font-size: 1.15rem; }
+    .mep-calc-header p { color: #d1d9e7; font-size: 0.75rem; margin-top: 5px; }
+    .mep-calc-close {
+      border: 1px solid #ffffff55;
+      border-radius: 8px;
+      background: transparent;
+      color: #fff;
+      font-size: 1.5rem;
+      width: 36px;
+      height: 36px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .mep-calc-tabs {
+      display: flex;
+      gap: 6px;
+      padding: 14px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .mep-calc-tab {
+      flex: 0 0 auto;
+      padding: 10px 12px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      background: var(--card-bg);
+      color: var(--text-dark);
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.78rem;
+    }
+
+    .mep-calc-tab[aria-selected="true"] { background: #29377d; color: #fff; border-color: #f0b51b; }
+    .mep-calc-panel { padding: 20px; }
+    .mep-calc-panel[hidden] { display: none; }
+    .mep-calc-note { font-size: 0.75rem; line-height: 1.65; color: var(--text-muted); margin-bottom: 16px; }
+    .mep-calc-fields, .mep-calc-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .mep-calc-field { min-width: 0; }
+    .mep-calc-field label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 6px; }
+    .mep-calc-field input, .mep-calc-field select {
+      width: 100%;
+      min-width: 0;
+      padding: 11px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 9px;
+      background: var(--card-bg);
+      color: var(--text-dark);
+      font: inherit;
+      font-size: 0.85rem;
+    }
+
+    .mep-calc-field [aria-invalid="true"] { border-color: #dc2626; }
+    .mep-calc-dialog :focus-visible, .mep-calc-trigger:focus-visible { outline: 3px solid #f0b51b; outline-offset: 2px; }
+    .mep-calc-results { margin-top: 18px; }
+    .mep-calc-result { min-width: 0; padding: 14px; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--card-bg); }
+    .mep-calc-result dt { color: var(--text-muted); font-size: 0.75rem; }
+    .mep-calc-result dd { margin: 6px 0; font-size: 1rem; font-weight: 700; overflow-wrap: anywhere; }
+    .mep-calc-result small { display: block; margin-top: 7px; font-size: 0.7rem; line-height: 1.5; color: var(--text-muted); }
+    .mep-calc-badge { display: inline-block; padding: 4px 7px; border-radius: 6px; font-size: 0.66rem; font-weight: 700; }
+    .mep-calc-safe { background: #dcfce7; color: #14532d; }
+    .mep-calc-warn { background: #fef3c7; color: #78350f; }
+    .mep-calc-danger { background: #fee2e2; color: #991b1b; }
+    .mep-calc-error { color: #b91c1c; padding: 12px; background: #fee2e2; border-radius: 8px; margin-top: 12px; font-size: 0.8rem; }
+    .mep-calc-error[hidden] { display: none; }
+    .mep-calc-footer { padding: 0 20px 18px; }
+    .mep-calc-ai { margin-top: 22px; padding: 18px; border: 1px solid #f0b51b88; border-radius: 12px; background: var(--card-bg); }
+    .mep-calc-ai h3 { font-size: 0.95rem; margin-bottom: 10px; }
+    .mep-calc-ai label { display: block; font-size: 0.78rem; margin-bottom: 6px; }
+    .mep-calc-ai textarea { width: 100%; min-height: 74px; resize: vertical; padding: 10px; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--bg-light); color: var(--text-dark); font: inherit; font-size: 0.8rem; }
+    .mep-calc-ai button { margin-top: 10px; padding: 11px 14px; border: 1px solid #f0b51b; border-radius: 9px; background: #29377d; color: #fff; font: inherit; font-size: 0.8rem; cursor: pointer; }
+    .mep-calc-ai button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .mep-calc-ai-status { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 0.78rem; line-height: 1.6; }
+    .mep-calc-ai-answer { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.82rem; line-height: 1.8; margin-top: 14px; }
+    .mep-calc-ai-sources { padding-left: 22px; margin-top: 12px; font-size: 0.78rem; line-height: 1.8; overflow-wrap: anywhere; }
+    .mep-calc-ai-sources a { color: var(--text-dark); text-decoration: underline; }
+    .mep-calc-ai [hidden] { display: none; }
+    @media (max-width: 540px) {
+      .mep-calc-trigger { padding: 9px; margin: 0 6px; }
+      .mep-calc-trigger-text { display: none; }
+      .mep-calc-fields, .mep-calc-results { grid-template-columns: minmax(0, 1fr); }
+      .mep-calc-header, .mep-calc-panel { padding: 16px; }
+    }
   </style>
 </head>
 <body>
@@ -2797,6 +2931,10 @@
           <span id="headerSessionLabel">Victory Construction · Sesi belum aktif</span>
         </div>
       </div>
+      <button class="mep-calc-trigger" id="mep-calc-open" type="button" aria-haspopup="dialog" aria-controls="mep-calc-dialog" aria-label="Kalkulator MEP" title="Kalkulator MEP">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M8 6h8v4H8zM8 14h2m4 0h2m-8 4h2m4 0h2"/></svg>
+        <span class="mep-calc-trigger-text">Kalkulator MEP</span>
+      </button>
       <button class="btn-settings" onclick="openSettingsModal()" aria-label="Pengaturan tampilan" title="Pengaturan tampilan">
         <svg style="width: 18px; height: 18px; fill: white;" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
@@ -3612,6 +3750,16 @@
     </nav>
 
   </div>
+
+  <dialog class="mep-calc-dialog" id="mep-calc-dialog" aria-labelledby="mep-calc-title" aria-describedby="mep-calc-disclaimer">
+    <header class="mep-calc-header">
+      <div><h2 id="mep-calc-title">Kalkulator Master MEP</h2><p>Victory Construction · Kalkulasi lokal, tanpa koneksi database</p></div>
+      <button class="mep-calc-close" id="mep-calc-close" type="button" aria-label="Tutup kalkulator" autofocus>&times;</button>
+    </header>
+    <div class="mep-calc-tabs" id="mep-calc-tabs" role="tablist" aria-label="Jenis kalkulator MEP"></div>
+    <div id="mep-calc-panels"></div>
+    <p class="mep-calc-note mep-calc-footer" id="mep-calc-disclaimer">Alat estimasi awal, bukan pengesahan desain atau pengganti perhitungan engineer. Badge hanya membandingkan ambang/asumsi yang dicantumkan, bukan sertifikasi kepatuhan PUIL/SNI. Verifikasi standar edisi berlaku, kondisi lapangan, dan datasheet sebelum pelaksanaan. Input hanya berada di memori halaman; tidak dikirim atau disimpan.</p>
+  </dialog>
 
   <script src="google-config.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -4704,10 +4852,10 @@
       if (action === 'saveSnapshot' && !request.mutationId) {
         request.mutationId = globalThis.crypto?.randomUUID?.() || `save-${Date.now()}-${Math.random().toString(16).slice(2)}`;
       }
-      const timeoutMs = getAppsScriptTimeout(action);
-      const quiet = action === 'ping';
+      const timeoutMs = action === 'askGeminiMEP' ? 90000 : getAppsScriptTimeout(action);
+      const quiet = action === 'ping' || action === 'askGeminiMEP';
       const onSlow = quiet ? null : () => setAppsScriptStatus('server lambat, masih menunggu…');
-      const repeatable = !['createProject', 'uploadFile'].includes(action);
+      const repeatable = !['createProject', 'uploadFile', 'askGeminiMEP'].includes(action);
       const uploadUsesBridge = action === 'uploadFile';
 
       // Baca lewat cermin Supabase dulu; tulis tetap ke Apps Script.
@@ -7517,6 +7665,530 @@
     window.addEventListener('message', handleAppsScriptBridgeMessage);
     window.addEventListener('load', initializeGoogleSignIn, { once: true });
     loadAccountPhoto();
+  </script>
+  <script id="mep-calc-script">
+    const mepCalculator = (() => {
+      // Reference estimates: Cu/PVC 70 C, B2-like installation, 3 loaded conductors, ambient 30 C.
+      // R20 is corrected to 70 C; X is an assumed 0.08 ohm/km, not a product-specific impedance.
+      const cables = [
+        [2.5, 7.41, 20], [4, 4.61, 27], [6, 3.08, 34], [10, 1.83, 46],
+        [16, 1.15, 62], [25, 0.727, 80], [35, 0.524, 99], [50, 0.387, 118],
+        [70, 0.268, 149], [95, 0.193, 179], [120, 0.153, 206], [150, 0.124, 236]
+      ].map(([size, r20, kha]) => ({ size, r: r20 * (1 + 0.00393 * 50), x: 0.08, kha }));
+      const breakers = [6, 10, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630];
+      const number = (key, label, value, min = 0, max = 1e9) => ({ key, label, value, min, max });
+      const select = (key, label, options, value) => ({ key, label, options, value });
+      const tabs = [
+        {
+          key: 'electric', title: '⚡ Listrik',
+          note: 'Listrik & kapasitor bank. Tabel estimasi Cu/PVC 70°C, pendekatan metode B2, 3 konduktor berbeban, udara 30°C, tanpa derating pengelompokan. R pada 70°C (Ω/km), X asumsi 0,08 Ω/km; KHA juga dipakai konservatif pada 1 fasa. Bukan tabel universal PUIL: cocokkan jenis kabel, pemasangan, suhu, harmonisa, dan datasheet. Drop: √3 untuk 3 fasa, 2 untuk 1 fasa; ambang 4%/5% sesuai parameter kalkulator. Breaker harus dikoordinasikan dengan KHA, arus start dan kurva proteksi.',
+          fields: [
+            number('kw', 'Daya aktif (kW)', 10),
+            select('phase', 'Sistem fasa', [[3, '3 Fasa · 380 V'], [1, '1 Fasa · 220 V']], 3),
+            number('pf', 'Cos phi awal', 0.85, 0.01, 1),
+            number('targetPf', 'Target cos phi baru', 0.95, 0.01, 1),
+            select('cable', 'Ukuran kabel Cu · R / X (Ω/km) · KHA estimasi',
+              cables.map(c => [c.size, `${c.size} mm² · R ${c.r.toFixed(3)} · X ${c.x} · ${c.kha} A`]), 6),
+            number('length', 'Panjang kabel satu arah (m)', 30)
+          ]
+        },
+        {
+          key: 'water', title: '💧 Pipa & Pompa',
+          note: 'Q dikonversi L/detik → m³/detik dan diameter dianggap diameter dalam (mm → m), bukan diameter nominal luar. Hazen-Williams termasuk tambahan fitting 20%. Efisiensi pompa 65%; 1 HP = 0,746 kW; 1 mka = 0,0981 bar. Air hujan: koefisien limpasan 0,9; kapasitas roof drain 4 inci ~12 L/detik/titik hanya asumsi awal, verifikasi head inlet, kemiringan dan datasheet.',
+          fields: [
+            number('flow', 'Debit air (L/detik)', 2),
+            select('diameter', 'Diameter dalam pipa (mm)', [25, 32, 40, 50, 65, 75, 80, 90, 100, 110, 125, 150].map(v => [v, `${v} mm`]), 50),
+            number('length', 'Panjang pipa (m)', 50),
+            select('c', 'Material · koefisien C', [[150, 'PVC · C=150'], [140, 'PPR · C=140'], [120, 'GIP · C=120'], [100, 'Black Steel · C=100']], 150),
+            number('staticHead', 'Head statis (m)', 30),
+            number('residual', 'Head residual (mka)', 12),
+            number('roof', 'Luas atap (m²)', 500),
+            number('rain', 'Intensitas hujan (mm/jam)', 120)
+          ]
+        },
+        {
+          key: 'hvac', title: '❄️ HVAC & Ducting',
+          note: 'Estimasi beban area, bukan perhitungan heat gain detail. PK ≈ BTU/h ÷ 9.000, chiller 2,4 GPM/TR. ACH 6–15. Kecepatan duct memakai debit ventilasi CMH ÷ 3.600 dan luas duct dalam m². Delta T untuk rumus 1,08 menggunakan °F.',
+          fields: [
+            number('area', 'Luas ruang AC (m²)', 100),
+            number('load', 'Beban ruang (BTU/h/m²)', 600, 550, 1200),
+            number('volume', 'Volume ruang ventilasi (m³)', 300),
+            number('ach', 'Pergantian udara (ACH)', 6, 6, 15),
+            number('a', 'Lebar duct a (mm)', 500, 1),
+            number('b', 'Tinggi duct b (mm)', 300, 1),
+            number('deltaT', 'Selisih suhu udara (°F)', 18)
+          ]
+        },
+        {
+          key: 'lighting', title: '💡 Pencahayaan',
+          note: 'Metode lumen dengan pilihan target lux sesuai parameter permintaan, bukan verifikasi seluruh persyaratan SNI. Jumlah lampu dibulatkan ke atas; densitas memakai daya terpasang setelah pembulatan. Batas konservasi 10 W/m² merupakan ambang kalkulator, dapat berbeda menurut fungsi ruang/edisi standar. Belum memperhitungkan silau, keseragaman, dan tata letak.',
+          fields: [
+            number('area', 'Luas ruang (m²)', 100, 0.01),
+            select('lux', 'Target pencahayaan (lux)', [[100, 'Koridor · 100 lux'], [150, 'Parkir · 150 lux'], [250, 'Rapat · 250 lux'], [350, 'Kantor · 350 lux'], [500, 'Lab / Gambar · 500 lux']], 350),
+            number('watt', 'Daya satu armatur LED (W)', 20, 0.01),
+            number('efficacy', 'Efikasi (lm/W)', 100, 0.01),
+            number('uf', 'Faktor utilisasi UF', 0.6, 0.01, 1),
+            number('llf', 'Light loss factor LLF', 0.8, 0.01, 1)
+          ]
+        },
+        {
+          key: 'fire', title: '🔥 Fire Fighting',
+          note: 'HANYA ESTIMASI AWAL, bukan desain proteksi kebakaran. Cakupan 12/9/6 m² per titik dan asumsi 6–12 sprinkler aktif × 20 GPM tidak menggantikan analisis hidraulik, density/area, K-factor, tekanan, hose allowance, standar dan persetujuan otoritas. Volume tangki di bawah hanya debit pompa utama × durasi, bukan pembuktian kecukupan gabungan sprinkler/hydrant. Tidak ada badge AMAN untuk desain fire.',
+          fields: [
+            number('area', 'Luas area proteksi (m²)', 1000),
+            select('coverage', 'Klasifikasi bahaya · cakupan asumsi', [[12, 'Ringan · 12 m²/titik'], [9, 'Sedang · 9 m²/titik'], [6, 'Berat · 6 m²/titik']], 12),
+            number('gpm', 'Debit main fire pump (GPM)', 500, 0.01),
+            number('duration', 'Durasi kebakaran (menit)', 45, 0.01)
+          ]
+        },
+        {
+          key: 'utility', title: '🏢 Utilitas',
+          note: 'Trafo/genset memakai cos phi 0,85 dan pembebanan maksimum 80%; belum memperhitungkan starting motor, harmonisa atau kapasitas produk standar. GWT diasumsikan satu hari kebutuhan domestik, roof tank 30%; cadangan kebakaran dihitung terpisah. Slope 1% dan 2% adalah asumsi awal; verifikasi diameter dalam, debit, sambungan dan standar proyek.',
+          fields: [
+            number('connected', 'Total connected load (kW)', 500),
+            number('demand', 'Demand factor', 0.75, 0.01, 1),
+            number('people', 'Jumlah penghuni (orang)', 200),
+            select('waterUse', 'Pemakaian air (L/orang/hari)', [[50, 'Kantor · 50'], [100, 'Sekolah · 100'], [150, 'Apartemen · 150'], [250, 'Hotel · 250']], 50),
+            number('length', 'Panjang pipa air kotor (m)', 20)
+          ]
+        }
+      ];
+      const result = (label, value, unit, level = 'warn', status = 'PERHATIAN · ESTIMASI', note = '') =>
+        ({ label, value, unit, level, status, note });
+      const threshold = (value, safe, limit, safeText, warnText, dangerText) =>
+        value <= safe ? ['safe', safeText] : value <= limit ? ['warn', warnText] : ['danger', dangerText];
+
+      function calculate(key, input) {
+        const tab = tabs.find(item => item.key === key);
+        if (!tab) throw new RangeError('Tab kalkulator tidak dikenal.');
+        const values = {};
+        for (const field of tab.fields) {
+          const raw = input[field.key];
+          const value = typeof raw === 'number' ? raw : typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN;
+          if (!Number.isFinite(value) || (field.options
+            ? !field.options.some(option => option[0] === value)
+            : value < field.min || value > field.max)) {
+            throw new RangeError(`${field.label}: ${field.options ? 'pilih opsi yang tersedia' : `isi angka ${field.min} sampai ${field.max}`}.`);
+          }
+          values[field.key] = value;
+        }
+        const v = values;
+        let results;
+        if (key === 'electric') {
+          if (v.targetPf < v.pf) throw new RangeError('Target cos phi harus sama atau lebih besar dari cos phi awal.');
+          const cable = cables.find(c => c.size === v.cable);
+          const voltage = v.phase === 3 ? 380 : 220;
+          const factor = v.phase === 3 ? Math.sqrt(3) : 1;
+          const current = v.kw * 1000 / (factor * voltage * v.pf);
+          const minKha = current * 1.25;
+          const breaker = breakers.find(rating => rating > current * 1.2);
+          const drop = (v.phase === 3 ? Math.sqrt(3) : 2) * current * v.length / 1000 *
+            (cable.r * v.pf + cable.x * Math.sqrt(1 - v.pf * v.pf));
+          const percent = drop / voltage * 100;
+          const dropStatus = threshold(percent, 4, 5, 'AMAN · PENERANGAN ≤4%', 'BATAS DAYA ≤5%', 'MELEBIHI AMBANG 5% · VERIFIKASI PUIL');
+          results = [
+            result('Arus nominal In', current, 'A'),
+            result('KHA kabel minimum (1,25 × In)', minKha, 'A', minKha <= cable.kha ? 'safe' : 'danger',
+              minKha <= cable.kha ? 'AMAN · KHA ESTIMASI' : 'KABEL KEKECILAN', `KHA tabel ${cable.kha} A; R70 ${cable.r.toFixed(3)} Ω/km; X ${cable.x} Ω/km.`),
+            result('Rating breaker (>1,2 × In)', breaker ?? 'Di atas rentang tabel', breaker ? 'A' : '',
+              !breaker || breaker > cable.kha ? 'danger' : 'warn',
+              !breaker ? 'PERLU PEMILIHAN MANUAL >630 A' : breaker > cable.kha ? 'RATING BREAKER > KHA KABEL' : 'PERHATIAN · KOORDINASI PROTEKSI',
+              'Rating standar tidak otomatis cocok untuk kabel, starting motor, atau kapasitas pemutusan.'),
+            result('Voltage drop', drop, 'V', ...dropStatus),
+            result('Voltage drop', percent, '%', ...dropStatus),
+            result('Kebutuhan kapasitor bank', v.kw * (Math.tan(Math.acos(v.pf)) - Math.tan(Math.acos(v.targetPf))), 'kVAR',
+              'warn', 'PERHATIAN · ESTIMASI', 'Verifikasi step kapasitor, harmonisa/resonansi, dan pengendali faktor daya.')
+          ];
+        } else if (key === 'water') {
+          const q = v.flow / 1000;
+          const d = v.diameter / 1000;
+          const velocity = q / (0.25 * Math.PI * d * d);
+          const friction = 10.67 * v.length * Math.pow(q, 1.852) * Math.pow(v.c, -1.852) * Math.pow(d, -4.87);
+          const head = v.staticHead + friction * 1.2 + v.residual;
+          const power = 1000 * 9.81 * q * head / (1000 * 0.65);
+          const rain = 0.9 * v.rain * v.roof / 3600;
+          results = [
+            result('Kecepatan aliran air', velocity, 'm/s', ...threshold(velocity, 2, 2.5, 'AMAN ≤2 m/s', 'BATAS MAKS ≤2,5 m/s', 'RISIKO WATER HAMMER')),
+            result('Head loss gesek', friction, 'mka'),
+            result('Head loss + fitting 20%', friction * 1.2, 'mka'),
+            result('Total head pompa', head, 'mka'),
+            result('Total head pompa', head * 0.0981, 'bar'),
+            result('Daya motor pompa (η 65%)', power, 'kW'),
+            result('Daya motor pompa', power / 0.746, 'HP'),
+            result('Debit air hujan atap', rain, 'L/detik'),
+            result('Roof drain / pipa tegak 4 inci', Math.ceil(rain / 12), 'titik', 'warn', 'PERHATIAN · ASUMSI ~12 L/s/TITIK')
+          ];
+        } else if (key === 'hvac') {
+          const btu = v.area * v.load;
+          const tr = btu / 12000;
+          const cmh = v.volume * v.ach;
+          const cfm = cmh / 1.699;
+          const velocity = (cmh / 3600) / (v.a * v.b / 1e6);
+          results = [
+            result('Kapasitas pendinginan', btu, 'BTU/h'),
+            result('Ton refrigerasi', tr, 'TR'),
+            result('Ukuran AC pendekatan', btu / 9000, 'PK'),
+            result('Debit air dingin chiller', tr * 2.4, 'GPM'),
+            result('Udara ventilasi', cmh, 'CMH'),
+            result('Udara ventilasi', cfm, 'CFM'),
+            result('Beban panas sensibel Qs', 1.08 * cfm * v.deltaT, 'BTU/h'),
+            result('Diameter ekivalen duct bulat', 1.30 * Math.pow(v.a * v.b, 0.625) / Math.pow(v.a + v.b, 0.25), 'mm'),
+            result('Kecepatan udara duct', velocity, 'm/s', ...threshold(velocity, 5.5, 8.5, 'AMAN · BRANCH/MAIN ≤5,5 m/s', 'KHUSUS MAIN DUCT ≤8,5 m/s', 'BISING >8,5 m/s'))
+          ];
+        } else if (key === 'lighting') {
+          const lumen = v.watt * v.efficacy;
+          const count = Math.ceil(v.lux * v.area / (lumen * v.uf * v.llf));
+          const power = count * v.watt;
+          const density = power / v.area;
+          results = [
+            result('Fluks per armatur', lumen, 'lm'),
+            result('Jumlah titik lampu ideal', count, 'titik'),
+            result('Total daya penerangan', power, 'W'),
+            result('Densitas daya', density, 'W/m²', density <= 10 ? 'safe' : 'danger',
+              density <= 10 ? 'AMAN · AMBANG ≤10 W/m²' : 'MELEBIHI AMBANG 10 W/m²')
+          ];
+        } else if (key === 'fire') {
+          results = [
+            result('Jumlah kepala sprinkler', Math.ceil(v.area / v.coverage), 'titik'),
+            result('Debit sprinkler · 6 titik × 20', 6 * 20, 'GPM'),
+            result('Debit sprinkler · 12 titik × 20', 12 * 20, 'GPM'),
+            result('Jockey pump · 5% main', v.gpm * 0.05, 'GPM'),
+            result('Jockey pump · 10% main', v.gpm * 0.10, 'GPM'),
+            result('Fire reserve tank · main pump saja', v.gpm * 3.785 * v.duration / 1000, 'm³', 'warn', 'PERHATIAN · BUKAN DESAIN FINAL')
+          ];
+        } else {
+          const peak = v.connected * v.demand;
+          const daily = v.people * v.waterUse / 1000;
+          if (!Number.isInteger(v.people)) throw new RangeError('Jumlah penghuni harus bilangan bulat.');
+          results = [
+            result('Beban puncak listrik', peak, 'kW'),
+            result('Kapasitas minimum trafo', peak / (0.85 * 0.80), 'kVA'),
+            result('Kapasitas minimum genset', peak / (0.85 * 0.80), 'kVA'),
+            result('Kebutuhan air bersih harian Qd', daily, 'm³/hari'),
+            result('Ground Water Tank (GWT)', daily, 'm³'),
+            result('Roof tank · 30% Qd', daily * 0.3, 'm³'),
+            result('Turunan pipa ≥4 inci · slope 1%', v.length * 0.01, 'm', 'warn', 'PERHATIAN · ESTIMASI', `${v.length} cm; 1 cm/m.`),
+            result('Turunan pipa ≤3 inci · slope 2%', v.length * 0.02, 'm', 'warn', 'PERHATIAN · ESTIMASI', `${v.length * 2} cm; 2 cm/m.`)
+          ];
+        }
+        if (results.some(item => typeof item.value === 'number' && !Number.isFinite(item.value))) {
+          throw new RangeError('Hasil di luar rentang numerik. Kurangi besaran input.');
+        }
+        return results;
+      }
+
+      function initialize() {
+        const dialog = document.getElementById('mep-calc-dialog');
+        const tablist = document.getElementById('mep-calc-tabs');
+        const panels = document.getElementById('mep-calc-panels');
+        const formatter = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 3 });
+        const buttons = [];
+        const sections = [];
+        function activate(index, focus = false) {
+          buttons.forEach((button, i) => {
+            button.setAttribute('aria-selected', String(i === index));
+            button.tabIndex = i === index ? 0 : -1;
+            sections[i].hidden = i !== index;
+          });
+          if (focus) buttons[index].focus();
+        }
+        tabs.forEach((tab, index) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'mep-calc-tab';
+          button.id = `mep-calc-tab-${tab.key}`;
+          button.setAttribute('role', 'tab');
+          button.setAttribute('aria-controls', `mep-calc-panel-${tab.key}`);
+          button.textContent = tab.title;
+          button.addEventListener('click', () => activate(index));
+          button.addEventListener('keydown', event => {
+            const keys = { ArrowRight: (index + 1) % tabs.length, ArrowLeft: (index + tabs.length - 1) % tabs.length, Home: 0, End: tabs.length - 1 };
+            if (Object.hasOwn(keys, event.key)) {
+              event.preventDefault();
+              activate(keys[event.key], true);
+            }
+          });
+          tablist.append(button);
+          buttons.push(button);
+          const panel = document.createElement('section');
+          panel.id = `mep-calc-panel-${tab.key}`;
+          panel.className = 'mep-calc-panel';
+          panel.setAttribute('role', 'tabpanel');
+          panel.setAttribute('aria-labelledby', button.id);
+          const note = document.createElement('p');
+          note.className = 'mep-calc-note';
+          note.textContent = tab.note;
+          const fields = document.createElement('div');
+          fields.className = 'mep-calc-fields';
+          const controls = new Map();
+          for (const field of tab.fields) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'mep-calc-field';
+            const label = document.createElement('label');
+            const control = document.createElement(field.options ? 'select' : 'input');
+            control.id = `mep-calc-${tab.key}-${field.key}`;
+            label.htmlFor = control.id;
+            label.textContent = field.label;
+            if (field.options) {
+              field.options.forEach(([value, text]) => control.add(new Option(text, String(value))));
+            } else {
+              control.type = 'number';
+              control.min = String(field.min);
+              control.max = String(field.max);
+              control.step = tab.key === 'utility' && field.key === 'people' ? '1' : 'any';
+              control.required = true;
+            }
+            control.value = String(field.value);
+            wrapper.append(label, control);
+            fields.append(wrapper);
+            controls.set(field.key, control);
+          }
+          const error = document.createElement('p');
+          error.id = `mep-calc-error-${tab.key}`;
+          error.className = 'mep-calc-error';
+          error.setAttribute('role', 'alert');
+          error.hidden = true;
+          controls.forEach(control => control.setAttribute('aria-describedby', error.id));
+          const output = document.createElement('dl');
+          output.className = 'mep-calc-results';
+          output.setAttribute('aria-live', 'polite');
+          output.setAttribute('aria-atomic', 'true');
+          function update() {
+            output.replaceChildren();
+            controls.forEach(control => control.removeAttribute('aria-invalid'));
+            try {
+              const values = Object.fromEntries([...controls].map(([key, control]) => [key, control.value]));
+              const results = calculate(tab.key, values);
+              const fragment = document.createDocumentFragment();
+              results.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'mep-calc-result';
+                const title = document.createElement('dt');
+                title.textContent = item.label;
+                const value = document.createElement('dd');
+                value.textContent = `${typeof item.value === 'number' ? formatter.format(item.value) : item.value} ${item.unit}`.trim();
+                const badge = document.createElement('span');
+                badge.className = `mep-calc-badge mep-calc-${item.level}`;
+                badge.textContent = item.status;
+                card.append(title, value, badge);
+                if (item.note) {
+                  const hint = document.createElement('small');
+                  hint.textContent = item.note;
+                  card.append(hint);
+                }
+                fragment.append(card);
+              });
+              output.append(fragment);
+              error.hidden = true;
+              error.textContent = '';
+            } catch (failure) {
+              if (!(failure instanceof RangeError)) throw failure;
+              error.textContent = failure.message;
+              error.hidden = false;
+              controls.forEach(control => {
+                if (!control.checkValidity()) control.setAttribute('aria-invalid', 'true');
+              });
+            }
+          }
+          fields.addEventListener('input', update);
+          fields.addEventListener('change', update);
+          panel.append(note, fields, error, output);
+          panels.append(panel);
+          sections.push(panel);
+          update();
+        });
+        activate(0);
+        document.getElementById('mep-calc-open').addEventListener('click', () => {
+          if (!dialog.open) dialog.showModal();
+        });
+        document.getElementById('mep-calc-close').addEventListener('click', () => dialog.close());
+        dialog.addEventListener('keydown', event => {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            dialog.close();
+          }
+        });
+        let backdropPointer = false;
+        const isOutside = event => {
+          const bounds = dialog.getBoundingClientRect();
+          return event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom;
+        };
+        dialog.addEventListener('pointerdown', event => { backdropPointer = event.target === dialog && isOutside(event); });
+        dialog.addEventListener('click', event => {
+          if (backdropPointer && event.target === dialog && isOutside(event)) dialog.close();
+          backdropPointer = false;
+        });
+      }
+      return { calculate, tabs, cables, initialize };
+    })();
+    mepCalculator.initialize();
+  </script>
+  <script id="mep-calc-ai-script">
+    (() => {
+      let busy = false;
+      const aiButtons = [];
+      const formatter = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 3 });
+      function collect(tab) {
+        const values = Object.fromEntries(tab.fields.map(field =>
+          [field.key, document.getElementById(`mep-calc-${tab.key}-${field.key}`).value]));
+        const results = mepCalculator.calculate(tab.key, values);
+        return {
+          tab: tab.key,
+          title: tab.title,
+          assumptions: tab.note,
+          inputs: tab.fields.map(field => ({
+            label: field.label,
+            value: field.options ? field.options.find(option => String(option[0]) === values[field.key])[1] : values[field.key]
+          })),
+          results: results.map(item => ({
+            label: item.label,
+            value: `${typeof item.value === 'number' ? formatter.format(item.value) : item.value} ${item.unit} · ${item.status}${item.note ? ' · ' + item.note : ''}`
+          }))
+        };
+      }
+      function safeUrl(raw) {
+        if (typeof raw !== 'string') return null;
+        try {
+          const url = new URL(raw);
+          return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password ? url.href : null;
+        } catch (error) {
+          if (!(error instanceof TypeError)) throw error;
+          return null;
+        }
+      }
+      mepCalculator.tabs.forEach(tab => {
+        const panel = document.getElementById(`mep-calc-panel-${tab.key}`);
+        const section = document.createElement('section');
+        section.className = 'mep-calc-ai';
+        section.setAttribute('aria-labelledby', `mep-calc-ai-title-${tab.key}`);
+        const title = document.createElement('h3');
+        title.id = `mep-calc-ai-title-${tab.key}`;
+        title.textContent = '✨ Konsultasi AI Gemini & Referensi Google';
+        const privacy = document.createElement('p');
+        privacy.className = 'mep-calc-note';
+        privacy.textContent = 'Opsional dan membutuhkan internet serta login Google. Saat tombol ditekan, input, asumsi, hasil tab ini dan pertanyaan dikirim melalui Apps Script ke Google Gemini/Search. Jangan masukkan data rahasia. Jawaban AI/harga dapat keliru; periksa sumber dan engineer berwenang. Kalkulator lokal tetap berfungsi tanpa AI.';
+        const label = document.createElement('label');
+        label.htmlFor = `mep-calc-ai-question-${tab.key}`;
+        label.textContent = 'Pertanyaan tambahan (opsional, maksimal 1.500 karakter)';
+        const question = document.createElement('textarea');
+        question.id = label.htmlFor;
+        question.maxLength = 1500;
+        question.placeholder = 'Carikan rekomendasi tipe produk & kisaran harga di pasaran';
+        const button = document.createElement('button');
+        button.id = `mep-calc-ai-ask-${tab.key}`;
+        button.type = 'button';
+        button.textContent = '🔍 Analisis Hasil & Cari di Google';
+        aiButtons.push(button);
+        const status = document.createElement('p');
+        status.className = 'mep-calc-ai-status';
+        status.setAttribute('role', 'status');
+        status.setAttribute('aria-live', 'polite');
+        const spinner = document.createElement('span');
+        spinner.className = 'loading-spinner';
+        spinner.setAttribute('aria-hidden', 'true');
+        spinner.hidden = true;
+        const statusText = document.createElement('span');
+        status.append(spinner, statusText);
+        const answer = document.createElement('div');
+        answer.className = 'mep-calc-ai-answer';
+        const sources = document.createElement('ol');
+        sources.className = 'mep-calc-ai-sources';
+        sources.setAttribute('aria-label', 'Sumber Google Search');
+        const citations = document.createElement('div');
+        citations.className = 'mep-calc-note';
+        const clear = () => {
+          answer.textContent = '';
+          sources.replaceChildren();
+          citations.replaceChildren();
+        };
+        const invalidate = () => {
+          if (answer.textContent) {
+            clear();
+            statusText.textContent = 'Input berubah. Jalankan analisis lagi untuk hasil terbaru.';
+          }
+        };
+        panel.querySelector('.mep-calc-fields').addEventListener('input', invalidate);
+        panel.querySelector('.mep-calc-fields').addEventListener('change', invalidate);
+        question.addEventListener('input', invalidate);
+        button.addEventListener('click', async () => {
+          if (busy) return;
+          clear();
+          status.classList.remove('mep-calc-error');
+          try {
+            if (!currentGoogleCredential || currentAuthProfile?.isPreview) {
+              throw new Error('Konsultasi AI memerlukan login Google aktif; tidak tersedia di Preview Mode. Perhitungan lokal tetap dapat digunakan.');
+            }
+            const summary = collect(tab);
+            const projectId = activeProjectId;
+            const credential = currentGoogleCredential;
+            const signature = JSON.stringify(summary);
+            busy = true;
+            aiButtons.forEach(item => { item.disabled = true; });
+            question.disabled = true;
+            section.setAttribute('aria-busy', 'true');
+            spinner.hidden = false;
+            statusText.textContent = 'Sedang menganalisis standar SNI/PUIL & mencari referensi di Google...';
+            // No sync overlay, Supabase, automatic retry, or save path for a billed AI request.
+            const response = await performAppsScriptRequest('askGeminiMEP', { projectId, summary, question: question.value.trim() });
+            if (projectId !== activeProjectId || credential !== currentGoogleCredential || signature !== JSON.stringify(collect(tab))) {
+              throw new Error('Input, proyek, atau sesi berubah selama analisis. Jalankan ulang untuk hasil terbaru.');
+            }
+            if (typeof response.text !== 'string' || !response.text.trim() || !Array.isArray(response.sources)) {
+              throw new Error('Respons konsultasi AI tidak valid. Pastikan Code.gs terbaru sudah dideploy.');
+            }
+            answer.textContent = response.text;
+            const links = new Map();
+            response.sources.forEach(source => {
+              const url = safeUrl(source.url);
+              if (!url || !Number.isInteger(source.index) || source.index < 1 || links.has(source.index)) return;
+              links.set(source.index, url);
+              const li = document.createElement('li');
+              li.value = source.index;
+              const anchor = document.createElement('a');
+              anchor.href = url;
+              anchor.target = '_blank';
+              anchor.rel = 'noopener noreferrer';
+              anchor.textContent = typeof source.title === 'string' ? source.title : `Sumber ${source.index}`;
+              li.append(anchor);
+              sources.append(li);
+            });
+            if (Array.isArray(response.citations)) {
+              response.citations.forEach(citation => {
+                if (typeof citation.text !== 'string' || !Array.isArray(citation.sourceIndexes)) return;
+                const indexes = citation.sourceIndexes.filter(index => links.has(index));
+                if (!indexes.length) return;
+                const excerpt = document.createElement('p');
+                excerpt.textContent = citation.text + ' ';
+                indexes.forEach(index => {
+                  const link = document.createElement('a');
+                  link.href = links.get(index);
+                  link.target = '_blank';
+                  link.rel = 'noopener noreferrer';
+                  link.textContent = `[${index}] `;
+                  excerpt.append(link);
+                });
+                citations.append(excerpt);
+              });
+            }
+            statusText.textContent = (response.truncated ? 'Jawaban terpotong oleh batas keluaran. ' : 'Analisis selesai. ') +
+              (links.size ? 'Referensi Google tersedia di bawah; verifikasi sumber dan tanggalnya.' : 'Tidak ada sumber grounding yang tersedia; jawaban belum terverifikasi.');
+          } catch (error) {
+            clear();
+            status.classList.add('mep-calc-error');
+            statusText.textContent = error.message || 'Konsultasi AI gagal. Coba lagi nanti.';
+          } finally {
+            busy = false;
+            aiButtons.forEach(item => { item.disabled = false; });
+            question.disabled = false;
+            spinner.hidden = true;
+            section.setAttribute('aria-busy', 'false');
+          }
+        });
+        section.append(title, privacy, label, question, button, status, answer, sources, citations);
+        panel.append(section);
+      });
+    })();
   </script>
 </body>
 </html>
