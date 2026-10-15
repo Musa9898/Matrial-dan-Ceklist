@@ -2814,17 +2814,6 @@
     .mep-calc-error { color: #b91c1c; padding: 12px; background: #fee2e2; border-radius: 8px; margin-top: 12px; font-size: 0.8rem; }
     .mep-calc-error[hidden] { display: none; }
     .mep-calc-footer { padding: 0 20px 18px; }
-    .mep-calc-ai { margin-top: 22px; padding: 18px; border: 1px solid #f0b51b88; border-radius: 12px; background: var(--card-bg); }
-    .mep-calc-ai h3 { font-size: 0.95rem; margin-bottom: 10px; }
-    .mep-calc-ai label { display: block; font-size: 0.78rem; margin-bottom: 6px; }
-    .mep-calc-ai textarea { width: 100%; min-height: 74px; resize: vertical; padding: 10px; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--bg-light); color: var(--text-dark); font: inherit; font-size: 0.8rem; }
-    .mep-calc-ai button { margin-top: 10px; padding: 11px 14px; border: 1px solid #f0b51b; border-radius: 9px; background: #29377d; color: #fff; font: inherit; font-size: 0.8rem; cursor: pointer; }
-    .mep-calc-ai button:disabled { opacity: 0.6; cursor: not-allowed; }
-    .mep-calc-ai-status { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 0.78rem; line-height: 1.6; }
-    .mep-calc-ai-answer { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.82rem; line-height: 1.8; margin-top: 14px; }
-    .mep-calc-ai-sources { padding-left: 22px; margin-top: 12px; font-size: 0.78rem; line-height: 1.8; overflow-wrap: anywhere; }
-    .mep-calc-ai-sources a { color: var(--text-dark); text-decoration: underline; }
-    .mep-calc-ai [hidden] { display: none; }
     @media (max-width: 540px) {
       .mep-calc-trigger { padding: 9px; margin: 0 6px; }
       .mep-calc-trigger-text { display: none; }
@@ -4852,10 +4841,10 @@
       if (action === 'saveSnapshot' && !request.mutationId) {
         request.mutationId = globalThis.crypto?.randomUUID?.() || `save-${Date.now()}-${Math.random().toString(16).slice(2)}`;
       }
-      const timeoutMs = action === 'askGeminiMEP' ? 90000 : getAppsScriptTimeout(action);
-      const quiet = action === 'ping' || action === 'askGeminiMEP';
+      const timeoutMs = getAppsScriptTimeout(action);
+      const quiet = action === 'ping';
       const onSlow = quiet ? null : () => setAppsScriptStatus('server lambat, masih menunggu…');
-      const repeatable = !['createProject', 'uploadFile', 'askGeminiMEP'].includes(action);
+      const repeatable = !['createProject', 'uploadFile'].includes(action);
       const uploadUsesBridge = action === 'uploadFile';
 
       // Baca lewat cermin Supabase dulu; tulis tetap ke Apps Script.
@@ -8023,172 +8012,6 @@
       return { calculate, tabs, cables, initialize };
     })();
     mepCalculator.initialize();
-  </script>
-  <script id="mep-calc-ai-script">
-    (() => {
-      let busy = false;
-      const aiButtons = [];
-      const formatter = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 3 });
-      function collect(tab) {
-        const values = Object.fromEntries(tab.fields.map(field =>
-          [field.key, document.getElementById(`mep-calc-${tab.key}-${field.key}`).value]));
-        const results = mepCalculator.calculate(tab.key, values);
-        return {
-          tab: tab.key,
-          title: tab.title,
-          assumptions: tab.note,
-          inputs: tab.fields.map(field => ({
-            label: field.label,
-            value: field.options ? field.options.find(option => String(option[0]) === values[field.key])[1] : values[field.key]
-          })),
-          results: results.map(item => ({
-            label: item.label,
-            value: `${typeof item.value === 'number' ? formatter.format(item.value) : item.value} ${item.unit} · ${item.status}${item.note ? ' · ' + item.note : ''}`
-          }))
-        };
-      }
-      function safeUrl(raw) {
-        if (typeof raw !== 'string') return null;
-        try {
-          const url = new URL(raw);
-          return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password ? url.href : null;
-        } catch (error) {
-          if (!(error instanceof TypeError)) throw error;
-          return null;
-        }
-      }
-      mepCalculator.tabs.forEach(tab => {
-        const panel = document.getElementById(`mep-calc-panel-${tab.key}`);
-        const section = document.createElement('section');
-        section.className = 'mep-calc-ai';
-        section.setAttribute('aria-labelledby', `mep-calc-ai-title-${tab.key}`);
-        const title = document.createElement('h3');
-        title.id = `mep-calc-ai-title-${tab.key}`;
-        title.textContent = '✨ Konsultasi AI Gemini & Referensi Google';
-        const privacy = document.createElement('p');
-        privacy.className = 'mep-calc-note';
-        privacy.textContent = 'Opsional dan membutuhkan internet serta login Google. Saat tombol ditekan, input, asumsi, hasil tab ini dan pertanyaan dikirim melalui Apps Script ke Google Gemini/Search. Jangan masukkan data rahasia. Jawaban AI/harga dapat keliru; periksa sumber dan engineer berwenang. Kalkulator lokal tetap berfungsi tanpa AI.';
-        const label = document.createElement('label');
-        label.htmlFor = `mep-calc-ai-question-${tab.key}`;
-        label.textContent = 'Pertanyaan tambahan (opsional, maksimal 1.500 karakter)';
-        const question = document.createElement('textarea');
-        question.id = label.htmlFor;
-        question.maxLength = 1500;
-        question.placeholder = 'Carikan rekomendasi tipe produk & kisaran harga di pasaran';
-        const button = document.createElement('button');
-        button.id = `mep-calc-ai-ask-${tab.key}`;
-        button.type = 'button';
-        button.textContent = '🔍 Analisis Hasil & Cari di Google';
-        aiButtons.push(button);
-        const status = document.createElement('p');
-        status.className = 'mep-calc-ai-status';
-        status.setAttribute('role', 'status');
-        status.setAttribute('aria-live', 'polite');
-        const spinner = document.createElement('span');
-        spinner.className = 'loading-spinner';
-        spinner.setAttribute('aria-hidden', 'true');
-        spinner.hidden = true;
-        const statusText = document.createElement('span');
-        status.append(spinner, statusText);
-        const answer = document.createElement('div');
-        answer.className = 'mep-calc-ai-answer';
-        const sources = document.createElement('ol');
-        sources.className = 'mep-calc-ai-sources';
-        sources.setAttribute('aria-label', 'Sumber Google Search');
-        const citations = document.createElement('div');
-        citations.className = 'mep-calc-note';
-        const clear = () => {
-          answer.textContent = '';
-          sources.replaceChildren();
-          citations.replaceChildren();
-        };
-        const invalidate = () => {
-          if (answer.textContent) {
-            clear();
-            statusText.textContent = 'Input berubah. Jalankan analisis lagi untuk hasil terbaru.';
-          }
-        };
-        panel.querySelector('.mep-calc-fields').addEventListener('input', invalidate);
-        panel.querySelector('.mep-calc-fields').addEventListener('change', invalidate);
-        question.addEventListener('input', invalidate);
-        button.addEventListener('click', async () => {
-          if (busy) return;
-          clear();
-          status.classList.remove('mep-calc-error');
-          try {
-            if (!currentGoogleCredential || currentAuthProfile?.isPreview) {
-              throw new Error('Konsultasi AI memerlukan login Google aktif; tidak tersedia di Preview Mode. Perhitungan lokal tetap dapat digunakan.');
-            }
-            const summary = collect(tab);
-            const projectId = activeProjectId;
-            const credential = currentGoogleCredential;
-            const signature = JSON.stringify(summary);
-            busy = true;
-            aiButtons.forEach(item => { item.disabled = true; });
-            question.disabled = true;
-            section.setAttribute('aria-busy', 'true');
-            spinner.hidden = false;
-            statusText.textContent = 'Sedang menganalisis standar SNI/PUIL & mencari referensi di Google...';
-            // No sync overlay, Supabase, automatic retry, or save path for a billed AI request.
-            const response = await performAppsScriptRequest('askGeminiMEP', { projectId, summary, question: question.value.trim() });
-            if (projectId !== activeProjectId || credential !== currentGoogleCredential || signature !== JSON.stringify(collect(tab))) {
-              throw new Error('Input, proyek, atau sesi berubah selama analisis. Jalankan ulang untuk hasil terbaru.');
-            }
-            if (typeof response.text !== 'string' || !response.text.trim() || !Array.isArray(response.sources)) {
-              throw new Error('Respons konsultasi AI tidak valid. Pastikan Code.gs terbaru sudah dideploy.');
-            }
-            answer.textContent = response.text;
-            const links = new Map();
-            response.sources.forEach(source => {
-              const url = safeUrl(source.url);
-              if (!url || !Number.isInteger(source.index) || source.index < 1 || links.has(source.index)) return;
-              links.set(source.index, url);
-              const li = document.createElement('li');
-              li.value = source.index;
-              const anchor = document.createElement('a');
-              anchor.href = url;
-              anchor.target = '_blank';
-              anchor.rel = 'noopener noreferrer';
-              anchor.textContent = typeof source.title === 'string' ? source.title : `Sumber ${source.index}`;
-              li.append(anchor);
-              sources.append(li);
-            });
-            if (Array.isArray(response.citations)) {
-              response.citations.forEach(citation => {
-                if (typeof citation.text !== 'string' || !Array.isArray(citation.sourceIndexes)) return;
-                const indexes = citation.sourceIndexes.filter(index => links.has(index));
-                if (!indexes.length) return;
-                const excerpt = document.createElement('p');
-                excerpt.textContent = citation.text + ' ';
-                indexes.forEach(index => {
-                  const link = document.createElement('a');
-                  link.href = links.get(index);
-                  link.target = '_blank';
-                  link.rel = 'noopener noreferrer';
-                  link.textContent = `[${index}] `;
-                  excerpt.append(link);
-                });
-                citations.append(excerpt);
-              });
-            }
-            statusText.textContent = (response.truncated ? 'Jawaban terpotong oleh batas keluaran. ' : 'Analisis selesai. ') +
-              (links.size ? 'Referensi Google tersedia di bawah; verifikasi sumber dan tanggalnya.' : 'Tidak ada sumber grounding yang tersedia; jawaban belum terverifikasi.');
-          } catch (error) {
-            clear();
-            status.classList.add('mep-calc-error');
-            statusText.textContent = error.message || 'Konsultasi AI gagal. Coba lagi nanti.';
-          } finally {
-            busy = false;
-            aiButtons.forEach(item => { item.disabled = false; });
-            question.disabled = false;
-            spinner.hidden = true;
-            section.setAttribute('aria-busy', 'false');
-          }
-        });
-        section.append(title, privacy, label, question, button, status, answer, sources, citations);
-        panel.append(section);
-      });
-    })();
   </script>
 </body>
 </html>

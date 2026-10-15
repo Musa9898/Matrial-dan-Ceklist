@@ -50,20 +50,6 @@ Fire fighting selalu berstatus perhatian: asumsi 6–12 sprinkler × 20 GPM dan 
 
 Validasi: `node --test tests\spreadsheet-sync.test.js tests\mep-calculator.test.js`.
 
-### Konsultasi Gemini & Google Search (opsional)
-
-Perhitungan kalkulator tetap 100% lokal. Panel konsultasi di bawah hasil setiap tab baru melakukan request setelah **Analisis Hasil & Cari di Google** ditekan. Input, asumsi, hasil tab aktif dan pertanyaan opsional dikirim ke Google Gemini melalui Apps Script. Jangan masukkan informasi rahasia. Tidak ada snapshot, nama proyek, email atau token login yang dikirim ke Gemini oleh handler; token Google hanya untuk autentikasi ke Apps Script. AI memerlukan sesi Google dan akses ke proyek aktif; Preview Mode tidak dapat menggunakan layanan AI.
-
-1. Pada Apps Script → **Project Settings → Script Properties**, tambahkan `GEMINI_API_KEY` dengan API key Gemini milik Anda. Jangan simpan key di frontend/repository. Handler memakai model default `gemini-2.5-flash` melalui `v1beta/models/...:generateContent` dengan `tools: [{ google_search: {} }]`, sesuai [contoh REST resmi Google](https://ai.google.dev/gemini-api/docs/generate-content/google-search). Model ini dipilih karena menurut [halaman harga Gemini API](https://ai.google.dev/gemini-api/docs/pricing) Google Search grounding pada **free tier** hanya tersedia untuk Gemini 2.5 Flash/Flash-Lite (sekitar 500 request/hari, dipakai bersama), sedangkan model Gemini 3 ke atas membutuhkan paid tier untuk grounding. Opsional: tambahkan Script Property `GEMINI_MODEL` (misalnya `gemini-2.5-flash-lite`, atau model Gemini 3 bila billing aktif) untuk mengganti model tanpa mengubah kode; kosongkan untuk kembali ke default. Model lama/dihentikan seperti `gemini-1.5-flash` akan menghasilkan HTTP 404. Error HTTP 429 berarti kuota/rate limit API key habis (berbeda dengan kuota aplikasi Gemini Pro). Pastikan model dan Google Search grounding tersedia bagi akun/key serta kuota/billing memadai.
-2. Salin `Code.gs` terbaru, deploy Web App sebagai **New version** dengan URL deployment yang sama. Tidak perlu mengubah konfigurasi Supabase. Izinkan akses UrlFetch bila diminta.
-3. Login Google, buka kalkulator, hitung lalu tekan tombol konsultasi. API key kosong, penolakan izin, rate limit, jawaban kosong/blokir, dan gangguan jaringan ditampilkan sebagai error tanpa mengubah data kalkulator/proyek. Timeout frontend 90 detik; tidak ada retry/fallback otomatis untuk mencegah tagihan ganda setelah respons tidak pasti. Server menerapkan cooldown best-effort 15 detik per email; ini bukan hard billing quota (atur quota/budget di Google Cloud).
-
-Jawaban dirender sebagai teks (bukan HTML dari model), dengan daftar tautan HTTP(S) grounding dan kutipan yang tersedia. Jika grounding kosong atau jawaban terpotong, UI memberi keterangan. Mengubah input menghapus analisis sebelumnya; respons untuk input/proyek/sesi yang berubah tidak ditampilkan sebagai analisis terbaru. Klaim standar, edisi, produk, dan harga AI tetap perlu diverifikasi; bukan pengesahan desain engineer.
-
-Jika muncul HTTP 404, pesan menyebut model/versi API dan status upstream yang dikenali (misalnya `NOT_FOUND`), tanpa meneruskan pesan mentah atau API key. Periksa model yang tersedia untuk key melalui ListModels/Google AI Studio; jangan menganggap semua 404 selesai dengan mencoba ulang. Setelah mengganti kode: **Terapkan → Kelola deployment → Edit → Versi baru → Terapkan**, pertahankan URL Web App yang sama. Properti API key, konfigurasi Spreadsheet, dan Supabase tidak perlu diubah untuk pembaruan model ini.
-
-Tes seluruh fitur terkait: `node --test tests\spreadsheet-sync.test.js tests\mep-calculator.test.js tests\mep-gemini.test.js`. Tes Gemini memakai mock, tidak menghabiskan kuota API.
-
 ## Pilihan proyek dan loading sinkronisasi
 
 Halaman login menggunakan panel identitas proyek dan form dua langkah; dua kolom di desktop dan susunan vertikal yang dapat digulir di ponsel. Hover/fokus tombol, mode gelap, serta preferensi reduced-motion didukung. Perubahan tampilan tidak mengubah autentikasi, hak akses, pilihan proyek, atau penguncian sinkronisasi.
