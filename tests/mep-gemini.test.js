@@ -10,7 +10,7 @@ const summary = () => ({
   inputs: [{ label: 'Daya (kW)', value: '10' }],
   results: [{ label: 'Arus (A)', value: '17,875' }]
 });
-function backend({ key = 'server-test-key', status = 200, body, transportError = false } = {}) {
+function backend({ key = 'server-test-key', model = null, status = 200, body, transportError = false } = {}) {
   const calls = [];
   const cache = new Map();
   const normal = {
@@ -28,7 +28,7 @@ function backend({ key = 'server-test-key', status = 200, body, transportError =
   };
   const context = vm.createContext({
     console,
-    PropertiesService: { getScriptProperties: () => ({ getProperty: () => key }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: name => name === 'GEMINI_API_KEY' ? key : name === 'GEMINI_MODEL' ? model : null }) },
     CacheService: { getScriptCache: () => ({
       get: name => cache.get(name), put: (name, value) => cache.set(name, value)
     }) },
@@ -62,7 +62,7 @@ test('authenticated Gemini action uses server key, search grounding and returns 
   assert.equal(response.sources[0].index, 1);
   assert.deepEqual(Array.from(response.citations[0].sourceIndexes), [1]);
   assert.equal(calls.length, 1);
-  assert.match(calls[0].url, /^https:\/\/generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-3\.8-flash:generateContent\?key=server-test-key$/);
+  assert.match(calls[0].url, /^https:\/\/generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-2\.5-flash:generateContent\?key=server-test-key$/);
   assert.equal(calls[0].options.method, 'post');
   assert.equal(calls[0].options.contentType, 'application/json');
   assert.equal(calls[0].options.muteHttpExceptions, true);
@@ -80,7 +80,7 @@ test('404 identifies model/version and preserves safe upstream status without le
   const result = request();
   assert.equal(result.status, 'error');
   assert.match(result.message, /HTTP 404 \(NOT_FOUND\)/);
-  assert.match(result.message, /gemini-3\.8-flash/);
+  assert.match(result.message, /gemini-2\.5-flash/);
   assert.match(result.message, /ListModels/);
   assert.doesNotMatch(result.message, /server-test-key|private\.example|secret/);
   assert.equal(calls.length, 1);
@@ -97,6 +97,23 @@ test('HTTP errors with malformed or unexpected bodies stay explicit without trus
   for (const [status, expected] of [[400, /request ditolak/], [401, /autentikasi ditolak/], [403, /izin ditolak/], [429, /kuota\/rate limit/], [503, /gangguan/]]) {
     const { request } = backend({ status, body: JSON.stringify({ error: { status: 'PERMISSION_DENIED' } }) });
     assert.match(request().message, expected);
+  }
+});
+
+test('GEMINI_MODEL script property overrides the default model and invalid names are rejected', () => {
+  const custom = backend({ model: 'gemini-3.8-flash-lite' });
+  assert.equal(custom.request().status, 'success');
+  assert.match(custom.calls[0].url, /\/models\/gemini-3\.8-flash-lite:generateContent\?/);
+
+  const limited = backend({ model: 'gemini-3.8-flash-lite', status: 429, body: JSON.stringify({ error: { status: 'RESOURCE_EXHAUSTED' } }) });
+  assert.match(limited.request().message, /gemini-3\.8-flash-lite.*GEMINI_MODEL/);
+
+  for (const bad of ['../secret', 'Gemini Flash', 'model?key=x']) {
+    const invalid = backend({ model: bad });
+    const result = invalid.request();
+    assert.equal(result.status, 'error');
+    assert.match(result.message, /GEMINI_MODEL/);
+    assert.equal(invalid.calls.length, 0);
   }
 });
 

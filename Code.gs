@@ -267,8 +267,15 @@ function doPost(e) {
 }
 
 function askGeminiMEP_(request, email) {
-  const apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const apiKey = scriptProperties.getProperty('GEMINI_API_KEY');
   if (!apiKey || !apiKey.trim()) throw new Error('Konsultasi AI belum dikonfigurasi. Isi GEMINI_API_KEY di Script Properties lalu deploy versi terbaru.');
+  // Optional GEMINI_MODEL lets the model change without editing code; validated to keep the URL path safe.
+  const configuredModel = String(scriptProperties.getProperty('GEMINI_MODEL') || '').trim();
+  if (configuredModel && !/^[a-z0-9][a-z0-9.-]{0,63}$/.test(configuredModel)) {
+    throw new Error('GEMINI_MODEL di Script Properties tidak valid. Gunakan nama model seperti gemini-2.5-flash atau kosongkan.');
+  }
+  const model = configuredModel || 'gemini-2.5-flash';
   const summary = request.summary;
   const allowedTabs = ['electric', 'water', 'hvac', 'lighting', 'fire', 'utility'];
   if (!summary || !allowedTabs.includes(summary.tab) ||
@@ -291,7 +298,6 @@ function askGeminiMEP_(request, email) {
   const rateKey = 'mep-ai:' + email;
   if (cache.get(rateKey)) throw new Error('Tunggu 15 detik sebelum konsultasi AI berikutnya.');
   cache.put(rateKey, '1', 15);
-  const model = 'gemini-3.8-flash';
   let response;
   try {
     response = UrlFetchApp.fetch(
@@ -326,7 +332,7 @@ function askGeminiMEP_(request, email) {
     // Only expose a known status, never raw upstream messages, URLs, or API keys.
     const prefix = 'Gemini HTTP ' + status + (upstreamStatus ? ' (' + upstreamStatus + ')' : '') + ': ';
     if (status === 404) throw new Error(prefix + 'model ' + model + ' tidak ditemukan atau tidak tersedia untuk API key ini pada v1beta. Periksa ListModels/akses model di Google AI Studio dan deploy Code.gs terbaru; mengulang request yang sama belum tentu memperbaikinya.');
-    if (status === 429) throw new Error(prefix + 'kuota/rate limit tercapai. Periksa kuota dan billing API, lalu coba lagi nanti.');
+    if (status === 429) throw new Error(prefix + 'kuota/rate limit model ' + model + ' tercapai. Periksa kuota dan billing API di Google AI Studio, coba lagi nanti, atau isi GEMINI_MODEL dengan model lain yang punya kuota.');
     if (status === 400) throw new Error(prefix + 'request ditolak. Periksa validitas API key, dukungan Google Search grounding, dan persyaratan billing/wilayah.');
     if (status === 401) throw new Error(prefix + 'autentikasi ditolak. Periksa GEMINI_API_KEY di Script Properties.');
     if (status === 403) throw new Error(prefix + 'izin ditolak. Periksa pembatasan API key, akses model/API, dan billing di server.');
