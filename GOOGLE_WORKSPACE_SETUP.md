@@ -42,6 +42,8 @@ Setelah selesai, buka website dan login. Jika tombol Google menolak dengan `inva
 
 ## Pilihan proyek dan loading sinkronisasi
 
+Halaman login menggunakan panel identitas proyek dan form dua langkah; dua kolom di desktop dan susunan vertikal yang dapat digulir di ponsel. Hover/fokus tombol, mode gelap, serta preferensi reduced-motion didukung. Perubahan tampilan tidak mengubah autentikasi, hak akses, pilihan proyek, atau penguncian sinkronisasi.
+
 1. Di halaman login, masuk dengan Google terlebih dahulu untuk memverifikasi akun dan mengambil daftar proyek dari `Access`.
 2. Pilih **Proyek yang akan dibuka**, lalu tekan **Masuk ke Proyek**. Proyek dengan akses baca saja diberi label **Lihat saja**. Daftar proyek tidak ditampilkan sebelum akun diverifikasi.
 3. Dashboard dibuka hanya setelah data proyek yang dipilih selesai dimuat. Jika gagal, halaman login tetap terbuka dan tombol **Masuk ke Proyek** dapat digunakan untuk mencoba lagi.

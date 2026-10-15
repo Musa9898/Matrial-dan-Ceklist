@@ -94,12 +94,13 @@
       display: flex;
       flex-direction: column;
       width: 100%;
-      max-width: 460px;
-      height: min(840px, calc(100dvh - 32px));
-      min-height: 480px;
+      max-width: 480px;
+      height: auto;
+      max-height: calc(100dvh - 32px);
+      min-height: 0;
       overflow-y: auto;
       border: 1px solid rgba(255, 226, 138, 0.28);
-      border-radius: 24px;
+      border-radius: 28px;
       background: var(--bg-light);
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
     }
@@ -134,10 +135,11 @@
 
     .login-brand {
       position: relative;
+      flex-shrink: 0;
       overflow: hidden;
-      padding: 28px 24px 24px;
+      padding: 28px;
       border-bottom: 3px solid var(--brand-gold);
-      background: linear-gradient(135deg, #33428f 0%, var(--brand-navy-deep) 100%);
+      background: radial-gradient(ellipse at top right, #4258a5 0%, transparent 65%), linear-gradient(145deg, #29377d, #111a40);
       color: #ffffff;
       isolation: isolate;
     }
@@ -163,7 +165,7 @@
 
     .login-brand h1 {
       max-width: 310px;
-      font-size: 1.35rem;
+      font-size: clamp(1.7rem, 4vw, 2.6rem);
       line-height: 1.2;
       color: #ffffff;
     }
@@ -178,9 +180,9 @@
 
     .login-form-body {
       display: flex;
-      flex: 1;
+      flex: 1 0 auto;
       flex-direction: column;
-      padding: 22px 22px 18px;
+      padding: 28px 28px 32px;
     }
 
     .login-form-body .form-row {
@@ -190,7 +192,7 @@
     .login-form-body .form-row label {
       text-transform: none;
       letter-spacing: 0;
-      font-size: 0.76rem;
+      font-size: 0.8rem;
     }
 
     .login-actions {
@@ -2252,6 +2254,303 @@
         width: min(860px, 100%);
       }
     }
+    .login-company {
+      margin-left: 14px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      line-height: 1.6;
+    }
+
+    .login-company span {
+      display: block;
+      color: #c5d1f4;
+      font-size: 0.64rem;
+      font-weight: 400;
+      letter-spacing: 0.16em;
+    }
+
+    .login-eyebrow {
+      display: block;
+      margin-bottom: 12px;
+      color: var(--brand-gold-light);
+      font-size: 0.66rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .login-brand .login-brand-description {
+      margin-top: 14px;
+      font-size: 0.84rem;
+      line-height: 1.7;
+      color: #d4def7;
+    }
+
+    .login-feature-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 20px;
+      list-style: none;
+    }
+
+    .login-feature-tags li {
+      padding: 7px 11px;
+      border: 1px solid #ffffff29;
+      border-radius: 8px;
+      background: #ffffff0a;
+      color: #e4eaff;
+      font-size: 0.7rem;
+    }
+
+    .login-blueprint {
+      display: none;
+      width: 100%;
+      margin: 30px 0 20px;
+      color: #a7b8ed;
+    }
+
+    .login-brand-footer {
+      display: none;
+      color: #bdc9ec;
+      font-size: 0.72rem;
+      line-height: 1.6;
+    }
+
+    .login-form-heading {
+      margin-bottom: 22px;
+    }
+
+    .login-form-heading .login-eyebrow {
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .login-form-heading h2 {
+      color: var(--text-dark);
+      font-size: 1.55rem;
+      letter-spacing: -0.04em;
+      margin-bottom: 8px;
+    }
+
+    .login-form-heading p {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      line-height: 1.6;
+    }
+
+    .login-step-label {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--text-dark);
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .login-step-number {
+      display: inline-grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      background: var(--brand-blue-soft);
+      color: var(--brand-navy);
+      font-size: 0.68rem;
+      flex: 0 0 24px;
+    }
+
+    .login-form-body .google-signin-container {
+      margin: 0 0 24px;
+      min-height: 44px;
+    }
+
+    .login-form-body .form-row label {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 12px;
+    }
+
+    .login-form-body .form-row select {
+      min-height: 48px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      background-color: var(--card-bg);
+      color: var(--text-dark);
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .login-form-body .form-row select:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .login-form-body .form-row select:focus-visible {
+      outline: none;
+      border-color: var(--brand-navy);
+      box-shadow: 0 0 0 4px #7589d826;
+    }
+
+    .login-form-body .form-row:has(select:not(:disabled)) .login-step-number {
+      background: var(--brand-gold-soft);
+      color: #755000;
+      border-color: var(--brand-gold);
+    }
+
+    .login-form-body .login-status.is-loading {
+      border-color: var(--brand-gold);
+    }
+
+    .login-form-body .form-hint {
+      margin-top: 8px;
+      font-size: 0.68rem;
+      line-height: 1.6;
+    }
+
+    .login-form-body > #loginProjectButton {
+      min-height: 48px;
+      margin-top: 4px;
+      border-radius: 12px;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .login-form-body > #loginProjectButton:not(:disabled):hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px #29377d30;
+    }
+
+    .login-form-body > #loginProjectButton:not(:disabled):active {
+      transform: translateY(0);
+    }
+
+    .login-form-body > #loginProjectButton:focus-visible,
+    .login-form-body .preview-mode-button:focus-visible {
+      outline: 3px solid var(--brand-gold);
+      outline-offset: 4px;
+    }
+
+    .login-form-body .preview-mode-button {
+      margin-top: 14px;
+    }
+
+    .login-form-body .login-status {
+      padding: 12px;
+      margin-top: 18px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      background: var(--card-bg);
+      text-align: left;
+      font-size: 0.72rem;
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+    }
+
+    .login-form-body .login-footnote {
+      margin-top: 16px;
+      line-height: 1.7;
+    }
+
+    body.theme-dark .login-form-body .form-row select {
+      border-color: #37465e;
+    }
+
+    body.theme-dark .login-step-number {
+      background: #29377d44;
+      color: #c3d0ff;
+    }
+
+    @media (min-width: 860px) {
+      .login-screen {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        max-width: 960px;
+      }
+
+      .login-brand {
+        display: flex;
+        flex-direction: column;
+        padding: 38px;
+        border-bottom: 0;
+        border-right: 1px solid #ffffff1a;
+      }
+
+      .login-brand-lockup {
+        margin-bottom: 36px;
+      }
+
+      .login-brand h1 {
+        max-width: 360px;
+      }
+
+      .login-blueprint {
+        display: block;
+      }
+
+      .login-brand-footer {
+        display: block;
+        margin-top: auto;
+      }
+
+      .login-form-body {
+        justify-content: center;
+        padding: 40px;
+      }
+    }
+
+    @media (max-width: 859px) {
+      .login-brand,
+      .login-form-body {
+        padding: 24px;
+      }
+
+      .login-brand-lockup {
+        margin-bottom: 18px;
+      }
+
+      .login-brand .header-brand-box {
+        width: 54px;
+        height: 54px;
+      }
+
+      .login-feature-tags {
+        margin-top: 12px;
+        gap: 6px;
+      }
+
+      .login-feature-tags li {
+        padding: 6px 8px;
+        font-size: 0.62rem;
+      }
+
+      .login-brand .login-brand-description {
+        margin-top: 10px;
+        font-size: 0.76rem;
+      }
+
+      .login-brand .login-eyebrow {
+        font-size: 0.58rem;
+        letter-spacing: 0.12em;
+      }
+
+      .login-company {
+        font-size: 0.68rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .login-form-body > #loginProjectButton,
+      .login-form-body .form-row select {
+        transition: none;
+      }
+
+      .login-form-body > #loginProjectButton:not(:disabled):hover {
+        transform: none;
+      }
+    }
   </style>
 </head>
 <body>
@@ -2268,14 +2567,37 @@
           <span class="header-brand-victory">VICTORY</span>
           <span class="header-brand-construction">CONSTRUCTION</span>
         </span>
+        <div class="login-company">VICTORY CONSTRUCTION<span>PROJECT WORKSPACE</span></div>
       </div>
+      <span class="login-eyebrow">Terhubung. Terpantau. Terkendali.</span>
       <h1>Project Monitor MEP</h1>
-      <p>Sistem Monitoring Material &amp; Checklist Proyek</p>
+      <p class="login-brand-description">Satu ruang kerja untuk memantau material, aset, dan progres pekerjaan proyek Anda.</p>
+      <ul class="login-feature-tags" aria-label="Fitur aplikasi">
+        <li>Material &amp; Aset</li>
+        <li>Checklist MEP</li>
+        <li>Laporan Proyek</li>
+      </ul>
+      <svg class="login-blueprint" viewBox="0 0 360 170" fill="none" aria-hidden="true">
+        <path d="M0 155h360M20 30h320M20 70h320M20 110h320M40 10v150M120 10v150M200 10v150M280 10v150" stroke="currentColor" opacity=".12"/>
+        <path d="M34 155V78h68v77m12 0V30h108v125m12 0V60h88v95" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M130 46h76M130 64h76M130 82h76M130 100h76M130 118h76M50 95h36M50 113h36M250 78h56M250 96h56M250 114h56" stroke="currentColor" opacity=".5"/>
+        <path d="m28 61 57-22 56-13 54-10 87 28 46-17" stroke="#f0b51b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="141" cy="26" r="4" fill="#f0b51b"/>
+        <circle cx="282" cy="44" r="4" fill="#f0b51b"/>
+        <circle cx="328" cy="27" r="5" fill="#ffe28a"/>
+      </svg>
+      <div class="login-brand-footer">Dari lapangan, untuk kemajuan proyek.<br>Sistem Monitoring Material &amp; Checklist Proyek</div>
     </section>
     <div class="login-form-body">
+      <div class="login-form-heading">
+        <span class="login-eyebrow">AKSES WORKSPACE</span>
+        <h2>Selamat datang kembali.</h2>
+        <p>Masuk dengan akun Anda, lalu pilih proyek yang ingin dikelola.</p>
+      </div>
+      <div class="login-step-label"><span class="login-step-number" aria-hidden="true">01</span>Hubungkan akun Google</div>
       <div class="google-signin-container" id="googleSignInButton"></div>
       <div class="form-row">
-        <label for="loginProjectSelect">Proyek yang akan dibuka</label>
+        <label for="loginProjectSelect"><span class="login-step-number" aria-hidden="true">02</span>Proyek yang akan dibuka</label>
         <select id="loginProjectSelect" disabled onchange="updateLoginProjectButton()">
           <option value="">Masuk Google terlebih dahulu</option>
         </select>
