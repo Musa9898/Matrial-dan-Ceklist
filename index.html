@@ -2887,6 +2887,36 @@
     }
 
     .mep-calc-field [aria-invalid="true"] { border-color: #dc2626; }
+    .mep-calc-pair { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: end; }
+    .mep-calc-cable-type { display: flex; flex-direction: column; }
+    .mep-calc-cable-caption { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 6px; }
+    .mep-calc-cable-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 4px;
+      min-height: 44px;
+      padding: 8px 11px;
+      border: 1px solid rgba(240, 181, 27, 0.55);
+      border-radius: 9px;
+      background: rgba(240, 181, 27, 0.12);
+      color: var(--brand-gold, #f0b51b);
+      font-size: 0.8rem;
+      font-weight: 700;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+    .mep-calc-cable-core {
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(240, 181, 27, 0.22);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      max-width: 100%;
+      white-space: normal;
+    }
     .mep-calc-dialog :focus-visible, .mep-calc-trigger:focus-visible { outline: 3px solid #f0b51b; outline-offset: 2px; }
     .mep-calc-results { margin-top: 18px; }
     .mep-calc-result { min-width: 0; padding: 14px; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--card-bg); }
@@ -7768,12 +7798,53 @@
       });
       const breakers = [6, 10, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630,
         800, 1000, 1250, 1600, 2000, 2500, 3200, 4000];
+      // Copper PVC 70 °C, 3 loaded conductors, 2,5–300 mm² (IEC 60364-5-52 B.52.4 / B.52.10, = BS 7671 4D1A/4D2A).
+      // Aluminium is scaled from its B2 value by the copper method ratio (estimate).
+      const methods = {
+        1: { code: 'B2', name: 'Conduit / pipa di dinding' },
+        2: { code: 'C', name: 'Klem langsung di dinding', cu: [24, 32, 41, 57, 76, 96, 119, 144, 184, 223, 259, 299, 341, 403, 464] },
+        3: { code: 'E', name: 'Cable tray / ladder (udara bebas)', cu: [25, 34, 43, 60, 80, 101, 126, 153, 196, 238, 276, 319, 364, 430, 497] },
+        4: { code: 'D', name: 'Tanam tanah dalam duct (20°C)', cu: [24, 30, 38, 50, 64, 82, 98, 116, 143, 169, 192, 217, 243, 280, 316] }
+      };
+      const trefoilCu = { 240: 485, 300: 561, 400: 656, 500: 749, 630: 855 };
+      const tableKha = (size, conductor, method) => {
+        const entry = cables.find(c => c.size === size);
+        const base = entry?.[conductor];
+        if (!base) return { kha: null, code: methods[method].code };
+        if (method === 1) return { kha: base.kha, code: 'B2' };
+        const cuB2 = entry[1].kha;
+        const single = method === 3 && size >= 240;
+        const cuValue = single ? trefoilCu[size] : methods[method].cu[cables.indexOf(entry)];
+        const code = single ? 'F trefoil' : methods[method].code;
+        if (!cuValue) return { kha: null, code };
+        if (conductor === 1) return { kha: cuValue, code };
+        return { kha: base.kha && cuB2 ? Math.round(base.kha * cuValue / cuB2) : null, code };
+      };
+      // Field practice: NYM/NYY/NAYY 4-core up to ~185 mm²; ≥240 mm² feeders are usually single-core runs.
+      const cableTypeLabel = ({ conductor, cable, runs, phase }) => {
+        const material = conductors[conductor] || conductors[1];
+        const size = Number(cable);
+        const available = Boolean(cables.find(c => c.size === size)?.[conductor]);
+        const family = material.code === 'AL' ? 'NAYY' : size <= 16 ? 'NYM / NYY' : 'NYY';
+        const parallel = Number(runs) > 1 ? ` × ${runs} tarikan` : '';
+        const single = size >= 240;
+        const onePhase = Number(phase) === 1;
+        return {
+          text: `${family} - ${material.code} ${size} mm²${parallel}${available ? '' : ' (tidak tersedia)'}`,
+          core: single ? `Single-core · 1C per ${onePhase ? 'L/N' : 'fasa'}` : onePhase ? 'Multi-core · 3C (L+N+PE)' : 'Multi-core · 4C (3P+N)',
+          hint: single
+            ? 'Ukuran ≥240 mm² umumnya single-core: tarik per fasa + netral, susun trefoil, cek grounding/PE terpisah.'
+            : onePhase
+              ? 'Ukuran ≤185 mm² 1 fasa umumnya multi-core 3 core (fasa + netral + PE).'
+              : 'Ukuran ≤185 mm² umumnya multi-core 4 core (3 fasa + netral); PE bisa core ke-5 atau terpisah.'
+        };
+      };
       const number = (key, label, value, min = 0, max = 1e9) => ({ key, label, value, min, max });
       const select = (key, label, options, value) => ({ key, label, options, value });
       const tabs = [
         {
           key: 'electric', title: '⚡ Listrik',
-          note: 'Listrik, kabel paralel & kapasitor bank (hingga 4000 A untuk LVMDP). KHA estimasi IEC 60364-5-52 Tabel B.52.4: isolasi PVC 70°C, metode B2, 3 konduktor berbeban, udara 30°C, tanpa derating pengelompokan. CU tersedia 2,5–300 mm², AL 16–300 mm²; ukuran 400–630 mm² wajib memakai KHA per kabel dari datasheet. R pada 70°C (IEC 60228 kelas 2, α CU 0,00393 / AL 0,00403), X asumsi 0,08 Ω/km. Kabel paralel: KHA total = KHA per kabel × jumlah tarikan, R dan X efektif dibagi jumlah tarikan; tarikan paralel wajib sama jenis, ukuran dan panjang, serta perlu faktor koreksi pengelompokan (grouping) sesuai cara pemasangan. KHA juga dipakai konservatif pada 1 fasa. Drop: √3 untuk 3 fasa, 2 untuk 1 fasa; ambang 4%/5% sesuai parameter kalkulator. Breaker harus dikoordinasikan dengan KHA, arus start, kapasitas pemutusan dan kurva proteksi.',
+          note: 'Listrik, kabel paralel & kapasitor bank (hingga 4000 A untuk LVMDP). KHA estimasi IEC 60364-5-52 Tabel B.52.4: isolasi PVC 70°C, metode B2, 3 konduktor berbeban, udara 30°C, tanpa derating pengelompokan. CU tersedia 2,5–300 mm², AL 16–300 mm²; ukuran 400–630 mm² wajib mengisi KHA 1 kabel dari datasheet pabrik (kecuali CU di cable tray). Cara pemasangan: conduit dinding = B2, klem dinding = C, cable tray = E (multi-core) / F trefoil (single-core ≥240 mm²), tanam tanah dalam duct = D (tanah 20°C, 2,5 K·m/W). KHA AL untuk C/E/F/D = KHA AL B2 × rasio CU metode/B2 (estimasi). R pada 70°C (IEC 60228 kelas 2, α CU 0,00393 / AL 0,00403), X asumsi 0,08 Ω/km. Kabel paralel: KHA total = KHA per kabel × jumlah tarikan, R dan X efektif dibagi jumlah tarikan; tarikan paralel wajib sama jenis, ukuran dan panjang, serta perlu faktor koreksi pengelompokan (grouping) sesuai cara pemasangan. KHA juga dipakai konservatif pada 1 fasa. Drop: √3 untuk 3 fasa, 2 untuk 1 fasa; ambang 4%/5% sesuai parameter kalkulator. Breaker harus dikoordinasikan dengan KHA, arus start, kapasitas pemutusan dan kurva proteksi. kVA = kW ÷ cos phi awal. Isc kasar: Z trafo = Uk × U² ÷ S (dianggap reaktansi, sumber PLN tak hingga), kabel pakai R 20°C; tanpa kontribusi motor. Icu dipilih dari langkah standar 6–150 kA ≥ Isc panel sumber.',
           fields: [
             number('kw', 'Daya aktif (kW)', 10),
             select('phase', 'Sistem fasa', [[3, '3 Fasa · 380 V'], [1, '1 Fasa · 220 V']], 3),
@@ -7781,15 +7852,18 @@
             number('targetPf', 'Target cos phi baru', 0.95, 0.01, 1),
             select('conductor', 'Jenis konduktor', [[1, 'CU · Tembaga'], [2, 'AL · Aluminium']], 1),
             select('cable', 'Ukuran kabel per tarikan (mm²)',
-              cables.map(c => [c.size, `${c.size} mm²${c[1].kha ? '' : ' · KHA dari datasheet'}`]), 6),
+              cables.map(c => [c.size, `${c.size} mm²${c[1].kha ? '' : ' · KHA datasheet (CU tray: tabel F)'}`]), 6),
             select('runs', 'Jumlah tarikan paralel per fasa', Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1} tarikan`]), 1),
-            number('khaDatasheet', 'KHA per kabel dari datasheet (A) · 0 = pakai tabel B2', 0, 0, 5000),
-            number('length', 'Panjang kabel satu arah (m)', 30)
+            select('method', 'Cara pemasangan kabel', [[1, 'Conduit / pipa di dinding'], [2, 'Klem langsung di dinding'], [3, 'Cable tray / ladder'], [4, 'Tanam tanah (dalam duct)']], 1),
+            number('khaDatasheet', 'KHA 1 kabel dari datasheet pabrik (A) · isi 0 = pakai tabel standar', 0, 0, 5000),
+            { ...number('length', 'Panjang kabel satu arah (m)', 30), badge: cableTypeLabel },
+            number('trafoKva', 'Kapasitas trafo sumber (kVA)', 1000, 25, 5000),
+            number('uk', 'Impedansi trafo Uk (%)', 5, 3, 10)
           ]
         },
         {
           key: 'water', title: '💧 Pipa & Pompa',
-          note: 'Q dikonversi L/detik → m³/detik dan diameter dianggap diameter dalam (mm → m), bukan diameter nominal luar. Hazen-Williams termasuk tambahan fitting 20%. Efisiensi pompa 65%; 1 HP = 0,746 kW; 1 mka = 0,0981 bar. Air hujan: koefisien limpasan 0,9; kapasitas roof drain 4 inci ~12 L/detik/titik hanya asumsi awal, verifikasi head inlet, kemiringan dan datasheet.',
+          note: 'Q dikonversi L/detik → m³/detik dan diameter dianggap diameter dalam (mm → m), bukan diameter nominal luar. Hazen-Williams; fitting bisa asumsi 20% gesek atau rincian ΣK × v²/2g (elbow 90° 0,9; elbow 45° 0,4; tee cabang 1,8; gate/ball 0,2; check 2,0). Tekanan booster = head statis + losses + sisa fixture terjauh min 1,5 bar. Efisiensi pompa 65%; 1 HP = 0,746 kW; 1 mka = 0,0981 bar. Air hujan: koefisien limpasan 0,9; kapasitas roof drain 4 inci ~12 L/detik/titik hanya asumsi awal, verifikasi head inlet, kemiringan dan datasheet.',
           fields: [
             number('flow', 'Debit air (L/detik)', 2),
             select('diameter', 'Diameter dalam pipa (mm)', [25, 32, 40, 50, 65, 75, 80, 90, 100, 110, 125, 150].map(v => [v, `${v} mm`]), 50),
@@ -7797,16 +7871,24 @@
             select('c', 'Material · koefisien C', [[150, 'PVC · C=150'], [140, 'PPR · C=140'], [120, 'GIP · C=120'], [100, 'Black Steel · C=100']], 150),
             number('staticHead', 'Head statis (m)', 30),
             number('residual', 'Head residual (mka)', 12),
+            select('fittingMode', 'Metode minor loss fitting', [[1, 'Asumsi 20% gesek'], [2, 'Rincian K fitting (ΣK)']], 1),
+            number('elbow90', 'Elbow 90° (pcs · K 0,9)', 6, 0, 500),
+            number('elbow45', 'Elbow 45° (pcs · K 0,4)', 0, 0, 500),
+            number('tee', 'Tee cabang (pcs · K 1,8)', 2, 0, 500),
+            number('gateValve', 'Gate / ball valve (pcs · K 0,2)', 2, 0, 500),
+            number('checkValve', 'Check valve (pcs · K 2,0)', 1, 0, 500),
             number('roof', 'Luas atap (m²)', 500),
             number('rain', 'Intensitas hujan (mm/jam)', 120)
           ]
         },
         {
           key: 'hvac', title: '❄️ HVAC & Ducting',
-          note: 'Estimasi beban area, bukan perhitungan heat gain detail. PK ≈ BTU/h ÷ 9.000, chiller 2,4 GPM/TR. ACH 6–15. Kecepatan duct memakai debit ventilasi CMH ÷ 3.600 dan luas duct dalam m². Delta T untuk rumus 1,08 menggunakan °F.',
+          note: 'Estimasi beban area + penghuni (450 BTU/h/orang) + lampu (W × 3,412), bukan perhitungan heat gain detail; kalau angka BTU/m² sudah termasuk penghuni & lampu, isi 0 agar tidak dobel. PK ≈ BTU/h ÷ 9.000, chiller 2,4 GPM/TR. ACH 6–15. Kecepatan duct memakai debit ventilasi CMH ÷ 3.600 dan luas duct dalam m². Delta T untuk rumus 1,08 menggunakan °F.',
           fields: [
             number('area', 'Luas ruang AC (m²)', 100),
             number('load', 'Beban ruang (BTU/h/m²)', 600, 550, 1200),
+            number('people', 'Jumlah penghuni (orang · 450 BTU/h)', 10, 0, 10000),
+            number('lampW', 'Total daya lampu (W · × 3,412)', 740, 0, 1e7),
             number('volume', 'Volume ruang ventilasi (m³)', 300),
             number('ach', 'Pergantian udara (ACH)', 6, 6, 15),
             number('a', 'Lebar duct a (mm)', 500, 1),
@@ -7828,12 +7910,13 @@
         },
         {
           key: 'fire', title: '🔥 Fire Fighting',
-          note: 'HANYA ESTIMASI AWAL, bukan desain proteksi kebakaran. Cakupan 12/9/6 m² per titik dan asumsi 6–12 sprinkler aktif × 20 GPM tidak menggantikan analisis hidraulik, density/area, K-factor, tekanan, hose allowance, standar dan persetujuan otoritas. Volume tangki di bawah hanya debit pompa utama × durasi, bukan pembuktian kecukupan gabungan sprinkler/hydrant. Tidak ada badge AMAN untuk desain fire.',
+          note: 'HANYA ESTIMASI AWAL, bukan desain proteksi kebakaran. Cakupan 12/9/6 m² per titik dan asumsi 6–12 sprinkler aktif × 20 GPM tidak menggantikan analisis hidraulik, density/area, K-factor, tekanan, hose allowance, standar dan persetujuan otoritas. Volume tangki di bawah hanya debit pompa utama × durasi, bukan pembuktian kecukupan gabungan sprinkler/hydrant. Waktu kuras = volume tangki ÷ debit main pump; acuan hydrant NFPA minimum 45–60 menit. Tidak ada badge AMAN untuk desain fire.',
           fields: [
             number('area', 'Luas area proteksi (m²)', 1000),
             select('coverage', 'Klasifikasi bahaya · cakupan asumsi', [[12, 'Ringan · 12 m²/titik'], [9, 'Sedang · 9 m²/titik'], [6, 'Berat · 6 m²/titik']], 12),
             number('gpm', 'Debit main fire pump (GPM)', 500, 0.01),
-            number('duration', 'Durasi kebakaran (menit)', 45, 0.01)
+            number('duration', 'Durasi kebakaran (menit)', 45, 0.01),
+            number('tank', 'Volume tangki pemadam tersedia (m³)', 100, 0.01)
           ]
         },
         {
@@ -7848,6 +7931,7 @@
           ]
         }
       ];
+      const formatNumber = value => new Intl.NumberFormat('id-ID', { maximumFractionDigits: 1 }).format(value);
       const result = (label, value, unit, level = 'warn', status = 'STATUS: HITUNGAN KASAR / ESTIMASI', note = '') =>
         ({ label, value, unit, level, status, note });
       const threshold = (value, safe, limit, safeText, warnText, dangerText) =>
@@ -7874,11 +7958,12 @@
           const material = conductors[v.conductor];
           const cable = cables.find(c => c.size === v.cable)[v.conductor];
           if (!cable) throw new RangeError(`Kabel ${material.code} ${v.cable} mm² tidak tersedia di tabel; AL mulai 16 mm².`);
-          if (!cable.kha && !v.khaDatasheet) {
-            throw new RangeError(`KHA ${material.code} ${v.cable} mm² di luar tabel B2 (maks 300 mm²): isi KHA per kabel dari datasheet.`);
+          const table = tableKha(v.cable, v.conductor, v.method);
+          if (!table.kha && !v.khaDatasheet) {
+            throw new RangeError(`KHA ${material.code} ${v.cable} mm² untuk "${methods[v.method].name}" tidak ada di tabel standar: isi kolom "KHA 1 kabel dari datasheet pabrik".`);
           }
-          const khaPerRun = v.khaDatasheet || cable.kha;
-          const khaSource = v.khaDatasheet ? 'datasheet' : 'tabel B2';
+          const khaPerRun = v.khaDatasheet || table.kha;
+          const khaSource = v.khaDatasheet ? 'datasheet' : `tabel ${table.code}`;
           const totalKha = khaPerRun * v.runs;
           const r = cable.r / v.runs;
           const x = cable.x / v.runs;
@@ -7893,7 +7978,17 @@
           const dropStatus = threshold(percent, 4, 5, 'DROP TEGANGAN AMAN (Limit ≤ 4%)', 'BATAS DAYA ≤5%', 'MELEBIHI AMBANG 5% · VERIFIKASI PUIL');
           const khaOk = minKha <= totalKha;
           const cableText = `${v.runs} × ${material.code} ${v.cable} mm²`;
+          // Rough Isc: transformer impedance taken as reactance; cable R at 20 °C (max fault current).
+          const zTrafo = v.uk / 100 * 380 * 380 / (v.trafoKva * 1000);
+          const r20 = r / (1 + material.alpha * 50);
+          const loop = v.phase === 3 ? 1 : 2;
+          const sourceVolt = v.phase === 3 ? 380 / Math.sqrt(3) : 220;
+          const iscSource = sourceVolt / zTrafo / 1000;
+          const iscEnd = sourceVolt / Math.hypot(loop * r20 * v.length / 1000, zTrafo + loop * x * v.length / 1000) / 1000;
+          const icuSteps = [6, 10, 15, 25, 36, 50, 65, 70, 85, 100, 150];
+          const icu = icuSteps.find(rating => rating >= iscSource);
           results = [
+            result('DAYA SEMU / KVA (S = P ÷ Cos Phi)', v.kw / v.pf, 'kVA'),
             result('Arus nominal In', current, 'A'),
             result('Arus per tarikan (In ÷ n)', current / v.runs, 'A', 'warn', 'NOTE: BEBAN PARALEL WAJIB BALANCE (SPLIT RATA)',
               `${cableText}; tarikan paralel harus sama jenis, ukuran, panjang dan terminasi.`),
@@ -7907,35 +8002,64 @@
             result('Voltage drop', drop, 'V', ...dropStatus),
             result('Voltage drop', percent, '%', ...dropStatus),
             result('Kebutuhan kapasitor bank', v.kw * (Math.tan(Math.acos(v.pf)) - Math.tan(Math.acos(v.targetPf))), 'kVAR',
-              'warn', 'CEK: Step Kapasitor, Harmonisa & Cos Phi')
+              'warn', 'CEK: Step Kapasitor, Harmonisa & Cos Phi'),
+            result('ARUS HUBUNG SINGKAT PANEL SUMBER (Isc Estimasi)', iscSource, 'kA', 'warn', undefined,
+              `Worst case di terminal trafo ${v.trafoKva} kVA, Uk ${v.uk}%; Z trafo ${(zTrafo * 1000).toFixed(2)} mΩ. Belum termasuk kontribusi motor & impedansi jaringan PLN.`),
+            result('ARUS HUBUNG SINGKAT UJUNG KABEL (Isc Panel Beban)', iscEnd, 'kA', 'warn', undefined,
+              `Setelah ${v.length} m ${cableText} (R20 ${(r20).toFixed(4)} Ω/km); acuan Icu breaker di panel hilir.`),
+            result('BREAKING CAPACITY MCCB (Icu Min)', icu ?? 'Di atas 150', 'kA', icu ? 'warn' : 'danger',
+              icu ? 'CEK: Icu ≥ Isc · Verifikasi Datasheet' : 'PERLU ACB / PEMBATAS ARUS',
+              'Pilih Icu (atau Ics) breaker sisi sumber ≥ Isc panel sumber; standar 6–150 kA.')
           ];
         } else if (key === 'water') {
           const q = v.flow / 1000;
           const d = v.diameter / 1000;
           const velocity = q / (0.25 * Math.PI * d * d);
           const friction = 10.67 * v.length * Math.pow(q, 1.852) * Math.pow(v.c, -1.852) * Math.pow(d, -4.87);
-          const head = v.staticHead + friction * 1.2 + v.residual;
+          const fittings = { elbow90: 0.9, elbow45: 0.4, tee: 1.8, gateValve: 0.2, checkValve: 2.0 };
+          if (Object.keys(fittings).some(name => !Number.isInteger(v[name]))) throw new RangeError('Jumlah fitting harus bilangan bulat.');
+          const sumK = Object.entries(fittings).reduce((total, [name, k]) => total + k * v[name], 0);
+          const minorLoss = sumK * velocity * velocity / (2 * 9.81);
+          const detailed = v.fittingMode === 2;
+          const pipeLoss = detailed ? friction + minorLoss : friction * 1.2;
+          const head = v.staticHead + pipeLoss + v.residual;
+          const minResidual = 1.5 / 0.0981;
+          const boosterBar = (v.staticHead + pipeLoss + Math.max(v.residual, minResidual)) * 0.0981;
           const power = 1000 * 9.81 * q * head / (1000 * 0.65);
           const rain = 0.9 * v.rain * v.roof / 3600;
           results = [
             result('KECEPATAN ALIRAN (Limit Aman ≤ 2 m/s)', velocity, 'm/s', ...threshold(velocity, 2, 2.5, 'AMAN ≤2 m/s', 'BATAS MAKS ≤2,5 m/s', 'RISIKO WATER HAMMER')),
             result('HEAD LOSS GESEK (Hitungan Kasar / Estimasi)', friction, 'mka'),
             result('TOTAL GESEK + FITTING 20% (Koreksi Aksesoris)', friction * 1.2, 'mka'),
-            result('TOTAL HEAD POMPA MKA (Estimasi Lapangan)', head, 'mka'),
+            result('MINOR LOSS FITTING (ΣK × v²/2g)', minorLoss, 'mka', 'warn', undefined,
+              `ΣK = ${sumK.toFixed(1)} (elbow 90° ${v.elbow90}, elbow 45° ${v.elbow45}, tee ${v.tee}, gate/ball ${v.gateValve}, check ${v.checkValve}).`),
+            result('TOTAL GESEK + FITTING ΣK (Rincian K)', friction + minorLoss, 'mka'),
+            result('TOTAL HEAD POMPA MKA (Estimasi Lapangan)', head, 'mka', 'warn', undefined,
+              detailed ? 'Pakai gesek pipa + minor loss ΣK.' : 'Pakai gesek pipa + 20% fitting.'),
             result('TEKANAN POMPA BAR (Konversi Head)', head * 0.0981, 'bar'),
+            result('TEKANAN KERJA BOOSTER MIN (Head Statis + Sisa ≥1,5 bar)', boosterBar, 'bar', 'warn',
+              v.residual < minResidual ? 'SISA FIXTURE DINAIKKAN KE 1,5 BAR' : undefined,
+              `Head statis ${v.staticHead} m + losses ${pipeLoss.toFixed(2)} mka + sisa fixture terjauh ${Math.max(v.residual * 0.0981, 1.5).toFixed(2)} bar.`),
             result('DAYA MOTOR KW (Efisiensi 65%)', power, 'kW'),
             result('KAPASITAS MOTOR HP (Estimasi Beban)', power / 0.746, 'HP'),
             result('DEBIT AIR HUJAN (Kalkulasi Runoff Atap)', rain, 'L/detik'),
             result('JUMLAH TITIK ROOF DRAIN (Asumsi 12 L/s)', Math.ceil(rain / 12), 'titik', 'warn', 'PERHATIAN · ASUMSI ~12 L/s/TITIK')
           ];
         } else if (key === 'hvac') {
-          const btu = v.area * v.load;
+          const areaBtu = v.area * v.load;
+          const peopleBtu = v.people * 450;
+          const lightBtu = v.lampW * 3.412;
+          const btu = areaBtu + peopleBtu + lightBtu;
           const tr = btu / 12000;
           const cmh = v.volume * v.ach;
           const cfm = cmh / 1.699;
           const velocity = (cmh / 3600) / (v.a * v.b / 1e6);
+          if (!Number.isInteger(v.people)) throw new RangeError('Jumlah penghuni harus bilangan bulat.');
           results = [
-            result('KAPASITAS PK / BTU (Hitungan Kasar)', btu, 'BTU/h'),
+            result('BEBAN AREA / SELUBUNG (BTU/m² × Luas)', areaBtu, 'BTU/h'),
+            result('BEBAN PENGHUNI / PEOPLE LOAD (450 BTU/h/org)', peopleBtu, 'BTU/h', 'warn', undefined, 'Sensibel ~250 + laten ~200 BTU/h per orang (aktivitas kantor).'),
+            result('BEBAN LAMPU / LIGHTING LOAD (W × 3,412)', lightBtu, 'BTU/h'),
+            result('KAPASITAS PK / BTU (Hitungan Kasar)', btu, 'BTU/h', 'warn', undefined, 'Total = beban area + penghuni + lampu.'),
             result('BEBAN TON REFRIGERASI (Estimasi TR)', tr, 'TR'),
             result('KONVERSI KAPASITAS AC (Estimasi PK)', btu / 9000, 'PK'),
             result('DEBIT WATER CHILLER (Flow GPM)', tr * 2.4, 'GPM'),
@@ -7958,13 +8082,20 @@
               density <= 10 ? 'AMAN · AMBANG ≤10 W/m²' : 'MELEBIHI AMBANG 10 W/m²')
           ];
         } else if (key === 'fire') {
+          const drainMinutes = v.tank * 1000 / 3.785 / v.gpm;
+          const drainStatus = drainMinutes < 45 ? ['danger', 'KURANG DARI 45 MENIT (NFPA)']
+            : drainMinutes < v.duration ? ['danger', `DI BAWAH TARGET ${formatNumber(v.duration)} MENIT`]
+            : drainMinutes < 60 ? ['warn', 'MEMENUHI ≥45 MENIT · CEK SYARAT 60 MENIT']
+            : ['warn', 'MEMENUHI ≥60 MENIT · VERIFIKASI NFPA'];
           results = [
             result('JUMLAH SPRINKLER (Estimasi Titik)', Math.ceil(v.area / v.coverage), 'titik'),
             result('DEBIT SPRINKLER 6 TITIK (Flow GPM)', 6 * 20, 'GPM'),
             result('DEBIT SPRINKLER 12 TITIK (Flow GPM)', 12 * 20, 'GPM'),
             result('JOCKEY PUMP 5% MAIN (Flow GPM)', v.gpm * 0.05, 'GPM'),
             result('JOCKEY PUMP 10% MAIN (Flow GPM)', v.gpm * 0.10, 'GPM'),
-            result('KAPASITAS TANGKI AIR PEMADAM (Estimasi Kubikasi)', v.gpm * 3.785 * v.duration / 1000, 'm³', 'warn', 'PERHATIAN · BUKAN DESAIN FINAL')
+            result('KAPASITAS TANGKI AIR PEMADAM (Estimasi Kubikasi)', v.gpm * 3.785 * v.duration / 1000, 'm³', 'warn', 'PERHATIAN · BUKAN DESAIN FINAL'),
+            result('WAKTU KURAS TANGKI / DISCHARGE DURATION (NFPA 45–60 mnt)', drainMinutes, 'menit', ...drainStatus,
+              `Tangki ${formatNumber(v.tank)} m³ ÷ main pump ${formatNumber(v.gpm)} GPM (${formatNumber(v.gpm * 3.785 / 1000 * 60)} m³/jam).`)
           ];
         } else {
           const peak = v.connected * v.demand;
@@ -8035,6 +8166,7 @@
           const fields = document.createElement('div');
           fields.className = 'mep-calc-fields';
           const controls = new Map();
+          const badges = [];
           for (const field of tab.fields) {
             const wrapper = document.createElement('div');
             wrapper.className = 'mep-calc-field';
@@ -8054,7 +8186,24 @@
             }
             control.value = String(field.value);
             wrapper.append(label, control);
-            fields.append(wrapper);
+            if (field.badge) {
+              const pair = document.createElement('div');
+              pair.className = 'mep-calc-pair';
+              const aside = document.createElement('div');
+              aside.className = 'mep-calc-field mep-calc-cable-type';
+              const caption = document.createElement('span');
+              caption.className = 'mep-calc-cable-caption';
+              caption.textContent = 'Tipe kabel';
+              const chip = document.createElement('output');
+              chip.className = 'mep-calc-cable-chip';
+              chip.setAttribute('aria-live', 'polite');
+              aside.append(caption, chip);
+              pair.append(wrapper, aside);
+              fields.append(pair);
+              badges.push({ chip, render: field.badge });
+            } else {
+              fields.append(wrapper);
+            }
             controls.set(field.key, control);
           }
           const error = document.createElement('p');
@@ -8070,8 +8219,19 @@
           function update() {
             output.replaceChildren();
             controls.forEach(control => control.removeAttribute('aria-invalid'));
+            const values = Object.fromEntries([...controls].map(([key, control]) => [key, control.value]));
+            badges.forEach(({ chip, render }) => {
+              const info = render(values);
+              const main = document.createElement('span');
+              main.className = 'mep-calc-cable-main';
+              main.textContent = info.text;
+              const core = document.createElement('span');
+              core.className = 'mep-calc-cable-core';
+              core.textContent = info.core;
+              chip.title = info.hint;
+              chip.replaceChildren(main, core);
+            });
             try {
-              const values = Object.fromEntries([...controls].map(([key, control]) => [key, control.value]));
               const results = calculate(tab.key, values);
               const fragment = document.createDocumentFragment();
               results.forEach(item => {

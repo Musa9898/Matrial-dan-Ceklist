@@ -140,7 +140,7 @@ test('water velocity badges cover safe, tolerance and risk', () => {
 });
 
 test('HVAC calculates load, ventilation, sensible heat, equivalent diameter and velocity', () => {
-  const results = calculate('hvac');
+  const results = calculate('hvac', { people: 0, lampW: 0 });
   near(item(results, 'KAPASITAS PK / BTU (Hitungan Kasar)').value, 60000);
   near(item(results, 'BEBAN TON REFRIGERASI (Estimasi TR)').value, 5);
   near(item(results, 'KONVERSI KAPASITAS AC (Estimasi PK)').value, 60000 / 9000);
@@ -182,6 +182,67 @@ test('fire estimates round sprinklers and return explicitly non-certified ranges
   assert.equal(item(results, 'JOCKEY PUMP 10% MAIN (Flow GPM)').value, 50);
   near(item(results, 'KAPASITAS TANGKI AIR PEMADAM (Estimasi Kubikasi)').value, 85.1625);
   assert.ok(results.every(result => result.level === 'warn'));
+});
+
+test('electric adds apparent power, short-circuit estimate and Icu recommendation', () => {
+  const results = calculate('electric');
+  near(item(results, 'DAYA SEMU / KVA (S = P ÷ Cos Phi)').value, 10 / 0.85);
+  const z = 0.05 * 380 ** 2 / 1e6;
+  const isc = 380 / Math.sqrt(3) / z / 1000;
+  near(item(results, 'ARUS HUBUNG SINGKAT PANEL SUMBER (Isc Estimasi)').value, isc);
+  assert.ok(item(results, 'ARUS HUBUNG SINGKAT UJUNG KABEL (Isc Panel Beban)').value < isc);
+  assert.equal(item(results, 'BREAKING CAPACITY MCCB (Icu Min)').value, 36);
+  const big = calculate('electric', { trafoKva: 5000, uk: 3 });
+  assert.equal(item(big, 'BREAKING CAPACITY MCCB (Icu Min)').level, 'danger');
+});
+
+test('water adds cumulative fitting K minor loss and booster pressure with 1.5 bar residual', () => {
+  const q = 0.002;
+  const velocity = q / (Math.PI * 0.05 ** 2 / 4);
+  const hf = 10.67 * 50 * q ** 1.852 / (150 ** 1.852 * 0.05 ** 4.87);
+  const sumK = 6 * 0.9 + 2 * 1.8 + 2 * 0.2 + 2.0;
+  const minor = sumK * velocity ** 2 / (2 * 9.81);
+  const detailed = calculate('water', { fittingMode: 2 });
+  near(item(detailed, 'MINOR LOSS FITTING (ΣK × v²/2g)').value, minor);
+  near(item(detailed, 'TOTAL HEAD POMPA MKA (Estimasi Lapangan)').value, 30 + hf + minor + 12);
+  near(item(detailed, 'TEKANAN KERJA BOOSTER MIN (Head Statis + Sisa ≥1,5 bar)').value, (30 + hf + minor) * 0.0981 + 1.5);
+  assert.match(item(detailed, 'TEKANAN KERJA BOOSTER MIN (Head Statis + Sisa ≥1,5 bar)').status, /1,5 BAR/);
+  const high = calculate('water', { residual: 20 });
+  near(item(high, 'TEKANAN KERJA BOOSTER MIN (Head Statis + Sisa ≥1,5 bar)').value, (30 + hf * 1.2 + 20) * 0.0981);
+  assert.throws(() => calculate('water', { tee: 1.5 }), /bilangan bulat/);
+});
+
+test('HVAC total load integrates people and lighting heat', () => {
+  const results = calculate('hvac', { people: 20, lampW: 1000 });
+  const total = 60000 + 20 * 450 + 1000 * 3.412;
+  near(item(results, 'BEBAN PENGHUNI / PEOPLE LOAD (450 BTU/h/org)').value, 9000);
+  near(item(results, 'BEBAN LAMPU / LIGHTING LOAD (W × 3,412)').value, 3412);
+  near(item(results, 'KAPASITAS PK / BTU (Hitungan Kasar)').value, total);
+  near(item(results, 'BEBAN TON REFRIGERASI (Estimasi TR)').value, total / 12000);
+});
+
+test('fire tank discharge duration flags NFPA 45/60 minute bands', () => {
+  const minutes = tank => tank * 1000 / 3.785 / 500;
+  const at = tank => item(calculate('fire', { tank }), 'WAKTU KURAS TANGKI / DISCHARGE DURATION (NFPA 45–60 mnt)');
+  near(at(100).value, minutes(100));
+  assert.equal(at(80).level, 'danger');
+  assert.match(at(100).status, /45 MENIT/);
+  assert.match(at(120).status, /60 MENIT/);
+  assert.equal(item(calculate('fire', { tank: 100, duration: 60 }), 'WAKTU KURAS TANGKI / DISCHARGE DURATION (NFPA 45–60 mnt)').level, 'danger');
+});
+
+test('installation method selects IEC KHA column (B2, C, E/F trefoil, D)', () => {
+  const kw = 100;
+  const note = input => item(calculate('electric', { kw, ...input }), 'KHA kabel minimum (1,25 × In)').note;
+  assert.match(note({ cable: 95 }), /KHA total 179 A = 179 A \(tabel B2\)/);
+  assert.match(note({ cable: 95, method: 2 }), /223 A \(tabel C\)/);
+  assert.match(note({ cable: 95, method: 3 }), /238 A \(tabel E\)/);
+  assert.match(note({ cable: 95, method: 4 }), /169 A \(tabel D\)/);
+  assert.match(note({ cable: 300, method: 3, runs: 4 }), /KHA total 2244 A = 561 A \(tabel F trefoil\) × 4/);
+  assert.match(note({ cable: 400, method: 3 }), /656 A \(tabel F trefoil\)/);
+  assert.match(note({ cable: 95, conductor: 2, method: 2 }), new RegExp(`${Math.round(139 * 223 / 179)} A \\(tabel C\\)`));
+  assert.throws(() => calculate('electric', { cable: 400, method: 2 }), /Klem langsung di dinding/);
+  assert.throws(() => calculate('electric', { cable: 400, conductor: 2, method: 3 }), /datasheet pabrik/);
 });
 
 test('utility calculates power, tanks, daily water and gravity slopes', () => {
