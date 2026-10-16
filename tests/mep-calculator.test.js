@@ -35,7 +35,7 @@ test('electricity calculates both phase systems, cable drop, KHA and capacitor b
   for (const phase of [1, 3]) {
     const v = { ...defaults('electric'), phase };
     const results = calculate('electric', v);
-    const cable = calculator.cables.find(c => c.size === v.cable);
+    const cable = calculator.cables.find(c => c.size === v.cable)[1];
     const voltage = phase === 3 ? 380 : 220;
     const current = 10000 / ((phase === 3 ? Math.sqrt(3) : 1) * voltage * 0.85);
     near(item(results, 'Arus nominal In').value, current);
@@ -49,16 +49,61 @@ test('electricity calculates both phase systems, cable drop, KHA and capacitor b
   near(item(calculate('electric', { targetPf: 0.85 }), 'Kebutuhan kapasitor bank').value, 0);
 });
 
-test('cable table covers requested sizes and breaker warns when coordination is unsafe', () => {
-  assert.deepEqual(Array.from(calculator.cables, c => c.size), [2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150]);
-  assert.ok(calculator.cables.every(c => c.r > 0 && c.x > 0 && c.kha > 0));
+test('cable table covers CU/AL sizes and breaker warns when coordination is unsafe', () => {
+  assert.deepEqual(Array.from(calculator.cables, c => c.size),
+    [2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300, 400, 500, 630]);
+  for (const c of calculator.cables) {
+    assert.ok(c[1].r > 0 && c[1].x > 0);
+    assert.equal(c[2] === null, c.size < 16);
+    if (c[2]) assert.ok(c[2].r > c[1].r);
+    assert.equal(c[1].kha === null, c.size > 300);
+    if (c[2]) assert.equal(c[2].kha === null, c.size > 300);
+    if (c[2]?.kha) assert.ok(c[2].kha < c[1].kha);
+  }
+  assert.equal(calculator.cables.find(c => c.size === 150)[1].kha, 225);
+  assert.equal(calculator.cables.find(c => c.size === 300)[1].kha, 339);
+  assert.equal(calculator.cables.find(c => c.size === 300)[2].kha, 265);
   const small = calculate('electric', { kw: 50, cable: 2.5 });
   assert.equal(item(small, 'KHA kabel minimum (1,25 × In)').level, 'danger');
   assert.equal(item(small, 'Rating breaker (>1,2 × In)').level, 'danger');
-  const huge = calculate('electric', { kw: 1000 });
+  const huge = calculate('electric', { kw: 3000, cable: 300, runs: 12 });
   assert.equal(item(huge, 'Rating breaker (>1,2 × In)').value, 'Di atas rentang tabel');
+  assert.match(item(huge, 'Rating breaker (>1,2 × In)').status, />4000 A/);
   const current20 = 20 * Math.sqrt(3) * 380 * 0.85 / 1000;
   assert.equal(item(calculate('electric', { kw: current20 }), 'Rating breaker (>1,2 × In)').value, 25);
+});
+
+test('large LVMDP loads use parallel runs, CU/AL tables, datasheet KHA and breakers up to 4000 A', () => {
+  const breakerAt = amps => item(calculate('electric', { kw: amps * Math.sqrt(3) * 380 * 0.85 / 1000, cable: 300, runs: 12 }),
+    'Rating breaker (>1,2 × In)').value;
+  for (const [amps, rating] of [[600, 800], [1000, 1250], [1500, 2000], [2500, 3200], [3300, 4000]]) {
+    assert.equal(breakerAt(amps), rating);
+  }
+
+  const kw = 1000;
+  const current = kw * 1000 / (Math.sqrt(3) * 380 * 0.85);
+  const cu = calculate('electric', { kw, conductor: 1, cable: 300, runs: 7, length: 50 });
+  const cuCable = calculator.cables.find(c => c.size === 300)[1];
+  near(item(cu, 'Arus per tarikan (In ÷ n)').value, current / 7);
+  assert.match(item(cu, 'KHA kabel minimum (1,25 × In)').note, /KHA total 2373 A = 339 A \(tabel B2\) × 7/);
+  assert.equal(item(cu, 'KHA kabel minimum (1,25 × In)').level, 'warn');
+  const cuDrop = Math.sqrt(3) * current * 0.05 * (cuCable.r / 7 * 0.85 + cuCable.x / 7 * Math.sqrt(1 - 0.85 ** 2));
+  near(item(cu, 'Voltage drop', 'V').value, cuDrop);
+  assert.equal(item(cu, 'Rating breaker (>1,2 × In)').value, 2500);
+  assert.equal(item(cu, 'Rating breaker (>1,2 × In)').level, 'danger');
+
+  const al = calculate('electric', { kw, conductor: 2, cable: 300, runs: 7, length: 50 });
+  assert.equal(item(al, 'KHA kabel minimum (1,25 × In)').level, 'danger');
+  assert.ok(item(al, 'Voltage drop', 'V').value > cuDrop);
+  assert.match(item(calculate('electric', { kw, conductor: 2, cable: 300, runs: 8 }), 'KHA kabel minimum (1,25 × In)').note,
+    /KHA total 2120 A = 265 A \(tabel B2\) × 8/);
+
+  assert.throws(() => calculate('electric', { conductor: 2, cable: 10 }), /AL mulai 16/);
+  assert.throws(() => calculate('electric', { cable: 400 }), /datasheet/);
+  const datasheet = calculate('electric', { kw, cable: 400, runs: 4, khaDatasheet: 435 });
+  assert.match(item(datasheet, 'KHA kabel minimum (1,25 × In)').note, /KHA total 1740 A = 435 A \(datasheet\) × 4/);
+  const override = calculate('electric', { cable: 6, khaDatasheet: 30 });
+  assert.match(item(override, 'KHA kabel minimum (1,25 × In)').note, /30 A \(datasheet\)/);
 });
 
 test('voltage drop indicators distinguish 4 and 5 percent bands', () => {

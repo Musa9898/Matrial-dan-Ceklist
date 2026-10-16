@@ -7676,27 +7676,41 @@
   </script>
   <script id="mep-calc-script">
     const mepCalculator = (() => {
-      // Reference estimates: Cu/PVC 70 C, B2-like installation, 3 loaded conductors, ambient 30 C.
-      // R20 is corrected to 70 C; X is an assumed 0.08 ohm/km, not a product-specific impedance.
+      // Reference estimates: IEC 60364-5-52 Table B.52.4 (PVC 70 C, method B2, 3 loaded conductors, ambient 30 C).
+      // R20 per IEC 60228 class 2 corrected to 70 C; X is an assumed 0.08 ohm/km. Sizes >300 mm² need datasheet KHA.
+      const conductors = {
+        1: { code: 'CU', name: 'Tembaga', alpha: 0.00393 },
+        2: { code: 'AL', name: 'Aluminium', alpha: 0.00403 }
+      };
       const cables = [
-        [2.5, 7.41, 20], [4, 4.61, 27], [6, 3.08, 34], [10, 1.83, 46],
-        [16, 1.15, 62], [25, 0.727, 80], [35, 0.524, 99], [50, 0.387, 118],
-        [70, 0.268, 149], [95, 0.193, 179], [120, 0.153, 206], [150, 0.124, 236]
-      ].map(([size, r20, kha]) => ({ size, r: r20 * (1 + 0.00393 * 50), x: 0.08, kha }));
-      const breakers = [6, 10, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630];
+        [2.5, [7.41, 20], null], [4, [4.61, 27], null], [6, [3.08, 34], null], [10, [1.83, 46], null],
+        [16, [1.15, 62], [1.91, 48]], [25, [0.727, 80], [1.20, 62]], [35, [0.524, 99], [0.868, 77]],
+        [50, [0.387, 118], [0.641, 92]], [70, [0.268, 149], [0.443, 116]], [95, [0.193, 179], [0.320, 139]],
+        [120, [0.153, 206], [0.253, 160]], [150, [0.124, 225], [0.206, 176]], [185, [0.0991, 255], [0.164, 199]],
+        [240, [0.0754, 297], [0.125, 232]], [300, [0.0601, 339], [0.100, 265]],
+        [400, [0.0470, null], [0.0778, null]], [500, [0.0366, null], [0.0605, null]], [630, [0.0283, null], [0.0469, null]]
+      ].map(([size, cu, al]) => {
+        const data = (pair, alpha) => pair && { r: pair[0] * (1 + alpha * 50), x: 0.08, kha: pair[1] };
+        return { size, 1: data(cu, conductors[1].alpha), 2: data(al, conductors[2].alpha) };
+      });
+      const breakers = [6, 10, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630,
+        800, 1000, 1250, 1600, 2000, 2500, 3200, 4000];
       const number = (key, label, value, min = 0, max = 1e9) => ({ key, label, value, min, max });
       const select = (key, label, options, value) => ({ key, label, options, value });
       const tabs = [
         {
           key: 'electric', title: '⚡ Listrik',
-          note: 'Listrik & kapasitor bank. Tabel estimasi Cu/PVC 70°C, pendekatan metode B2, 3 konduktor berbeban, udara 30°C, tanpa derating pengelompokan. R pada 70°C (Ω/km), X asumsi 0,08 Ω/km; KHA juga dipakai konservatif pada 1 fasa. Bukan tabel universal PUIL: cocokkan jenis kabel, pemasangan, suhu, harmonisa, dan datasheet. Drop: √3 untuk 3 fasa, 2 untuk 1 fasa; ambang 4%/5% sesuai parameter kalkulator. Breaker harus dikoordinasikan dengan KHA, arus start dan kurva proteksi.',
+          note: 'Listrik, kabel paralel & kapasitor bank (hingga 4000 A untuk LVMDP). KHA estimasi IEC 60364-5-52 Tabel B.52.4: isolasi PVC 70°C, metode B2, 3 konduktor berbeban, udara 30°C, tanpa derating pengelompokan. CU tersedia 2,5–300 mm², AL 16–300 mm²; ukuran 400–630 mm² wajib memakai KHA per kabel dari datasheet. R pada 70°C (IEC 60228 kelas 2, α CU 0,00393 / AL 0,00403), X asumsi 0,08 Ω/km. Kabel paralel: KHA total = KHA per kabel × jumlah tarikan, R dan X efektif dibagi jumlah tarikan; tarikan paralel wajib sama jenis, ukuran dan panjang, serta perlu faktor koreksi pengelompokan (grouping) sesuai cara pemasangan. KHA juga dipakai konservatif pada 1 fasa. Drop: √3 untuk 3 fasa, 2 untuk 1 fasa; ambang 4%/5% sesuai parameter kalkulator. Breaker harus dikoordinasikan dengan KHA, arus start, kapasitas pemutusan dan kurva proteksi.',
           fields: [
             number('kw', 'Daya aktif (kW)', 10),
             select('phase', 'Sistem fasa', [[3, '3 Fasa · 380 V'], [1, '1 Fasa · 220 V']], 3),
             number('pf', 'Cos phi awal', 0.85, 0.01, 1),
             number('targetPf', 'Target cos phi baru', 0.95, 0.01, 1),
-            select('cable', 'Ukuran kabel Cu · R / X (Ω/km) · KHA estimasi',
-              cables.map(c => [c.size, `${c.size} mm² · R ${c.r.toFixed(3)} · X ${c.x} · ${c.kha} A`]), 6),
+            select('conductor', 'Jenis konduktor', [[1, 'CU · Tembaga'], [2, 'AL · Aluminium']], 1),
+            select('cable', 'Ukuran kabel per tarikan (mm²)',
+              cables.map(c => [c.size, `${c.size} mm²${c[1].kha ? '' : ' · KHA dari datasheet'}`]), 6),
+            select('runs', 'Jumlah tarikan paralel per fasa', Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1} tarikan`]), 1),
+            number('khaDatasheet', 'KHA per kabel dari datasheet (A) · 0 = pakai tabel B2', 0, 0, 5000),
             number('length', 'Panjang kabel satu arah (m)', 30)
           ]
         },
@@ -7784,24 +7798,39 @@
         let results;
         if (key === 'electric') {
           if (v.targetPf < v.pf) throw new RangeError('Target cos phi harus sama atau lebih besar dari cos phi awal.');
-          const cable = cables.find(c => c.size === v.cable);
+          const material = conductors[v.conductor];
+          const cable = cables.find(c => c.size === v.cable)[v.conductor];
+          if (!cable) throw new RangeError(`Kabel ${material.code} ${v.cable} mm² tidak tersedia di tabel; AL mulai 16 mm².`);
+          if (!cable.kha && !v.khaDatasheet) {
+            throw new RangeError(`KHA ${material.code} ${v.cable} mm² di luar tabel B2 (maks 300 mm²): isi KHA per kabel dari datasheet.`);
+          }
+          const khaPerRun = v.khaDatasheet || cable.kha;
+          const khaSource = v.khaDatasheet ? 'datasheet' : 'tabel B2';
+          const totalKha = khaPerRun * v.runs;
+          const r = cable.r / v.runs;
+          const x = cable.x / v.runs;
           const voltage = v.phase === 3 ? 380 : 220;
           const factor = v.phase === 3 ? Math.sqrt(3) : 1;
           const current = v.kw * 1000 / (factor * voltage * v.pf);
           const minKha = current * 1.25;
           const breaker = breakers.find(rating => rating > current * 1.2);
           const drop = (v.phase === 3 ? Math.sqrt(3) : 2) * current * v.length / 1000 *
-            (cable.r * v.pf + cable.x * Math.sqrt(1 - v.pf * v.pf));
+            (r * v.pf + x * Math.sqrt(1 - v.pf * v.pf));
           const percent = drop / voltage * 100;
           const dropStatus = threshold(percent, 4, 5, 'AMAN · PENERANGAN ≤4%', 'BATAS DAYA ≤5%', 'MELEBIHI AMBANG 5% · VERIFIKASI PUIL');
+          const khaOk = minKha <= totalKha;
+          const cableText = `${v.runs} × ${material.code} ${v.cable} mm²`;
           results = [
             result('Arus nominal In', current, 'A'),
-            result('KHA kabel minimum (1,25 × In)', minKha, 'A', minKha <= cable.kha ? 'safe' : 'danger',
-              minKha <= cable.kha ? 'AMAN · KHA ESTIMASI' : 'KABEL KEKECILAN', `KHA tabel ${cable.kha} A; R70 ${cable.r.toFixed(3)} Ω/km; X ${cable.x} Ω/km.`),
+            result('Arus per tarikan (In ÷ n)', current / v.runs, 'A', 'warn', 'PERHATIAN · ARUS DIASUMSIKAN TERBAGI RATA',
+              `${cableText}; tarikan paralel harus sama jenis, ukuran, panjang dan terminasi.`),
+            result('KHA kabel minimum (1,25 × In)', minKha, 'A', !khaOk ? 'danger' : v.runs > 1 ? 'warn' : 'safe',
+              !khaOk ? 'KABEL KEKECILAN' : v.runs > 1 ? 'CUKUP · CEK DERATING GROUPING' : 'AMAN · KHA ESTIMASI',
+              `KHA total ${totalKha} A = ${khaPerRun} A (${khaSource}) × ${v.runs} tarikan; R70 efektif ${r.toFixed(4)} Ω/km; X efektif ${x.toFixed(4)} Ω/km.`),
             result('Rating breaker (>1,2 × In)', breaker ?? 'Di atas rentang tabel', breaker ? 'A' : '',
-              !breaker || breaker > cable.kha ? 'danger' : 'warn',
-              !breaker ? 'PERLU PEMILIHAN MANUAL >630 A' : breaker > cable.kha ? 'RATING BREAKER > KHA KABEL' : 'PERHATIAN · KOORDINASI PROTEKSI',
-              'Rating standar tidak otomatis cocok untuk kabel, starting motor, atau kapasitas pemutusan.'),
+              !breaker || breaker > totalKha ? 'danger' : 'warn',
+              !breaker ? 'PERLU PEMILIHAN MANUAL >4000 A' : breaker > totalKha ? 'RATING BREAKER > KHA KABEL' : 'PERHATIAN · KOORDINASI PROTEKSI',
+              `Rating standar 6–4000 A${breaker >= 800 ? '; ≥800 A umumnya ACB, cek kapasitas pemutusan (Icu) dan setelan proteksi' : ''}. Tidak otomatis cocok untuk kabel atau starting motor.`),
             result('Voltage drop', drop, 'V', ...dropStatus),
             result('Voltage drop', percent, '%', ...dropStatus),
             result('Kebutuhan kapasitor bank', v.kw * (Math.tan(Math.acos(v.pf)) - Math.tan(Math.acos(v.targetPf))), 'kVAR',
