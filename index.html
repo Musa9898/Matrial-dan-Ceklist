@@ -2682,6 +2682,67 @@
       }
     }
 
+    @media (max-width: 639px) {
+      body {
+        padding: 0;
+        align-items: flex-start;
+      }
+
+      .login-screen,
+      .app-container {
+        max-width: none;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .login-screen {
+        min-height: 100vh;
+        min-height: 100dvh;
+        max-height: none;
+        overflow: visible;
+      }
+
+      .login-brand {
+        padding: calc(20px + env(safe-area-inset-top, 0px))
+          calc(16px + env(safe-area-inset-right, 0px)) 20px
+          calc(16px + env(safe-area-inset-left, 0px));
+      }
+
+      .login-form-body {
+        min-width: 0;
+        padding: 24px calc(16px + env(safe-area-inset-right, 0px))
+          calc(24px + env(safe-area-inset-bottom, 0px))
+          calc(16px + env(safe-area-inset-left, 0px));
+      }
+
+      .app-container {
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-right: env(safe-area-inset-right, 0px);
+        padding-left: env(safe-area-inset-left, 0px);
+        display: block;
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
+      }
+
+      /* Header and search scroll away with the content; nav, modals and badge stay on screen. */
+      .app-container .scroll-content {
+        overflow: visible;
+      }
+
+      .app-container .bottom-bar,
+      .app-container .modal-backdrop {
+        position: fixed;
+      }
+
+      .app-container::after {
+        position: fixed;
+      }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .login-brand::before,
       .login-brand::after,
