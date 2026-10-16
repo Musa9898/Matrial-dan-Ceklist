@@ -2860,6 +2860,17 @@
     .mep-calc-panel { padding: 20px; }
     .mep-calc-panel[hidden] { display: none; }
     .mep-calc-note { font-size: 0.75rem; line-height: 1.65; color: var(--text-muted); margin-bottom: 16px; }
+    .mep-calc-info summary {
+      display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 12px;
+      border: 1px solid rgba(240, 181, 27, 0.45); border-radius: 999px; cursor: pointer;
+      color: var(--brand-gold); font-weight: 700; list-style: none; user-select: none;
+    }
+    .mep-calc-info summary::-webkit-details-marker { display: none; }
+    .mep-calc-info summary::before { content: "ⓘ"; font-size: 0.9rem; }
+    .mep-calc-info summary::after { content: "▾"; transition: transform 0.15s; }
+    .mep-calc-info[open] summary::after { transform: rotate(180deg); }
+    .mep-calc-info summary:focus-visible { outline: 2px solid var(--brand-gold); outline-offset: 2px; }
+    .mep-calc-info p { margin-top: 10px; }
     .mep-calc-fields, .mep-calc-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .mep-calc-field { min-width: 0; }
     .mep-calc-field label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 6px; }
@@ -3822,7 +3833,7 @@
     </header>
     <div class="mep-calc-tabs" id="mep-calc-tabs" role="tablist" aria-label="Jenis kalkulator MEP"></div>
     <div id="mep-calc-panels"></div>
-    <p class="mep-calc-note mep-calc-footer" id="mep-calc-disclaimer">Alat estimasi awal, bukan pengesahan desain atau pengganti perhitungan engineer. Badge hanya membandingkan ambang/asumsi yang dicantumkan, bukan sertifikasi kepatuhan PUIL/SNI. Verifikasi standar edisi berlaku, kondisi lapangan, dan datasheet sebelum pelaksanaan. Input hanya berada di memori halaman; tidak dikirim atau disimpan.</p>
+    <details class="mep-calc-note mep-calc-info mep-calc-footer"><summary>Keterangan penggunaan</summary><p id="mep-calc-disclaimer">Alat estimasi awal, bukan pengesahan desain atau pengganti perhitungan engineer. Badge hanya membandingkan ambang/asumsi yang dicantumkan, bukan sertifikasi kepatuhan PUIL/SNI. Verifikasi standar edisi berlaku, kondisi lapangan, dan datasheet sebelum pelaksanaan. Input hanya berada di memori halaman; tidak dikirim atau disimpan.</p></details>
   </dialog>
 
   <script src="google-config.js"></script>
@@ -8014,9 +8025,13 @@
           panel.className = 'mep-calc-panel';
           panel.setAttribute('role', 'tabpanel');
           panel.setAttribute('aria-labelledby', button.id);
-          const note = document.createElement('p');
-          note.className = 'mep-calc-note';
-          note.textContent = tab.note;
+          const note = document.createElement('details');
+          note.className = 'mep-calc-note mep-calc-info';
+          const noteSummary = document.createElement('summary');
+          noteSummary.textContent = 'Keterangan & asumsi';
+          const noteText = document.createElement('p');
+          noteText.textContent = tab.note;
+          note.append(noteSummary, noteText);
           const fields = document.createElement('div');
           fields.className = 'mep-calc-fields';
           const controls = new Map();
