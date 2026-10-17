@@ -2063,7 +2063,9 @@
 
     /* Kurva S */
     .kurva-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-    .kurva-actions .btn-cancel { padding: 8px 12px; font-size: 0.8rem; }
+    .kurva-actions .btn-cancel { padding: 8px 12px; font-size: 0.8rem; white-space: nowrap; }
+    .kurva-actions [hidden] { display: none !important; }
+    .section-header:has(> .kurva-actions) .section-title { white-space: nowrap; flex-shrink: 0; }
     .kurva-empty { text-align: center; padding: 36px 20px; border: 1px dashed #cbd5e1; border-radius: 16px; background: var(--card-bg); color: var(--text-muted); }
     .kurva-empty strong { display: block; color: var(--text-dark); margin-bottom: 6px; }
     .kurva-empty p { font-size: 0.85rem; line-height: 1.5; }
@@ -2102,6 +2104,19 @@
     .kurva-holiday { fill: rgba(240, 181, 27, 0.18); }
     .kurva-bar { fill: rgba(41, 55, 125, 0.18); }
     .kurva-plan { fill: none; stroke: var(--brand-navy); stroke-width: 2.5; stroke-linejoin: round; }
+    .kurva-baseline { fill: none; stroke: #94a3b8; stroke-width: 2; stroke-dasharray: 6 5; stroke-linejoin: round; opacity: 0.85; }
+    .kurva-legend .legend-baseline { background: repeating-linear-gradient(90deg, #94a3b8 0 5px, transparent 5px 8px); }
+    .kurva-revision-badge { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; font-size: 0.75rem; color: var(--text-muted); }
+    .kurva-revision-badge b { padding: 2px 8px; border-radius: 999px; background: rgba(240, 181, 27, 0.18); color: #b7820a; font-size: 0.7rem; }
+    body.theme-dark .kurva-revision-badge b { color: var(--brand-gold); }
+    .kurva-revision-list { list-style: none; margin: 0; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+    .kurva-revision-list li { border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px; }
+    .kurva-revision-list li.is-active { border-color: var(--brand-gold); }
+    .kurva-revision-list li div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .kurva-revision-list strong { font-size: 0.82rem; color: var(--text-dark); }
+    .kurva-revision-list em { font-style: normal; font-size: 0.68rem; font-weight: 700; color: var(--success-green); }
+    .kurva-revision-list small { display: block; font-size: 0.7rem; color: var(--text-muted); overflow-wrap: anywhere; }
+    .kurva-revision-list p { margin: 4px 0; font-size: 0.78rem; color: var(--text-dark); }
     .kurva-actual { fill: none; stroke: var(--success-green); stroke-width: 3; stroke-linejoin: round; }
     .kurva-actual-dot { fill: var(--card-bg); stroke: var(--success-green); stroke-width: 2; }
     .kurva-today { stroke: var(--danger-red); stroke-width: 1.5; stroke-dasharray: 4 4; }
@@ -2152,6 +2167,7 @@
     .kurva-animate .kurva-table-wrap { animation: kurvaFadeDown 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--kurva-i, 0) * 60ms); }
     .kurva-animate .kurva-bar { transform-box: fill-box; transform-origin: 50% 100%; animation: kurvaGrow 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(300ms + var(--kurva-i, 0) * 14ms); }
     .kurva-animate .kurva-holiday,
+    .kurva-animate .kurva-baseline,
     .kurva-animate .kurva-today,
     .kurva-animate .kurva-today-label { animation: kurvaFadeIn 0.6s ease 0.9s both; }
     .kurva-animate .kurva-plan { stroke-dasharray: var(--kurva-len, 4000); stroke-dashoffset: var(--kurva-len, 4000); animation: kurvaDraw 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.35s forwards; }
@@ -3530,6 +3546,7 @@
         <div class="section-title"><span>📈</span> Kurva S</div>
         <div class="kurva-actions">
           <button class="btn-cancel" type="button" id="kurvaImportButton" onclick="openKurvaImportModal()">Import Excel</button>
+          <button class="btn-cancel" type="button" id="kurvaRescheduleButton" onclick="openKurvaImportModal('reschedule')">Reschedule</button>
           <button class="btn-action-primary" type="button" id="kurvaProgressButton" onclick="openKurvaProgressModal()">+ Input Progres</button>
         </div>
       </div>
@@ -3539,7 +3556,7 @@
     <div class="modal-backdrop" id="modalKurvaImport" role="dialog" aria-modal="true" aria-labelledby="kurvaImportTitle">
       <div class="modal-sheet">
         <h3 id="kurvaImportTitle">Import Jadwal Kurva S</h3>
-        <p class="form-hint">Pilih file Excel (.xlsx) master schedule. Aplikasi membaca kolom ITEM, Bobot, Minggu Ke, dan rencana per minggu.</p>
+        <p class="form-hint" id="kurvaImportHint">Pilih file Excel (.xlsx) master schedule. Aplikasi membaca kolom ITEM, Bobot, Minggu Ke, dan rencana per minggu.</p>
         <div class="form-row">
           <label class="required-label" for="kurvaFileInput">File Excel</label>
           <input type="file" id="kurvaFileInput" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="handleKurvaFileSelected(this.files[0])">
@@ -4967,6 +4984,7 @@
       toggle('button[onclick^="openDailyWorkReportForm"]', 'daily_report');
       toggle('#kurvaProgressButton', 'daily_report');
       toggle('#kurvaImportButton', 'files');
+      toggle('#kurvaRescheduleButton', 'files');
       toggle('#addProjectFolderButton', 'files');
       toggle('#projectFolderContents button[onclick^="renameProjectFolder"]', 'files');
       toggle('#projectFileUploadButton', 'files');
@@ -8275,6 +8293,7 @@
     }
 
     let kurvaImportDraft = null;
+    let kurvaImportMode = 'import';
     const KURVA_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
     function normalizeProjectSchedule(value) {
@@ -8287,8 +8306,27 @@
         weekCount,
         items,
         holidays: Array.isArray(value.holidays) ? value.holidays.map(Number).filter(Number.isInteger) : [],
-        progress: value.progress && typeof value.progress === 'object' && !Array.isArray(value.progress) ? value.progress : {}
+        progress: value.progress && typeof value.progress === 'object' && !Array.isArray(value.progress) ? value.progress : {},
+        revision: Math.max(0, Math.round(Number(value.revision) || 0)),
+        baseline: value.baseline && Array.isArray(value.baseline.planCumulative) && value.baseline.planCumulative.length ? value.baseline : null,
+        revisions: Array.isArray(value.revisions) ? value.revisions.filter((entry) => entry && typeof entry === 'object') : []
       };
+    }
+
+    function getKurvaRevisionMeta(schedule, revision, note) {
+      return {
+        revision,
+        note,
+        fileName: schedule.fileName || '',
+        importedAt: schedule.importedAt || '',
+        importedBy: schedule.importedBy || '',
+        startDate: schedule.startDate || '',
+        weekCount: schedule.weekCount
+      };
+    }
+
+    function getKurvaFinishDate(startDate, planCumulative) {
+      return kurvaSCore.getWeekStartDate(startDate, kurvaSCore.getFinishWeek(planCumulative) + 1);
     }
 
     function formatKurvaPercent(value, digits = 2) {
@@ -8362,6 +8400,10 @@
         parts.push(`<text class="kurva-today-label" x="${x(currentWeek) > width / 2 ? x(currentWeek) - 4 : x(currentWeek) + 4}" y="${pad.top + 12}" text-anchor="${x(currentWeek) > width / 2 ? 'end' : 'start'}">Minggu ini</text>`);
       }
       const planPoints = [`${x(0)},${y(0)}`, ...curve.planCumulative.map((value, index) => `${x(index + 1)},${y(value)}`)];
+      if (curve.baselineCumulative) {
+        const basePoints = [`${x(0)},${y(0)}`, ...curve.baselineCumulative.map((value, index) => `${x(index + 1)},${y(value)}`)];
+        parts.push(`<polyline class="kurva-baseline" points="${basePoints.join(' ')}"/>`);
+      }
       parts.push(`<polyline class="kurva-plan" points="${planPoints.join(' ')}"/>`);
       if (curve.lastReportedWeek) {
         const actualPoints = [`${x(0)},${y(0)}`];
@@ -8382,6 +8424,8 @@
       const container = document.getElementById('kurvaContent');
       if (!container) return;
       container.classList.remove('kurva-animate');
+      const rescheduleButton = document.getElementById('kurvaRescheduleButton');
+      if (rescheduleButton) rescheduleButton.hidden = !projectSchedule;
       if (!projectSchedule) {
         container.innerHTML = `
           <div class="kurva-empty">
@@ -8438,16 +8482,31 @@
           <td>${escapeHtml(formatKurvaDate(kurvaSCore.getWeekStartDate(projectSchedule.startDate, week), true))}</td>
           <td>${curve.planWeekly[index].toFixed(3)}</td>
           <td>${planCumulative.toFixed(3)}</td>
+          ${curve.baselineCumulative ? `<td>${curve.baselineCumulative[index].toFixed(3)}</td>` : ''}
           <td>${curve.actualWeekly[index] === null ? '–' : curve.actualWeekly[index].toFixed(3)}</td>
           <td>${curve.actualCumulative[index] === null ? '–' : curve.actualCumulative[index].toFixed(3)}</td>
           <td class="${dev === null ? '' : dev >= -0.005 ? 'is-ahead' : 'is-behind'}">${dev === null ? '–' : `${dev > 0 ? '+' : ''}${dev.toFixed(3)}`}</td>
         </tr>`;
       }).join('');
 
+      const revision = projectSchedule.revision || 0;
+      const baselineFinish = projectSchedule.baseline ? getKurvaFinishDate(projectSchedule.baseline.startDate, projectSchedule.baseline.planCumulative) : '';
+      const currentFinish = getKurvaFinishDate(projectSchedule.startDate, curve.planCumulative);
+      const shiftWeeks = baselineFinish ? kurvaSCore.getWeekOffset(baselineFinish, currentFinish) : 0;
+      const shiftLabel = !baselineFinish ? '' : shiftWeeks > 0 ? `selesai mundur ${shiftWeeks} minggu dari jadwal awal` : shiftWeeks < 0 ? `selesai maju ${-shiftWeeks} minggu dari jadwal awal` : 'tanggal selesai sama dengan jadwal awal';
+      const revisionHistory = [...(projectSchedule.revisions || [])].reverse().map((entry) => `
+        <li class="${entry.revision === revision ? 'is-active' : ''}">
+          <div><strong>${entry.revision ? `Revisi ke-${entry.revision}` : 'Jadwal awal (baseline)'}</strong>${entry.revision === revision ? '<em>Aktif</em>' : ''}</div>
+          <small>${escapeHtml(entry.importedAt ? formatKurvaDate(entry.importedAt.slice(0, 10), true) : '-')}${entry.importedBy ? ` · ${escapeHtml(entry.importedBy)}` : ''} · ${Number(entry.weekCount) || '-'} minggu · mulai ${escapeHtml(formatKurvaDate(entry.startDate, true))}</small>
+          ${entry.revision ? `<p>${escapeHtml(entry.note || '-')}</p>` : ''}
+          <small>${escapeHtml(entry.fileName || '')}</small>
+        </li>`).join('');
+
       container.innerHTML = `
         <div class="kurva-meta">
           <strong>${escapeHtml(projectSchedule.title || getActiveProjectName())}</strong>
           <span>Mulai ${escapeHtml(formatKurvaDate(projectSchedule.startDate, true))} · ${projectSchedule.weekCount} minggu · Total bobot ${formatKurvaPercent(curve.totalWeight)}</span>
+          ${revision ? `<div class="kurva-revision-badge"><b>Revisi ke-${revision}</b><span>${escapeHtml(shiftLabel)}${projectSchedule.revisionNote ? ` · ${escapeHtml(projectSchedule.revisionNote)}` : ''}</span></div>` : ''}
         </div>
         <div class="kurva-summary">
           <div class="kurva-stat">
@@ -8458,7 +8517,7 @@
           <div class="kurva-stat">
             <span>Rencana kumulatif</span>
             <strong class="color-purple" data-kurva-count="${currentWeek >= 1 ? curve.planCumulative[planWeek - 1] : 0}">${formatKurvaPercent(currentWeek >= 1 ? curve.planCumulative[planWeek - 1] : 0)}</strong>
-            <small>s.d. minggu ke-${Math.max(0, currentWeek)}</small>
+            <small>s.d. minggu ke-${Math.max(0, currentWeek)}${curve.baselineCumulative && currentWeek >= 1 ? ` · awal ${formatKurvaPercent(curve.baselineCumulative[planWeek - 1])}` : ''}</small>
           </div>
           <div class="kurva-stat">
             <span>Realisasi kumulatif</span>
@@ -8475,7 +8534,8 @@
         <div class="kurva-chart-card">
           <div class="kurva-chart-scroll">${buildKurvaChart(curve, currentWeek, container.clientWidth - 36)}</div>
           <div class="kurva-legend">
-            <span><i class="legend-plan"></i>Rencana kumulatif</span>
+            <span><i class="legend-plan"></i>${revision ? `Rencana revisi ke-${revision}` : 'Rencana kumulatif'}</span>
+            ${curve.baselineCumulative ? '<span><i class="legend-baseline"></i>Rencana awal (baseline)</span>' : ''}
             <span><i class="legend-actual"></i>Realisasi kumulatif</span>
             <span><i class="legend-bar"></i>Rencana mingguan</span>
             ${projectSchedule.holidays.length ? '<span><i class="legend-holiday"></i>Libur</span>' : ''}
@@ -8487,11 +8547,16 @@
           <summary>Tabel mingguan (rencana, realisasi, deviasi)</summary>
           <div class="kurva-table-scroll">
             <table class="kurva-table">
-              <thead><tr><th>Minggu</th><th>Mulai</th><th>Rencana</th><th>Renc. Kum.</th><th>Realisasi</th><th>Real. Kum.</th><th>Deviasi Kum.</th></tr></thead>
+              <thead><tr><th>Minggu</th><th>Mulai</th><th>Rencana</th><th>Renc. Kum.</th>${curve.baselineCumulative ? '<th>Awal Kum.</th>' : ''}<th>Realisasi</th><th>Real. Kum.</th><th>Deviasi Kum.</th></tr></thead>
               <tbody>${tableRows}</tbody>
             </table>
           </div>
         </details>
+        ${revisionHistory && (projectSchedule.revisions || []).length > 1 ? `
+        <details class="kurva-table-wrap">
+          <summary>Riwayat revisi jadwal (${projectSchedule.revisions.length})</summary>
+          <ul class="kurva-revision-list">${revisionHistory}</ul>
+        </details>` : ''}
         <p class="form-hint">Sumber: ${escapeHtml(projectSchedule.fileName || 'Excel')}${projectSchedule.importedBy ? ` · diimpor oleh ${escapeHtml(projectSchedule.importedBy)}` : ''}${projectSchedule.importedAt ? ` · ${escapeHtml(formatKurvaDate(projectSchedule.importedAt.slice(0, 10), true))}` : ''}</p>`;
 
               const chartScroll = container.querySelector('.kurva-chart-scroll');
@@ -8564,6 +8629,7 @@
         <dl>
           <dt>Rencana minggu ini</dt><dd>${fmt(curve.planWeekly[index])}</dd>
           <dt>Rencana kumulatif</dt><dd>${fmt(curve.planCumulative[index])}</dd>
+          ${curve.baselineCumulative ? `<dt>Rencana awal kum.</dt><dd>${fmt(curve.baselineCumulative[index])}</dd>` : ''}
           <dt>Realisasi minggu ini</dt><dd>${fmt(curve.actualWeekly[index])}</dd>
           <dt>Realisasi kumulatif</dt><dd>${fmt(curve.actualCumulative[index])}</dd>
           <dt>Deviasi</dt><dd class="${devClass}">${dev === null ? '–' : `${dev > 0 ? '+' : ''}${formatKurvaPercent(dev, 3)}`}</dd>
@@ -8596,12 +8662,24 @@
               }, 200);
             });
 
-    function openKurvaImportModal() {
+    function openKurvaImportModal(mode = 'import') {
       if (!requireAccess('files')) return;
+      if (mode === 'reschedule' && !projectSchedule) {
+        alert('Import jadwal awal terlebih dahulu sebelum membuat reschedule.');
+        return;
+      }
+      kurvaImportMode = mode;
       kurvaImportDraft = null;
+      const isReschedule = mode === 'reschedule';
+      const nextRevision = (projectSchedule?.revision || 0) + 1;
+      document.getElementById('kurvaImportTitle').textContent = isReschedule ? `Reschedule · Revisi ke-${nextRevision}` : 'Import Jadwal Kurva S';
+      document.getElementById('kurvaImportHint').textContent = isReschedule
+        ? 'Pilih file Excel jadwal revisi. Jadwal awal tetap disimpan sebagai baseline, progres yang sudah diinput tetap dipertahankan.'
+        : 'Pilih file Excel (.xlsx) master schedule. Aplikasi membaca kolom ITEM, Bobot, Minggu Ke, dan rencana per minggu.';
+      document.getElementById('kurvaImportSave').textContent = isReschedule ? 'Simpan Revisi' : 'Simpan Jadwal';
       document.getElementById('kurvaFileInput').value = '';
-      document.getElementById('kurvaImportPreview').innerHTML = projectSchedule
-        ? '<div class="kurva-alert">Proyek ini sudah punya jadwal. Import baru akan mengganti jadwal, progres pekerjaan dengan nama yang sama tetap dipertahankan.</div>'
+      document.getElementById('kurvaImportPreview').innerHTML = projectSchedule && !isReschedule
+        ? '<div class="kurva-alert">Import ulang akan mengganti jadwal sekarang dan menghapus baseline serta riwayat revisi. Untuk perubahan jadwal proyek gunakan tombol <strong>Reschedule</strong>.</div>'
         : '';
       document.getElementById('kurvaImportSave').disabled = true;
       document.getElementById('modalKurvaImport').style.display = 'flex';
@@ -8626,27 +8704,39 @@
       try {
         const parsed = await kurvaSCore.parseScheduleFile(await file.arrayBuffer());
         kurvaImportDraft = { ...parsed, fileName: file.name };
+        const isReschedule = kurvaImportMode === 'reschedule' && projectSchedule;
         const keptWeeks = projectSchedule ? Object.keys(projectSchedule.progress).length : 0;
+        const newIds = new Set(parsed.items.map((item) => item.id));
+        const lostItems = isReschedule
+          ? projectSchedule.items.filter((item) => !newIds.has(item.id) && Object.values(projectSchedule.progress).some((entry) => Number(entry?.values?.[item.id]) > 0)).length
+          : 0;
         const groups = getKurvaGroups(parsed.items).map(([group, items]) =>
           `<li><span>${escapeHtml(group)}</span><strong>${formatKurvaPercent(items.reduce((sum, item) => sum + item.weight, 0))}</strong></li>`).join('');
         preview.innerHTML = `
+          ${isReschedule ? `
+          <div class="form-row">
+            <label class="required-label" for="kurvaRevisionNote">Alasan revisi</label>
+            <textarea id="kurvaRevisionNote" rows="2" maxlength="300" placeholder="Contoh: keterlambatan material, perubahan desain, addendum kontrak"></textarea>
+          </div>` : ''}
           <div class="form-row">
             <label for="kurvaImportName">Nama jadwal</label>
-            <input type="text" id="kurvaImportName" value="${escapeHtml(parsed.title || getActiveProjectName())}">
+            <input type="text" id="kurvaImportName" value="${escapeHtml(isReschedule ? projectSchedule.title || parsed.title : parsed.title || getActiveProjectName())}">
           </div>
           <div class="form-row">
             <label class="required-label" for="kurvaImportStart">Tanggal mulai minggu ke-1</label>
-            <input type="date" id="kurvaImportStart" value="${escapeHtml(parsed.startDate)}" required>
+            <input type="date" id="kurvaImportStart" value="${escapeHtml(isReschedule ? projectSchedule.startDate || parsed.startDate : parsed.startDate)}" required>
+            ${isReschedule ? '<small class="form-hint">Biasanya tetap sama dengan jadwal awal supaya nomor minggu progres tidak bergeser.</small>' : ''}
           </div>
           <div class="kurva-import-summary">
             <div><span>Sheet</span><strong>${escapeHtml(parsed.sheetName || '-')}</strong></div>
             <div><span>Pekerjaan</span><strong>${parsed.items.length} item</strong></div>
-            <div><span>Durasi</span><strong>${parsed.weekCount} minggu</strong></div>
+            <div><span>Durasi</span><strong>${isReschedule ? `${projectSchedule.weekCount} → ` : ''}${parsed.weekCount} minggu</strong></div>
             <div><span>Total bobot</span><strong>${formatKurvaPercent(parsed.totalWeight)}</strong></div>
           </div>
           ${parsed.holidays.length ? `<p class="form-hint">Minggu tanpa rencana (libur): ${parsed.holidays.join(', ')}</p>` : ''}
           <ul class="kurva-import-groups">${groups}</ul>
-          ${keptWeeks ? `<p class="form-hint">${keptWeeks} minggu laporan progres lama akan dipertahankan untuk pekerjaan yang namanya sama.</p>` : ''}`;
+          ${keptWeeks ? `<p class="form-hint">${keptWeeks} minggu laporan progres lama akan dipertahankan untuk pekerjaan yang namanya sama.</p>` : ''}
+          ${lostItems ? `<div class="kurva-alert">${lostItems} pekerjaan yang sudah punya progres tidak ditemukan di file revisi, progresnya tidak akan ikut terbawa.</div>` : ''}`;
         saveButton.disabled = false;
       } catch (error) {
         preview.innerHTML = `<div class="kurva-alert is-error">${escapeHtml(error.message || 'File tidak dapat dibaca.')}</div>`;
@@ -8660,15 +8750,17 @@
         alert('Isi tanggal mulai minggu ke-1.');
         return;
       }
+      const isReschedule = kurvaImportMode === 'reschedule' && projectSchedule;
+      const note = isReschedule ? document.getElementById('kurvaRevisionNote').value.trim() : '';
+      if (isReschedule && !note) {
+        alert('Isi alasan revisi jadwal.');
+        document.getElementById('kurvaRevisionNote').focus();
+        return;
+      }
       const itemIds = new Set(kurvaImportDraft.items.map((item) => item.id));
-      const progress = {};
-      Object.entries(projectSchedule?.progress || {}).forEach(([week, entry]) => {
-        if (Number(week) > kurvaImportDraft.weekCount) return;
-        const values = Object.fromEntries(Object.entries(entry?.values || {}).filter(([itemId]) => itemIds.has(itemId)));
-        progress[week] = { ...entry, values };
-      });
+      const progress = kurvaSCore.remapProgress(projectSchedule?.progress, projectSchedule?.startDate, startDate, kurvaImportDraft.weekCount, itemIds);
       const previous = projectSchedule;
-      projectSchedule = {
+      const next = {
         title: document.getElementById('kurvaImportName').value.trim() || kurvaImportDraft.title,
         fileName: kurvaImportDraft.fileName,
         sheetName: kurvaImportDraft.sheetName,
@@ -8680,6 +8772,26 @@
         importedBy: getSignedInName(),
         progress
       };
+      if (isReschedule) {
+        const revision = (previous.revision || 0) + 1;
+        next.revision = revision;
+        next.revisionNote = note;
+        next.baseline = previous.baseline || {
+          startDate: previous.startDate,
+          weekCount: previous.weekCount,
+          planCumulative: kurvaSCore.computeCurve(previous).planCumulative,
+          fileName: previous.fileName || '',
+          importedAt: previous.importedAt || '',
+          importedBy: previous.importedBy || ''
+        };
+        const history = previous.revisions?.length ? previous.revisions : [getKurvaRevisionMeta(previous, 0, 'Jadwal awal')];
+        next.revisions = [...history, getKurvaRevisionMeta(next, revision, note)];
+      } else {
+        next.revision = 0;
+        next.baseline = null;
+        next.revisions = [getKurvaRevisionMeta(next, 0, 'Jadwal awal')];
+      }
+      projectSchedule = next;
       if (!await persistActiveProjectData()) {
         projectSchedule = previous;
         return;
@@ -9092,8 +9204,45 @@
           actualCumulative,
           deviation,
           lastReportedWeek,
+          baselineCumulative: getBaselineCumulative(schedule),
           totalWeight: round(schedule.items.reduce((sum, item) => sum + item.weight, 0), 4)
         };
+      }
+
+      function getWeekOffset(fromStart, toStart) {
+        const diff = Date.parse(`${toStart}T00:00:00Z`) - Date.parse(`${fromStart}T00:00:00Z`);
+        return Number.isFinite(diff) ? Math.round(diff / DAY_MS / 7) : 0;
+      }
+
+      // Baseline (original plan) aligned to the active schedule's week numbers by calendar date.
+      function getBaselineCumulative(schedule) {
+        const base = schedule?.baseline;
+        if (!base || !Array.isArray(base.planCumulative) || !base.planCumulative.length) return null;
+        const offset = getWeekOffset(base.startDate, schedule.startDate);
+        const last = base.planCumulative.length;
+        return Array.from({ length: schedule.weekCount }, (_, index) => {
+          const baseWeek = index + 1 + offset;
+          return baseWeek < 1 ? 0 : Number(base.planCumulative[Math.min(baseWeek, last) - 1]) || 0;
+        });
+      }
+
+      function getFinishWeek(planCumulative) {
+        const total = planCumulative.length ? planCumulative[planCumulative.length - 1] : 0;
+        const index = planCumulative.findIndex((value) => value >= total - 0.005);
+        return index + 1;
+      }
+
+      // Re-keys weekly progress when the start date changes and drops items missing from the new schedule.
+      function remapProgress(progress, oldStart, newStart, newWeekCount, itemIds) {
+        const offset = oldStart && newStart ? getWeekOffset(oldStart, newStart) : 0;
+        const result = {};
+        Object.entries(progress || {}).forEach(([week, entry]) => {
+          const target = Number(week) - offset;
+          if (!Number.isInteger(target) || target < 1 || target > newWeekCount) return;
+          const values = Object.fromEntries(Object.entries(entry?.values || {}).filter(([itemId]) => itemIds.has(itemId)));
+          result[target] = { ...entry, values };
+        });
+        return result;
       }
 
       function getWeekForDate(startDate, dateISO, weekCount) {
@@ -9113,6 +9262,10 @@
         parseScheduleGrid,
         parseSheetXml,
         computeCurve,
+        getBaselineCumulative,
+        getFinishWeek,
+        getWeekOffset,
+        remapProgress,
         getItemProgressAt,
         getItemProgressLimit,
         getWeekForDate,

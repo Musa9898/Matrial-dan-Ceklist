@@ -163,3 +163,32 @@ test('reads an xlsx workbook with shared strings and picks the schedule sheet', 
   assert.equal(schedule.items[0].name, 'Pekerjaan A & B');
   assert.deepEqual(Array.from(schedule.items[0].plan), [30, 30, 40]);
 });
+
+test('aligns the baseline curve to the revised schedule and reports finish shift', () => {
+  const schedule = kurva.parseScheduleGrid(sampleGrid());
+  schedule.baseline = { startDate: '2026-10-19', weekCount: 4, planCumulative: [25, 50, 75, 100] };
+  assert.deepEqual(Array.from(kurva.computeCurve(schedule).baselineCumulative), [25, 50, 75, 100, 100, 100]);
+  schedule.startDate = '2026-10-26';
+  assert.deepEqual(Array.from(kurva.getBaselineCumulative(schedule)), [50, 75, 100, 100, 100, 100]);
+  schedule.startDate = '2026-10-12';
+  assert.deepEqual(Array.from(kurva.getBaselineCumulative(schedule)), [0, 25, 50, 75, 100, 100]);
+  delete schedule.baseline;
+  assert.equal(kurva.computeCurve(schedule).baselineCumulative, null);
+  assert.equal(kurva.getFinishWeek([10, 50, 100, 100]), 3);
+  assert.equal(kurva.getWeekOffset('2026-10-19', '2026-11-16'), 4);
+});
+
+test('remaps progress weeks on reschedule and drops removed items', () => {
+  const progress = {
+    1: { values: { a: 10, gone: 50 }, updatedBy: 'spv' },
+    2: { values: { a: 20 } },
+    5: { values: { a: 60 } }
+  };
+  const same = kurva.remapProgress(progress, '2026-10-19', '2026-10-19', 4, new Set(['a']));
+  assert.deepEqual(Object.keys(same), ['1', '2']);
+  assert.deepEqual({ ...same[1].values }, { a: 10 });
+  assert.equal(same[1].updatedBy, 'spv');
+  const shifted = kurva.remapProgress(progress, '2026-10-19', '2026-10-26', 10, new Set(['a']));
+  assert.deepEqual(Object.keys(shifted), ['1', '4']);
+  assert.equal(shifted[1].values.a, 20);
+});
