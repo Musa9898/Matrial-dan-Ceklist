@@ -405,7 +405,7 @@ const SNAPSHOT_SECTIONS = {
   material: ['materialItems', 'deliveryHistory', 'usageHistory'],
   asset: ['assetItems'],
   checklist: ['checklistItems'],
-  daily_report: ['dailyWorkPlans'],
+  daily_report: ['dailyWorkPlans', 'projectSchedule'],
   files: ['projectFolders']
 };
 

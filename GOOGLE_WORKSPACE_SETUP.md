@@ -126,3 +126,13 @@ Kolom `role` pada tab `Access` menentukan apa yang boleh dilakukan pengguna di p
 | Logistik | ya | ya | tidak | tidak | tidak | tidak |
 
 Semua pengguna yang punya baris Access aktif juga dapat melihat proyek lain di sheet Access, tetapi hanya lihat saja (tidak bisa edit/upload). Aturan ini dicek di server (`Code.gs`), jadi `Code.gs` harus di-paste ulang dan di-deploy sebagai New version.
+
+## Kurva S (schedule proyek)
+
+Tab **Kurva S** di menu bawah menampilkan kurva rencana vs realisasi per proyek.
+
+1. **Import Excel** (Admin/Engineering, izin Upload File): pilih file master schedule `.xlsx`. Aplikasi membaca kolom `ITEM`, `Bobot`, `MINGGU KE` (mulai–selesai), dan baris nomor minggu 1, 2, 3, … beserta rencana bobot per minggu. Grup (I, II, III …) dan sub-grup (a., b. …) dibaca otomatis; minggu tanpa rencana ditandai libur. Cek tanggal mulai minggu ke-1, lalu **Simpan Jadwal**. Import ulang mengganti jadwal, progres item dengan nama yang sama tetap dipertahankan.
+2. **+ Input Progres** (Admin/Engineering/SPV, izin Laporan Harian): pilih minggu, isi progres kumulatif tiap pekerjaan (0–100% dari item itu). Nilai tidak boleh turun dari minggu sebelumnya.
+3. Realisasi mingguan, realisasi kumulatif, dan deviasi dihitung otomatis dari bobot (`bobot × progres%`). Minggu berjalan dihitung dari tanggal hari ini.
+
+Data tersimpan di snapshot proyek sebagai `projectSchedule` (ikut tersinkron ke Spreadsheet). Karena `SNAPSHOT_SECTIONS` di `Code.gs` berubah (`projectSchedule` masuk izin `daily_report`), `Code.gs` harus di-paste ulang dan di-deploy sebagai New version.

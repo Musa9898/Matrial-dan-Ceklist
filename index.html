@@ -2061,6 +2061,119 @@
       background-color: #070b14;
     }
 
+    /* Kurva S */
+    .kurva-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .kurva-actions .btn-cancel { padding: 8px 12px; font-size: 0.8rem; }
+    .kurva-empty { text-align: center; padding: 36px 20px; border: 1px dashed #cbd5e1; border-radius: 16px; background: var(--card-bg); color: var(--text-muted); }
+    .kurva-empty strong { display: block; color: var(--text-dark); margin-bottom: 6px; }
+    .kurva-empty p { font-size: 0.85rem; line-height: 1.5; }
+    .kurva-empty-icon { font-size: 2rem; margin-bottom: 8px; }
+    .kurva-meta { display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px; }
+    .kurva-meta strong { color: var(--text-dark); font-size: 0.95rem; }
+    .kurva-meta span { color: var(--text-muted); font-size: 0.75rem; }
+    .kurva-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+    .kurva-stat { background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .kurva-stat span { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; }
+    .kurva-stat strong { font-size: 1.15rem; color: var(--text-dark); }
+    .kurva-stat small { font-size: 0.7rem; color: var(--text-muted); }
+    .kurva-stat.is-ahead strong, .is-ahead strong, td.is-ahead { color: var(--success-green); }
+    .kurva-stat.is-behind strong, .is-behind strong, td.is-behind { color: var(--danger-red); }
+    .kurva-alert { background: var(--brand-gold-soft); color: var(--text-dark); border-radius: 12px; padding: 10px 12px; font-size: 0.8rem; margin-bottom: 12px; }
+    .kurva-alert.is-error { background: #fee2e2; color: #991b1b; }
+    .kurva-chart-card { background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 10px 8px 12px; margin-bottom: 16px; }
+    .kurva-chart-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; position: relative; }
+    .kurva-chart { display: block; max-width: none; }
+    .kurva-axis-week { font-size: 11px; }
+    .kurva-hit { fill: transparent; cursor: pointer; }
+    .kurva-hit:hover { fill: rgba(41, 55, 125, 0.08); }
+    .kurva-select { fill: rgba(240, 181, 27, 0.22); stroke: var(--brand-gold); stroke-width: 1; pointer-events: none; }
+    .kurva-tip { position: absolute; top: 14px; width: 200px; background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 12px; box-shadow: 0 10px 28px rgba(15, 23, 42, 0.22); padding: 10px 12px; font-size: 0.74rem; color: var(--text-dark); z-index: 2; }
+    .kurva-tip[hidden] { display: none; }
+    .kurva-tip strong { display: block; font-size: 0.85rem; padding-right: 20px; }
+    .kurva-tip small { display: block; color: var(--text-muted); }
+    .kurva-tip dl { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; margin: 8px 0 6px; }
+    .kurva-tip dt { color: var(--text-muted); }
+    .kurva-tip dd { margin: 0; font-weight: 700; text-align: right; }
+    .kurva-tip dd.is-ahead { color: var(--success-green); }
+    .kurva-tip dd.is-behind { color: var(--danger-red); }
+    .kurva-tip-close { position: absolute; top: 4px; right: 6px; border: 0; background: none; color: var(--text-muted); font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 4px; }
+    .kurva-grid { stroke: #e2e8f0; stroke-width: 1; }
+    .kurva-axis { fill: var(--text-muted); font-size: 13px; }
+    .kurva-holiday { fill: rgba(240, 181, 27, 0.18); }
+    .kurva-bar { fill: rgba(41, 55, 125, 0.18); }
+    .kurva-plan { fill: none; stroke: var(--brand-navy); stroke-width: 2.5; stroke-linejoin: round; }
+    .kurva-actual { fill: none; stroke: var(--success-green); stroke-width: 3; stroke-linejoin: round; }
+    .kurva-actual-dot { fill: var(--card-bg); stroke: var(--success-green); stroke-width: 2; }
+    .kurva-today { stroke: var(--danger-red); stroke-width: 1.5; stroke-dasharray: 4 4; }
+    .kurva-today-label { fill: var(--danger-red); font-size: 13px; font-weight: 700; }
+    .kurva-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+    .kurva-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .kurva-legend i { width: 16px; height: 4px; border-radius: 2px; display: inline-block; }
+    .kurva-legend .legend-plan { background: var(--brand-navy); }
+    .kurva-legend .legend-actual { background: var(--success-green); }
+    .kurva-legend .legend-bar { background: rgba(41, 55, 125, 0.25); height: 10px; }
+    .kurva-legend .legend-holiday { background: rgba(240, 181, 27, 0.35); height: 10px; }
+    .kurva-subtitle { font-size: 0.9rem; color: var(--text-dark); margin: 0 0 8px; }
+    .kurva-groups { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+    .kurva-group { background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 14px; overflow: hidden; }
+    .kurva-group summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px; }
+    .kurva-group summary::-webkit-details-marker { display: none; }
+    .kurva-group summary strong { display: block; font-size: 0.85rem; color: var(--text-dark); }
+    .kurva-group summary small, .kurva-item-name small, .kurva-item-values small, .kurva-group-values small { display: block; font-size: 0.7rem; color: var(--text-muted); font-weight: 500; }
+    .kurva-group-values, .kurva-item-values { text-align: right; flex-shrink: 0; }
+    .kurva-group-values span, .kurva-item-values span { font-weight: 700; color: var(--text-dark); font-size: 0.9rem; }
+    .kurva-item-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 10px 12px; border-top: 1px solid var(--border-subtle); }
+    .kurva-item-name { font-size: 0.8rem; color: var(--text-dark); font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+    .kurva-bar-track { grid-column: 1 / -1; position: relative; height: 8px; background: var(--border-subtle); border-radius: 4px; overflow: hidden; }
+    .kurva-bar-track span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
+    .kurva-bar-plan { background: rgba(41, 55, 125, 0.25); }
+    .kurva-bar-actual { background: var(--success-green); height: 4px; top: 2px !important; }
+    .kurva-bar-actual.is-behind { background: var(--danger-red); }
+    .kurva-table-wrap { background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 14px; margin-bottom: 10px; }
+    .kurva-table-wrap summary { cursor: pointer; padding: 12px; font-size: 0.85rem; font-weight: 700; color: var(--text-dark); }
+    .kurva-table-scroll { overflow-x: auto; padding: 0 8px 10px; }
+    .kurva-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; color: var(--text-dark); white-space: nowrap; }
+    .kurva-table th, .kurva-table td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--border-subtle); }
+    .kurva-table th:first-child, .kurva-table td:first-child, .kurva-table th:nth-child(2), .kurva-table td:nth-child(2) { text-align: left; }
+    .kurva-table th { color: var(--text-muted); font-weight: 700; position: sticky; top: 0; background: var(--card-bg); }
+    .kurva-table tr.is-current td { background: var(--brand-blue-soft); font-weight: 700; }
+    .kurva-table tr.is-holiday td { color: var(--text-muted); }
+    .kurva-table small { color: var(--warning-orange); }
+    .kurva-import-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 6px 0 10px; }
+    .kurva-import-summary div { background: var(--bg-light); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 8px 10px; }
+    .kurva-import-summary span { display: block; font-size: 0.7rem; color: var(--text-muted); }
+    .kurva-import-summary strong { font-size: 0.85rem; color: var(--text-dark); overflow-wrap: anywhere; }
+    .kurva-import-groups { list-style: none; display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; font-size: 0.8rem; color: var(--text-dark); }
+    .kurva-import-groups li { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed var(--border-subtle); padding: 4px 0; }
+    .kurva-progress-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; position: sticky; top: -1px; z-index: 2; background: var(--card-bg); padding: 6px 0; }
+    .kurva-progress-summary div { background: var(--bg-light); border-radius: 10px; padding: 6px 8px; border: 1px solid var(--border-subtle); }
+    .kurva-progress-summary span { display: block; font-size: 0.65rem; color: var(--text-muted); }
+    .kurva-progress-summary strong { font-size: 0.9rem; color: var(--text-dark); }
+    .kurva-progress-summary .is-ahead strong { color: var(--success-green); }
+    .kurva-progress-summary .is-behind strong { color: var(--danger-red); }
+    .kurva-input-group { margin-bottom: 12px; }
+    .kurva-input-group h4 { font-size: 0.8rem; color: var(--brand-navy); margin-bottom: 6px; text-transform: uppercase; }
+    body.theme-dark .kurva-input-group h4 { color: var(--brand-gold); }
+    .kurva-input-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-subtle); }
+    .kurva-input-row.is-muted .kurva-input-name { opacity: 0.6; }
+    .kurva-input-name { font-size: 0.8rem; font-weight: 600; color: var(--text-dark); min-width: 0; overflow-wrap: anywhere; }
+    .kurva-input-name small { display: block; font-size: 0.68rem; color: var(--text-muted); font-weight: 500; }
+    .kurva-input-field { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; color: var(--text-muted); font-size: 0.8rem; }
+    .kurva-input-field input { width: 74px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 10px; text-align: right; font-size: 0.9rem; background: var(--card-bg); color: var(--text-dark); }
+    .kurva-input-field input.is-invalid { border-color: var(--danger-red); box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2); }
+    body.theme-dark .kurva-grid { stroke: #2c3a50; }
+    body.theme-dark .kurva-plan { stroke: #8ea2ff; }
+    body.theme-dark .kurva-bar { fill: rgba(142, 162, 255, 0.22); }
+    body.theme-dark .kurva-legend .legend-plan { background: #8ea2ff; }
+    body.theme-dark .kurva-empty, body.theme-dark .kurva-input-field input { border-color: #43516a; }
+    @media (min-width: 640px) {
+      .kurva-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    @media (max-width: 400px) {
+      .bottom-bar .nav-button { font-size: 0.62rem; min-width: 0; }
+      .bottom-bar .nav-button svg { width: 20px; height: 20px; }
+    }
+
     body.theme-dark .app-container {
       background: var(--bg-light);
     }
@@ -3343,6 +3456,50 @@
       </section>
     </main>
 
+    <main class="scroll-content" id="tabViewKurvaS" style="display: none;">
+      <div class="section-header">
+        <div class="section-title"><span>📈</span> Kurva S</div>
+        <div class="kurva-actions">
+          <button class="btn-cancel" type="button" id="kurvaImportButton" onclick="openKurvaImportModal()">Import Excel</button>
+          <button class="btn-action-primary" type="button" id="kurvaProgressButton" onclick="openKurvaProgressModal()">+ Input Progres</button>
+        </div>
+      </div>
+      <div id="kurvaContent"></div>
+    </main>
+
+    <div class="modal-backdrop" id="modalKurvaImport" role="dialog" aria-modal="true" aria-labelledby="kurvaImportTitle">
+      <div class="modal-sheet">
+        <h3 id="kurvaImportTitle">Import Jadwal Kurva S</h3>
+        <p class="form-hint">Pilih file Excel (.xlsx) master schedule. Aplikasi membaca kolom ITEM, Bobot, Minggu Ke, dan rencana per minggu.</p>
+        <div class="form-row">
+          <label class="required-label" for="kurvaFileInput">File Excel</label>
+          <input type="file" id="kurvaFileInput" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="handleKurvaFileSelected(this.files[0])">
+        </div>
+        <div id="kurvaImportPreview"></div>
+        <div class="btn-group">
+          <button class="btn-cancel" type="button" onclick="closeKurvaImportModal()">Batal</button>
+          <button class="btn-save" type="button" id="kurvaImportSave" onclick="saveKurvaImport()" disabled>Simpan Jadwal</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalKurvaProgress" role="dialog" aria-modal="true" aria-labelledby="kurvaProgressTitle">
+      <div class="detail-modal-sheet">
+        <h3 id="kurvaProgressTitle">Input Progres Mingguan</h3>
+        <div class="form-row">
+          <label class="required-label" for="kurvaProgressWeek">Minggu</label>
+          <select id="kurvaProgressWeek" onchange="renderKurvaProgressForm()"></select>
+        </div>
+        <p class="form-hint">Isi progres kumulatif tiap pekerjaan (0–100% dari item tersebut) sampai akhir minggu yang dipilih. Realisasi, kumulatif, dan deviasi dihitung otomatis dari bobot.</p>
+        <div id="kurvaProgressSummary" class="kurva-progress-summary"></div>
+        <div id="kurvaProgressItems"></div>
+        <div class="btn-group">
+          <button class="btn-cancel" type="button" onclick="closeKurvaProgressModal()">Batal</button>
+          <button class="btn-save" type="button" onclick="saveKurvaProgress()">Simpan Progres</button>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-backdrop" id="modalAssetDetail" role="dialog" aria-modal="true" aria-labelledby="assetDetailTitle">
       <div class="detail-modal-sheet">
         <h3 id="assetDetailTitle">Detail Aset Alat Kerja</h3>
@@ -3910,6 +4067,10 @@
       <button class="nav-button" id="navSJ" onclick="switchTab('suratjalan')">
         <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
         Laporan
+      </button>
+      <button class="nav-button" id="navKurvaS" onclick="switchTab('kurvas')">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 2.75a.75.75 0 01.75.75v12.75H17a.75.75 0 010 1.5H3.75A1.5 1.5 0 012.25 16.25V3.5A.75.75 0 013 2.75z"/><path d="M5.2 14.6a.75.75 0 01-.4-1.45c1.7-.47 2.6-1.9 3.5-3.6l.35-.66c.95-1.82 2.1-4.03 5.12-4.55l-.6-.6a.75.75 0 011.06-1.06l1.9 1.9a.75.75 0 010 1.06l-1.9 1.9a.75.75 0 11-1.06-1.06l.5-.5c-2.13.48-2.98 2.1-3.88 3.81l-.36.69c-.95 1.8-2.13 3.6-4.23 4.12z"/></svg>
+        Kurva S
       </button>
       <button class="nav-button" id="navFiles" onclick="switchTab('files')">
         <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.5 5A1.5 1.5 0 014 3.5h4l1.5 1.75H16A1.5 1.5 0 0117.5 6.75v8.25A1.5 1.5 0 0116 16.5H4A1.5 1.5 0 012.5 15V5zm3.25 4a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5zm0 3a.75.75 0 000 1.5h5.5a.75.75 0 000-1.5h-5.5z" clip-rule="evenodd"/></svg>
@@ -4622,6 +4783,7 @@
 
     let dailyWorkPlans = loadDailyWorkPlans();
     let dailyWorkDraftTasks = [];
+    let projectSchedule = null;
 
     function persistDailyWorkPlans() {
       return persistActiveProjectData();
@@ -4645,7 +4807,7 @@
     }
 
     function getEmptyProjectData() {
-      return { materialItems: [], assetItems: [], deliveryHistory: {}, usageHistory: {}, checklistItems: [], dailyWorkPlans: [], projectFolders: [] };
+      return { materialItems: [], assetItems: [], deliveryHistory: {}, usageHistory: {}, checklistItems: [], dailyWorkPlans: [], projectFolders: [], projectSchedule: null };
     }
 
     function replaceProjectMap(target, source) {
@@ -4662,6 +4824,7 @@
       checklistItems = Array.isArray(safeData.checklistItems) ? safeData.checklistItems : [];
       dailyWorkPlans = Array.isArray(safeData.dailyWorkPlans) ? safeData.dailyWorkPlans : [];
       projectFolders = Array.isArray(safeData.projectFolders) ? safeData.projectFolders : [];
+      projectSchedule = normalizeProjectSchedule(safeData.projectSchedule);
       mergeDuplicateMaterials();
     }
 
@@ -4673,7 +4836,8 @@
         usageHistory,
         checklistItems,
         dailyWorkPlans,
-        projectFolders
+        projectFolders,
+        projectSchedule
       };
     }
 
@@ -4732,6 +4896,8 @@
       toggle('button[onclick^="openChecklistModal"]', 'checklist');
       toggle('button[onclick^="saveChecklistStatusUpdate"]', 'checklist');
       toggle('button[onclick^="openDailyWorkReportForm"]', 'daily_report');
+      toggle('#kurvaProgressButton', 'daily_report');
+      toggle('#kurvaImportButton', 'files');
       toggle('#addProjectFolderButton', 'files');
       toggle('#projectFolderContents button[onclick^="renameProjectFolder"]', 'files');
       toggle('#projectFileUploadButton', 'files');
@@ -5328,6 +5494,7 @@
       renderChecklistCards();
       renderDailyWorkReport();
       renderProjectFiles();
+      if (document.getElementById('tabViewKurvaS').style.display !== 'none') renderKurvaS();
     }
 
     async function switchProject(projectId) {
@@ -6595,10 +6762,11 @@
       document.getElementById('tabViewCeklist').style.display = 'none';
       document.getElementById('tabViewSuratJalan').style.display = 'none';
       document.getElementById('tabViewFiles').style.display = 'none';
+      document.getElementById('tabViewKurvaS').style.display = 'none';
       const isFileTab = tab === 'files';
       const isMaterialTab = tab === 'material';
       const isAssetsTab = tab === 'assets';
-      document.getElementById('metricsRow').style.display = isFileTab || isMaterialTab || isAssetsTab ? 'none' : 'grid';
+      document.getElementById('metricsRow').style.display = isFileTab || isMaterialTab || isAssetsTab || tab === 'kurvas' ? 'none' : 'grid';
       document.getElementById('globalFileSearchPanel').style.display = isFileTab ? 'block' : 'none';
       document.getElementById('materialSearchPanel').style.display = isMaterialTab ? 'block' : 'none';
       if (!isFileTab) clearGlobalFileSearch();
@@ -6622,6 +6790,10 @@
         document.getElementById('navFiles').classList.add('active');
         document.getElementById('tabViewFiles').style.display = 'block';
         renderProjectFiles();
+      } else if (tab === 'kurvas') {
+        document.getElementById('navKurvaS').classList.add('active');
+        document.getElementById('tabViewKurvaS').style.display = 'block';
+        renderKurvaS();
       }
     }
 
@@ -8033,6 +8205,482 @@
       }
     }
 
+    let kurvaImportDraft = null;
+    const KURVA_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+    function normalizeProjectSchedule(value) {
+      if (!value || typeof value !== 'object' || !Array.isArray(value.items)) return null;
+      const weekCount = Math.round(Number(value.weekCount));
+      const items = value.items.filter((item) => item && item.id && Array.isArray(item.plan) && Number(item.weight) > 0);
+      if (!items.length || !Number.isInteger(weekCount) || weekCount < 1) return null;
+      return {
+        ...value,
+        weekCount,
+        items,
+        holidays: Array.isArray(value.holidays) ? value.holidays.map(Number).filter(Number.isInteger) : [],
+        progress: value.progress && typeof value.progress === 'object' && !Array.isArray(value.progress) ? value.progress : {}
+      };
+    }
+
+    function formatKurvaPercent(value, digits = 2) {
+      if (!Number.isFinite(value)) return '–';
+      return `${value.toLocaleString('id-ID', { minimumFractionDigits: digits, maximumFractionDigits: digits })}%`;
+    }
+
+    function formatKurvaDate(iso, withYear = false) {
+      if (!iso) return '';
+      const [year, month, day] = iso.split('-').map(Number);
+      return `${day} ${KURVA_MONTHS[month - 1]}${withYear ? ` ${year}` : ''}`;
+    }
+
+    function getKurvaWeekRange(week) {
+      const start = kurvaSCore.getWeekStartDate(projectSchedule.startDate, week);
+      if (!start) return '';
+      const end = kurvaSCore.getWeekStartDate(projectSchedule.startDate, week + 1);
+      const last = new Date(Date.parse(`${end}T00:00:00Z`) - 864e5).toISOString().slice(0, 10);
+      return `${formatKurvaDate(start)} – ${formatKurvaDate(last, true)}`;
+    }
+
+    function getKurvaCurrentWeek() {
+      return kurvaSCore.getWeekForDate(projectSchedule.startDate, getTodayISO(), projectSchedule.weekCount);
+    }
+
+    function getKurvaItemPlanAt(item, week) {
+      return item.plan.slice(0, Math.max(0, week)).reduce((sum, value) => sum + (Number(value) || 0), 0);
+    }
+
+    function getKurvaGroups(items) {
+      const groups = new Map();
+      items.forEach((item) => {
+        if (!groups.has(item.group)) groups.set(item.group, []);
+        groups.get(item.group).push(item);
+      });
+      return [...groups.entries()];
+    }
+
+    function buildKurvaChart(curve, currentWeek, availableWidth) {
+      const weeks = projectSchedule.weekCount;
+      // Drawn at 1:1 pixel scale; narrow screens get a minimum width and scroll horizontally.
+      const width = Math.round(Math.max(availableWidth || 480, 62 + weeks * 20));
+      const height = Math.round(Math.min(480, Math.max(320, width * 0.4)));
+      const pad = { left: 48, right: 14, top: 18, bottom: 42 };
+      const plotWidth = width - pad.left - pad.right;
+      const plotHeight = height - pad.top - pad.bottom;
+      const maxValue = Math.max(100, curve.totalWeight);
+      const x = (week) => pad.left + (week / weeks) * plotWidth;
+      const y = (value) => pad.top + (1 - value / maxValue) * plotHeight;
+      const maxWeekly = Math.max(...curve.planWeekly, 0.0001);
+      const parts = [];
+
+      projectSchedule.holidays.forEach((week) => {
+        parts.push(`<rect class="kurva-holiday" x="${x(week - 1)}" y="${pad.top}" width="${x(week) - x(week - 1)}" height="${plotHeight}"><title>Minggu ${week}: libur</title></rect>`);
+      });
+      for (let value = 0; value <= 100; value += 20) {
+        parts.push(`<line class="kurva-grid" x1="${pad.left}" x2="${width - pad.right}" y1="${y(value)}" y2="${y(value)}"/>`);
+        parts.push(`<text class="kurva-axis" x="${pad.left - 6}" y="${y(value) + 4}" text-anchor="end">${value}%</text>`);
+      }
+      curve.planWeekly.forEach((value, index) => {
+        const barHeight = (value / maxWeekly) * plotHeight * 0.22;
+        if (barHeight > 0) parts.push(`<rect class="kurva-bar" x="${x(index) + 1}" y="${pad.top + plotHeight - barHeight}" width="${Math.max(1, x(index + 1) - x(index) - 2)}" height="${barHeight}"><title>Minggu ${index + 1}: rencana ${formatKurvaPercent(value, 3)}</title></rect>`);
+      });
+      for (let week = 1; week <= weeks; week += 1) {
+        parts.push(`<text class="kurva-axis kurva-axis-week" x="${x(week - 0.5)}" y="${height - pad.bottom + 16}" text-anchor="middle">${week}</text>`);
+      }
+      parts.push(`<text class="kurva-axis" x="${pad.left + plotWidth / 2}" y="${height - 6}" text-anchor="middle">Minggu ke- (klik minggu untuk detail)</text>`);
+      parts.push(`<rect class="kurva-select" x="0" y="${pad.top}" width="${x(1) - x(0)}" height="${plotHeight}" style="display:none"/>`);
+      if (currentWeek >= 1) {
+        parts.push(`<line class="kurva-today" x1="${x(currentWeek)}" x2="${x(currentWeek)}" y1="${pad.top}" y2="${pad.top + plotHeight}"/>`);
+        parts.push(`<text class="kurva-today-label" x="${x(currentWeek) > width / 2 ? x(currentWeek) - 4 : x(currentWeek) + 4}" y="${pad.top + 12}" text-anchor="${x(currentWeek) > width / 2 ? 'end' : 'start'}">Minggu ini</text>`);
+      }
+      const planPoints = [`${x(0)},${y(0)}`, ...curve.planCumulative.map((value, index) => `${x(index + 1)},${y(value)}`)];
+      parts.push(`<polyline class="kurva-plan" points="${planPoints.join(' ')}"/>`);
+      if (curve.lastReportedWeek) {
+        const actualPoints = [`${x(0)},${y(0)}`];
+        for (let week = 1; week <= curve.lastReportedWeek; week += 1) actualPoints.push(`${x(week)},${y(curve.actualCumulative[week - 1])}`);
+        parts.push(`<polyline class="kurva-actual" points="${actualPoints.join(' ')}"/>`);
+        Object.keys(projectSchedule.progress).map(Number).filter((week) => week >= 1 && week <= curve.lastReportedWeek).forEach((week) => {
+          parts.push(`<circle class="kurva-actual-dot" cx="${x(week)}" cy="${y(curve.actualCumulative[week - 1])}" r="3.5"/>`);
+        });
+      }
+      for (let week = 1; week <= weeks; week += 1) {
+        parts.push(`<rect class="kurva-hit" data-week="${week}" x="${x(week - 1)}" y="${pad.top}" width="${x(week) - x(week - 1)}" height="${plotHeight + 24}"/>`);
+      }
+      return `<svg class="kurva-chart" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Grafik kurva S rencana dan realisasi">${parts.join('')}</svg><div class="kurva-tip" hidden></div>`;
+    }
+
+    function renderKurvaS() {
+      const container = document.getElementById('kurvaContent');
+      if (!container) return;
+      if (!projectSchedule) {
+        container.innerHTML = `
+          <div class="kurva-empty">
+            <div class="kurva-empty-icon">📈</div>
+            <strong>Belum ada jadwal Kurva S</strong>
+            <p>${canAccess('files')
+              ? 'Import file Excel master schedule proyek ini untuk menampilkan kurva rencana. Setelah itu SPV bisa mengisi progres mingguan.'
+              : 'Minta Admin/Engineering mengimpor file Excel master schedule untuk proyek ini.'}</p>
+          </div>`;
+        return;
+      }
+
+      const curve = kurvaSCore.computeCurve(projectSchedule);
+      const currentWeek = getKurvaCurrentWeek();
+      const planWeek = Math.max(1, currentWeek);
+      const reported = curve.lastReportedWeek;
+      const actual = reported ? curve.actualCumulative[reported - 1] : 0;
+      const deviation = reported ? curve.deviation[reported - 1] : null;
+      const deviationClass = deviation === null ? '' : deviation >= -0.005 ? 'is-ahead' : 'is-behind';
+      const deviationLabel = deviation === null ? 'Belum ada laporan' : Math.abs(deviation) < 0.005 ? 'Sesuai rencana' : deviation > 0 ? 'Lebih cepat dari rencana' : 'Terlambat dari rencana';
+      const behindWeeks = currentWeek > reported ? currentWeek - reported : 0;
+      const progressAtReport = kurvaSCore.getItemProgressAt(projectSchedule, reported);
+
+      const groupsHtml = getKurvaGroups(projectSchedule.items).map(([group, items]) => {
+        const weight = items.reduce((sum, item) => sum + item.weight, 0);
+        const plan = items.reduce((sum, item) => sum + getKurvaItemPlanAt(item, planWeek), 0);
+        const done = items.reduce((sum, item) => sum + item.weight * progressAtReport[item.id] / 100, 0);
+        const itemRows = items.map((item) => {
+          const itemPlan = Math.min(100, getKurvaItemPlanAt(item, planWeek) / item.weight * 100);
+          const itemDone = progressAtReport[item.id];
+          return `
+            <div class="kurva-item-row">
+              <div class="kurva-item-name">${escapeHtml([item.subgroup, item.name].filter(Boolean).join(' · '))}<small>Bobot ${formatKurvaPercent(item.weight, 3)} · Minggu ${item.startWeek}–${item.endWeek}</small></div>
+              <div class="kurva-item-values"><span>${formatKurvaPercent(itemDone, 0)}</span><small>rencana ${formatKurvaPercent(itemPlan, 0)}</small></div>
+              <div class="kurva-bar-track"><span class="kurva-bar-plan" style="width:${itemPlan}%"></span><span class="kurva-bar-actual ${itemDone + 0.5 < itemPlan ? 'is-behind' : ''}" style="width:${itemDone}%"></span></div>
+            </div>`;
+        }).join('');
+        return `
+          <details class="kurva-group">
+            <summary>
+              <div><strong>${escapeHtml(group)}</strong><small>Bobot ${formatKurvaPercent(weight)} · ${items.length} pekerjaan</small></div>
+              <div class="kurva-group-values"><span>${formatKurvaPercent(done)}</span><small>rencana ${formatKurvaPercent(plan)}</small></div>
+            </summary>
+            ${itemRows}
+          </details>`;
+      }).join('');
+
+      const tableRows = curve.planCumulative.map((planCumulative, index) => {
+        const week = index + 1;
+        const isHoliday = projectSchedule.holidays.includes(week);
+        const dev = curve.deviation[index];
+        return `<tr class="${week === currentWeek ? 'is-current' : ''}${isHoliday ? ' is-holiday' : ''}">
+          <td>${week}${isHoliday ? ' <small>libur</small>' : ''}</td>
+          <td>${escapeHtml(formatKurvaDate(kurvaSCore.getWeekStartDate(projectSchedule.startDate, week), true))}</td>
+          <td>${curve.planWeekly[index].toFixed(3)}</td>
+          <td>${planCumulative.toFixed(3)}</td>
+          <td>${curve.actualWeekly[index] === null ? '–' : curve.actualWeekly[index].toFixed(3)}</td>
+          <td>${curve.actualCumulative[index] === null ? '–' : curve.actualCumulative[index].toFixed(3)}</td>
+          <td class="${dev === null ? '' : dev >= -0.005 ? 'is-ahead' : 'is-behind'}">${dev === null ? '–' : `${dev > 0 ? '+' : ''}${dev.toFixed(3)}`}</td>
+        </tr>`;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="kurva-meta">
+          <strong>${escapeHtml(projectSchedule.title || getActiveProjectName())}</strong>
+          <span>Mulai ${escapeHtml(formatKurvaDate(projectSchedule.startDate, true))} · ${projectSchedule.weekCount} minggu · Total bobot ${formatKurvaPercent(curve.totalWeight)}</span>
+        </div>
+        <div class="kurva-summary">
+          <div class="kurva-stat">
+            <span>Minggu berjalan</span>
+            <strong>${currentWeek >= 1 ? `Ke-${currentWeek}` : 'Belum mulai'}</strong>
+            <small>${currentWeek >= 1 ? escapeHtml(getKurvaWeekRange(currentWeek)) : `Mulai ${escapeHtml(formatKurvaDate(projectSchedule.startDate, true))}`}</small>
+          </div>
+          <div class="kurva-stat">
+            <span>Rencana kumulatif</span>
+            <strong class="color-purple">${formatKurvaPercent(currentWeek >= 1 ? curve.planCumulative[planWeek - 1] : 0)}</strong>
+            <small>s.d. minggu ke-${Math.max(0, currentWeek)}</small>
+          </div>
+          <div class="kurva-stat">
+            <span>Realisasi kumulatif</span>
+            <strong class="color-green">${formatKurvaPercent(actual)}</strong>
+            <small>${reported ? `laporan s.d. minggu ke-${reported}` : 'belum ada laporan'}</small>
+          </div>
+          <div class="kurva-stat ${deviationClass}">
+            <span>Deviasi</span>
+            <strong>${deviation === null ? '–' : `${deviation > 0 ? '+' : ''}${formatKurvaPercent(deviation)}`}</strong>
+            <small>${deviationLabel}</small>
+          </div>
+        </div>
+        ${behindWeeks && currentWeek >= 1 ? `<div class="kurva-alert">Progres minggu ke-${reported + 1}${behindWeeks > 1 ? `–${currentWeek}` : ''} belum diisi.</div>` : ''}
+        <div class="kurva-chart-card">
+          <div class="kurva-chart-scroll">${buildKurvaChart(curve, currentWeek, container.clientWidth - 36)}</div>
+          <div class="kurva-legend">
+            <span><i class="legend-plan"></i>Rencana kumulatif</span>
+            <span><i class="legend-actual"></i>Realisasi kumulatif</span>
+            <span><i class="legend-bar"></i>Rencana mingguan</span>
+            ${projectSchedule.holidays.length ? '<span><i class="legend-holiday"></i>Libur</span>' : ''}
+          </div>
+        </div>
+        <h4 class="kurva-subtitle">Progres per Pekerjaan</h4>
+        <div class="kurva-groups">${groupsHtml}</div>
+        <details class="kurva-table-wrap">
+          <summary>Tabel mingguan (rencana, realisasi, deviasi)</summary>
+          <div class="kurva-table-scroll">
+            <table class="kurva-table">
+              <thead><tr><th>Minggu</th><th>Mulai</th><th>Rencana</th><th>Renc. Kum.</th><th>Realisasi</th><th>Real. Kum.</th><th>Deviasi Kum.</th></tr></thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+          </div>
+        </details>
+        <p class="form-hint">Sumber: ${escapeHtml(projectSchedule.fileName || 'Excel')}${projectSchedule.importedBy ? ` · diimpor oleh ${escapeHtml(projectSchedule.importedBy)}` : ''}${projectSchedule.importedAt ? ` · ${escapeHtml(formatKurvaDate(projectSchedule.importedAt.slice(0, 10), true))}` : ''}</p>`;
+
+              const chartScroll = container.querySelector('.kurva-chart-scroll');
+      if (chartScroll) {
+        chartScroll.addEventListener('click', (event) => {
+          if (event.target.closest('.kurva-tip') && !event.target.closest('.kurva-tip-close')) return;
+          const hit = event.target.closest('.kurva-hit');
+          showKurvaWeekTip(chartScroll, curve, hit ? Number(hit.dataset.week) : 0);
+        });
+      }
+              if (chartScroll && chartScroll.scrollWidth > chartScroll.clientWidth && currentWeek >= 1) {
+                const ratio = Math.min(1, currentWeek / projectSchedule.weekCount);
+                chartScroll.scrollLeft = Math.max(0, chartScroll.scrollWidth * ratio - chartScroll.clientWidth * 0.6);
+              }
+              kurvaRenderedWidth = container.clientWidth;
+            }
+
+            let kurvaRenderedWidth = 0;
+
+    function showKurvaWeekTip(chartScroll, curve, week) {
+      const tip = chartScroll.querySelector('.kurva-tip');
+      const select = chartScroll.querySelector('.kurva-select');
+      const hit = week ? chartScroll.querySelector(`.kurva-hit[data-week="${week}"]`) : null;
+      if (!tip || !select || !hit || tip.dataset.week === String(week)) {
+        if (tip) { tip.hidden = true; tip.dataset.week = ''; }
+        if (select) select.style.display = 'none';
+        return;
+      }
+      const index = week - 1;
+      const fmt = (value) => value === null || value === undefined ? '–' : formatKurvaPercent(value, 3);
+      const dev = curve.deviation[index];
+      const devClass = dev === null ? '' : dev >= -0.005 ? 'is-ahead' : 'is-behind';
+      const isHoliday = projectSchedule.holidays.includes(week);
+      const report = projectSchedule.progress[week];
+      const activeItems = projectSchedule.items.filter((item) => week >= item.startWeek && week <= item.endWeek && Number(item.plan[index] || 0) > 0).length;
+      tip.innerHTML = `
+        <button type="button" class="kurva-tip-close" aria-label="Tutup">×</button>
+        <strong>Minggu ke-${week}${isHoliday ? ' · Libur' : ''}</strong>
+        <small>${escapeHtml(getKurvaWeekRange(week))}</small>
+        <dl>
+          <dt>Rencana minggu ini</dt><dd>${fmt(curve.planWeekly[index])}</dd>
+          <dt>Rencana kumulatif</dt><dd>${fmt(curve.planCumulative[index])}</dd>
+          <dt>Realisasi minggu ini</dt><dd>${fmt(curve.actualWeekly[index])}</dd>
+          <dt>Realisasi kumulatif</dt><dd>${fmt(curve.actualCumulative[index])}</dd>
+          <dt>Deviasi</dt><dd class="${devClass}">${dev === null ? '–' : `${dev > 0 ? '+' : ''}${formatKurvaPercent(dev, 3)}`}</dd>
+          <dt>Pekerjaan aktif</dt><dd>${activeItems}</dd>
+        </dl>
+        <small>${report ? `Diisi ${escapeHtml(report.updatedBy || '-')}` : week <= curve.lastReportedWeek ? 'Tidak ada perubahan progres' : 'Belum ada laporan'}</small>`;
+      tip.hidden = false;
+      tip.dataset.week = String(week);
+      const hitX = Number(hit.getAttribute('x'));
+      const hitW = Number(hit.getAttribute('width'));
+      select.setAttribute('x', hitX);
+      select.style.display = '';
+      const svgWidth = chartScroll.querySelector('.kurva-chart').width.baseVal.value;
+      const tipWidth = tip.offsetWidth;
+      const center = hitX + hitW / 2;
+      const viewLeft = chartScroll.scrollLeft + 4;
+      const viewRight = Math.min(svgWidth, chartScroll.scrollLeft + chartScroll.clientWidth) - 4;
+      let left = center + 12 + tipWidth <= viewRight ? center + 12 : center - 12 - tipWidth;
+      left = Math.max(viewLeft, Math.min(left, viewRight - tipWidth));
+      tip.style.left = `${left}px`;
+    }
+            let kurvaResizeTimer = null;
+            window.addEventListener('resize', () => {
+              clearTimeout(kurvaResizeTimer);
+              kurvaResizeTimer = setTimeout(() => {
+                const container = document.getElementById('kurvaContent');
+                const tab = document.getElementById('tabViewKurvaS');
+                if (!projectSchedule || !container || !tab || tab.style.display === 'none') return;
+                if (Math.abs(container.clientWidth - kurvaRenderedWidth) > 4) renderKurvaS();
+              }, 200);
+            });
+
+    function openKurvaImportModal() {
+      if (!requireAccess('files')) return;
+      kurvaImportDraft = null;
+      document.getElementById('kurvaFileInput').value = '';
+      document.getElementById('kurvaImportPreview').innerHTML = projectSchedule
+        ? '<div class="kurva-alert">Proyek ini sudah punya jadwal. Import baru akan mengganti jadwal, progres pekerjaan dengan nama yang sama tetap dipertahankan.</div>'
+        : '';
+      document.getElementById('kurvaImportSave').disabled = true;
+      document.getElementById('modalKurvaImport').style.display = 'flex';
+    }
+
+    function closeKurvaImportModal() {
+      kurvaImportDraft = null;
+      document.getElementById('modalKurvaImport').style.display = 'none';
+    }
+
+    async function handleKurvaFileSelected(file) {
+      const preview = document.getElementById('kurvaImportPreview');
+      const saveButton = document.getElementById('kurvaImportSave');
+      kurvaImportDraft = null;
+      saveButton.disabled = true;
+      if (!file) return;
+      if (file.size > 10 * 1024 * 1024) {
+        preview.innerHTML = '<div class="kurva-alert is-error">Ukuran file maksimal 10 MB.</div>';
+        return;
+      }
+      preview.innerHTML = '<div class="form-hint">Membaca file Excel…</div>';
+      try {
+        const parsed = await kurvaSCore.parseScheduleFile(await file.arrayBuffer());
+        kurvaImportDraft = { ...parsed, fileName: file.name };
+        const keptWeeks = projectSchedule ? Object.keys(projectSchedule.progress).length : 0;
+        const groups = getKurvaGroups(parsed.items).map(([group, items]) =>
+          `<li><span>${escapeHtml(group)}</span><strong>${formatKurvaPercent(items.reduce((sum, item) => sum + item.weight, 0))}</strong></li>`).join('');
+        preview.innerHTML = `
+          <div class="form-row">
+            <label for="kurvaImportName">Nama jadwal</label>
+            <input type="text" id="kurvaImportName" value="${escapeHtml(parsed.title || getActiveProjectName())}">
+          </div>
+          <div class="form-row">
+            <label class="required-label" for="kurvaImportStart">Tanggal mulai minggu ke-1</label>
+            <input type="date" id="kurvaImportStart" value="${escapeHtml(parsed.startDate)}" required>
+          </div>
+          <div class="kurva-import-summary">
+            <div><span>Sheet</span><strong>${escapeHtml(parsed.sheetName || '-')}</strong></div>
+            <div><span>Pekerjaan</span><strong>${parsed.items.length} item</strong></div>
+            <div><span>Durasi</span><strong>${parsed.weekCount} minggu</strong></div>
+            <div><span>Total bobot</span><strong>${formatKurvaPercent(parsed.totalWeight)}</strong></div>
+          </div>
+          ${parsed.holidays.length ? `<p class="form-hint">Minggu tanpa rencana (libur): ${parsed.holidays.join(', ')}</p>` : ''}
+          <ul class="kurva-import-groups">${groups}</ul>
+          ${keptWeeks ? `<p class="form-hint">${keptWeeks} minggu laporan progres lama akan dipertahankan untuk pekerjaan yang namanya sama.</p>` : ''}`;
+        saveButton.disabled = false;
+      } catch (error) {
+        preview.innerHTML = `<div class="kurva-alert is-error">${escapeHtml(error.message || 'File tidak dapat dibaca.')}</div>`;
+      }
+    }
+
+    async function saveKurvaImport() {
+      if (!requireAccess('files') || !kurvaImportDraft) return;
+      const startDate = document.getElementById('kurvaImportStart').value;
+      if (!startDate) {
+        alert('Isi tanggal mulai minggu ke-1.');
+        return;
+      }
+      const itemIds = new Set(kurvaImportDraft.items.map((item) => item.id));
+      const progress = {};
+      Object.entries(projectSchedule?.progress || {}).forEach(([week, entry]) => {
+        if (Number(week) > kurvaImportDraft.weekCount) return;
+        const values = Object.fromEntries(Object.entries(entry?.values || {}).filter(([itemId]) => itemIds.has(itemId)));
+        progress[week] = { ...entry, values };
+      });
+      const previous = projectSchedule;
+      projectSchedule = {
+        title: document.getElementById('kurvaImportName').value.trim() || kurvaImportDraft.title,
+        fileName: kurvaImportDraft.fileName,
+        sheetName: kurvaImportDraft.sheetName,
+        startDate,
+        weekCount: kurvaImportDraft.weekCount,
+        holidays: kurvaImportDraft.holidays,
+        items: kurvaImportDraft.items,
+        importedAt: new Date().toISOString(),
+        importedBy: getSignedInName(),
+        progress
+      };
+      if (!await persistActiveProjectData()) {
+        projectSchedule = previous;
+        return;
+      }
+      closeKurvaImportModal();
+      renderKurvaS();
+    }
+
+    function openKurvaProgressModal() {
+      if (!requireAccess('daily_report')) return;
+      if (!projectSchedule) {
+        showAppNotice('Belum ada jadwal Kurva S. Import file Excel master schedule terlebih dahulu.');
+        return;
+      }
+      const select = document.getElementById('kurvaProgressWeek');
+      const currentWeek = Math.max(1, getKurvaCurrentWeek());
+      select.innerHTML = Array.from({ length: projectSchedule.weekCount }, (_, index) => {
+        const week = index + 1;
+        const flags = [projectSchedule.progress[week] ? '✓' : '', projectSchedule.holidays.includes(week) ? 'libur' : ''].filter(Boolean).join(' ');
+        return `<option value="${week}">Minggu ${week}${projectSchedule.startDate ? ` · ${escapeHtml(getKurvaWeekRange(week))}` : ''}${flags ? ` (${flags})` : ''}</option>`;
+      }).join('');
+      select.value = String(currentWeek);
+      renderKurvaProgressForm();
+      document.getElementById('modalKurvaProgress').style.display = 'flex';
+    }
+
+    function closeKurvaProgressModal() {
+      document.getElementById('modalKurvaProgress').style.display = 'none';
+    }
+
+    function renderKurvaProgressForm() {
+      const week = Number(document.getElementById('kurvaProgressWeek').value) || 1;
+      const previous = kurvaSCore.getItemProgressAt(projectSchedule, week - 1);
+      const current = kurvaSCore.getItemProgressAt(projectSchedule, week);
+      document.getElementById('kurvaProgressItems').innerHTML = getKurvaGroups(projectSchedule.items).map(([group, items]) => `
+        <div class="kurva-input-group">
+          <h4>${escapeHtml(group)}</h4>
+          ${items.map((item) => {
+            const plan = Math.min(100, getKurvaItemPlanAt(item, week) / item.weight * 100);
+            const limit = kurvaSCore.getItemProgressLimit(projectSchedule, week, item.id);
+            const notStarted = week < item.startWeek;
+            return `
+              <label class="kurva-input-row${notStarted ? ' is-muted' : ''}">
+                <span class="kurva-input-name">${escapeHtml([item.subgroup, item.name].filter(Boolean).join(' · '))}
+                  <small>Bobot ${formatKurvaPercent(item.weight, 3)} · rencana ${formatKurvaPercent(plan, 0)} · minggu lalu ${formatKurvaPercent(previous[item.id], 0)}${notStarted ? ` · mulai minggu ${item.startWeek}` : ''}</small>
+                </span>
+                <span class="kurva-input-field">
+                  <input type="number" inputmode="decimal" step="any" min="${previous[item.id]}" max="${limit}" value="${current[item.id]}" data-item-id="${escapeHtml(item.id)}" oninput="updateKurvaProgressSummary()" aria-label="Progres ${escapeHtml(item.name)} dalam persen">
+                  <span>%</span>
+                </span>
+              </label>`;
+          }).join('')}
+        </div>`).join('');
+      updateKurvaProgressSummary();
+    }
+
+    function updateKurvaProgressSummary() {
+      const week = Number(document.getElementById('kurvaProgressWeek').value) || 1;
+      const itemsById = new Map(projectSchedule.items.map((item) => [item.id, item]));
+      let actual = 0;
+      document.querySelectorAll('#kurvaProgressItems input[data-item-id]').forEach((input) => {
+        const item = itemsById.get(input.dataset.itemId);
+        const value = Math.min(100, Math.max(0, Number(input.value) || 0));
+        input.classList.toggle('is-invalid', input.value === '' || Number(input.value) < Number(input.min) || Number(input.value) > Number(input.max));
+        if (item) actual += item.weight * value / 100;
+      });
+      const plan = kurvaSCore.computeCurve(projectSchedule).planCumulative[week - 1];
+      const deviation = actual - plan;
+      document.getElementById('kurvaProgressSummary').innerHTML = `
+        <div><span>Rencana kum.</span><strong>${formatKurvaPercent(plan)}</strong></div>
+        <div><span>Realisasi kum.</span><strong>${formatKurvaPercent(actual)}</strong></div>
+        <div class="${deviation >= -0.005 ? 'is-ahead' : 'is-behind'}"><span>Deviasi</span><strong>${deviation > 0 ? '+' : ''}${formatKurvaPercent(deviation)}</strong></div>`;
+    }
+
+    async function saveKurvaProgress() {
+      if (!requireAccess('daily_report') || !projectSchedule) return;
+      const week = Number(document.getElementById('kurvaProgressWeek').value);
+      const previous = kurvaSCore.getItemProgressAt(projectSchedule, week - 1);
+      const itemsById = new Map(projectSchedule.items.map((item) => [item.id, item]));
+      const values = {};
+      for (const input of document.querySelectorAll('#kurvaProgressItems input[data-item-id]')) {
+        const item = itemsById.get(input.dataset.itemId);
+        const value = Number(input.value);
+        if (input.value === '' || !Number.isFinite(value) || value < Number(input.min) || value > Number(input.max)) {
+          input.focus();
+          alert(`Progres "${item?.name || 'pekerjaan'}" harus antara ${input.min}% dan ${input.max}%.\nProgres kumulatif tidak boleh turun dari minggu sebelumnya atau melebihi minggu sesudahnya.`);
+          return;
+        }
+        const rounded = Math.round(value * 100) / 100;
+        if (rounded !== previous[input.dataset.itemId]) values[input.dataset.itemId] = rounded;
+      }
+      const oldEntry = projectSchedule.progress[week];
+      projectSchedule.progress[week] = { values, updatedAt: new Date().toISOString(), updatedBy: getSignedInName() };
+      if (!await persistActiveProjectData()) {
+        if (oldEntry) projectSchedule.progress[week] = oldEntry;
+        else delete projectSchedule.progress[week];
+        return;
+      }
+      closeKurvaProgressModal();
+      renderKurvaS();
+    }
+
     initializeAppTheme();
     initializeModalCloseButtons();
     initializePhotoPreview();
@@ -8041,6 +8689,336 @@
     window.addEventListener('message', handleAppsScriptBridgeMessage);
     window.addEventListener('load', initializeGoogleSignIn, { once: true });
     loadAccountPhoto();
+  </script>
+  <script id="kurva-s-core">
+    const kurvaSCore = (() => {
+      const DAY_MS = 864e5;
+      const round = (value, digits = 6) => Math.round(value * 10 ** digits) / 10 ** digits;
+      const isNum = (value) => typeof value === 'number' && Number.isFinite(value);
+      const text = (value) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '');
+      const ROMAN = /^[IVXLC]+\.?$/;
+      const LETTER = /^[a-z]{1,2}[.)]$/i;
+
+      function columnNumber(letters) {
+        return [...letters].reduce((total, char) => total * 26 + char.charCodeAt(0) - 64, 0);
+      }
+
+      function decodeXml(value) {
+        return String(value)
+          .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+          .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number(dec)))
+          .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+          .replace(/&amp;/g, '&');
+      }
+
+      function excelSerialToISO(serial) {
+        return new Date(Math.round((serial - 25569) * DAY_MS)).toISOString().slice(0, 10);
+      }
+
+      async function unzip(buffer) {
+        const bytes = new Uint8Array(buffer);
+        const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+        let end = -1;
+        for (let index = bytes.length - 22; index >= Math.max(0, bytes.length - 65557); index -= 1) {
+          if (view.getUint32(index, true) === 0x06054b50) { end = index; break; }
+        }
+        if (end < 0) throw new Error('File bukan Excel .xlsx yang valid.');
+        const count = view.getUint16(end + 10, true);
+        let pointer = view.getUint32(end + 16, true);
+        const decoder = new TextDecoder();
+        const entries = {};
+        for (let index = 0; index < count && view.getUint32(pointer, true) === 0x02014b50; index += 1) {
+          const nameLength = view.getUint16(pointer + 28, true);
+          const name = decoder.decode(bytes.subarray(pointer + 46, pointer + 46 + nameLength));
+          entries[name] = {
+            method: view.getUint16(pointer + 10, true),
+            size: view.getUint32(pointer + 20, true),
+            offset: view.getUint32(pointer + 42, true)
+          };
+          pointer += 46 + nameLength + view.getUint16(pointer + 30, true) + view.getUint16(pointer + 32, true);
+        }
+        return {
+          names: Object.keys(entries),
+          async read(name) {
+            const entry = entries[name];
+            if (!entry) return null;
+            const start = entry.offset + 30 + view.getUint16(entry.offset + 26, true) + view.getUint16(entry.offset + 28, true);
+            const data = bytes.slice(start, start + entry.size);
+            if (entry.method === 0) return decoder.decode(data);
+            if (entry.method !== 8 || typeof DecompressionStream === 'undefined') throw new Error('Browser belum mendukung pembacaan file Excel ini.');
+            const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+            return decoder.decode(await new Response(stream).arrayBuffer());
+          }
+        };
+      }
+
+      function parseSheetXml(xml, sharedStrings) {
+        const grid = {};
+        for (const match of xml.matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
+          const attrs = match[1];
+          const inner = match[2] || '';
+          const ref = /\br="([A-Z]+)(\d+)"/.exec(attrs);
+          if (!ref) continue;
+          const type = (/\bt="(\w+)"/.exec(attrs) || [])[1] || 'n';
+          let value;
+          if (type === 'inlineStr') {
+            value = decodeXml([...inner.matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/g)].map((part) => part[1]).join(''));
+          } else {
+            const raw = /<v>([\s\S]*?)<\/v>/.exec(inner);
+            if (!raw) continue;
+            if (type === 's') value = sharedStrings[Number(raw[1])] ?? '';
+            else if (type === 'str' || type === 'e') value = decodeXml(raw[1]);
+            else if (type === 'b') value = raw[1] === '1';
+            else value = Number(raw[1]);
+          }
+          if (value === '' || (typeof value === 'number' && !Number.isFinite(value))) continue;
+          const row = Number(ref[2]);
+          (grid[row] ||= {})[columnNumber(ref[1])] = value;
+        }
+        return grid;
+      }
+
+      async function readWorkbookGrids(buffer) {
+        const zip = await unzip(buffer);
+        const sharedXml = await zip.read('xl/sharedStrings.xml') || '';
+        const sharedStrings = [...sharedXml.matchAll(/<si>([\s\S]*?)<\/si>/g)].map((item) =>
+          decodeXml([...item[1].replace(/<rPh\b[\s\S]*?<\/rPh>/g, '').matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/g)].map((part) => part[1]).join('')));
+        const workbookXml = await zip.read('xl/workbook.xml') || '';
+        const relsXml = await zip.read('xl/_rels/workbook.xml.rels') || '';
+        const targets = {};
+        for (const rel of relsXml.matchAll(/<Relationship\b([^>]*)\/?>/g)) {
+          const id = (/\bId="([^"]+)"/.exec(rel[1]) || [])[1];
+          const target = (/\bTarget="([^"]+)"/.exec(rel[1]) || [])[1];
+          if (id && target) targets[id] = target.startsWith('/') ? target.slice(1) : `xl/${target.replace(/^\.\//, '')}`;
+        }
+        const sheets = [...workbookXml.matchAll(/<sheet\b([^>]*)\/?>/g)].map((sheet) => ({
+          name: decodeXml((/\bname="([^"]*)"/.exec(sheet[1]) || [])[1] || ''),
+          path: targets[(/\br:id="([^"]+)"/.exec(sheet[1]) || [])[1]]
+        })).filter((sheet) => sheet.path);
+        if (!sheets.length) {
+          zip.names.filter((name) => /^xl\/worksheets\/sheet\d+\.xml$/.test(name)).sort()
+            .forEach((path) => sheets.push({ name: path.split('/').pop(), path }));
+        }
+        const grids = [];
+        for (const sheet of sheets) {
+          const xml = await zip.read(sheet.path);
+          if (xml) grids.push({ name: sheet.name.trim(), grid: parseSheetXml(xml, sharedStrings) });
+        }
+        return grids;
+      }
+
+      function findWeekColumns(grid, fromRow) {
+        for (let row = fromRow; row <= fromRow + 5; row += 1) {
+          const cells = grid[row] || {};
+          const columns = Object.keys(cells).map(Number).sort((first, second) => first - second);
+          const weeks = [];
+          columns.forEach((column) => {
+            const value = cells[column];
+            const expected = weeks.length ? weeks[weeks.length - 1].week + 1 : 1;
+            if (isNum(value) && value === expected && (!weeks.length || column > weeks[weeks.length - 1].column)) weeks.push({ column, week: value });
+          });
+          if (weeks.length >= 3) return { row, weeks };
+        }
+        return null;
+      }
+
+      function parseScheduleGrid(grid) {
+        const rows = Object.keys(grid).map(Number).sort((first, second) => first - second);
+        let header = null;
+        for (const row of rows) {
+          const cells = grid[row];
+          const find = (pattern) => Number(Object.keys(cells).find((column) => pattern.test(text(cells[column])))) || 0;
+          const itemColumn = find(/^(uraian\s+)?(item|pekerjaan|uraian)(\s+pekerjaan)?$/i);
+          const weightColumn = find(/^bobot(\s*\(%\))?$/i);
+          if (itemColumn && weightColumn) {
+            header = {
+              row,
+              noColumn: find(/^no\.?$/i) || itemColumn,
+              weightColumn,
+              startColumn: find(/minggu\s*ke|mulai|start/i),
+              endColumn: find(/selesai|finish|akhir/i)
+            };
+            break;
+          }
+        }
+        if (!header) throw new Error('Header jadwal tidak ditemukan. Pastikan ada kolom "ITEM" dan "Bobot".');
+        if (header.startColumn && !header.endColumn) header.endColumn = header.startColumn + 1;
+
+        const weekInfo = findWeekColumns(grid, header.row);
+        if (!weekInfo) throw new Error('Baris nomor minggu (1, 2, 3, ...) tidak ditemukan di bawah header.');
+        const weekCount = weekInfo.weeks[weekInfo.weeks.length - 1].week;
+
+        let startDate = '';
+        const titleParts = [];
+        rows.filter((row) => row < header.row).forEach((row) => {
+          Object.keys(grid[row]).map(Number).sort((first, second) => first - second).forEach((column) => {
+            const value = grid[row][column];
+            if (!startDate && isNum(value) && value >= 36526 && value <= 73051) startDate = excelSerialToISO(value);
+            if (text(value) && titleParts.length < 3 && !titleParts.includes(text(value))) titleParts.push(text(value));
+          });
+        });
+
+        const items = [];
+        const usedIds = new Set();
+        let group = '';
+        let subgroup = '';
+        for (const row of rows.filter((value) => value > weekInfo.row)) {
+          const cells = grid[row];
+          const labels = [];
+          for (let column = header.noColumn; column < header.weightColumn; column += 1) {
+            const value = cells[column];
+            if (text(value) || isNum(value)) labels.push(text(value) || String(value));
+          }
+          if (labels.some((label) => /^(rencana|realisasi|deviasi)\b/i.test(label))) break;
+          const code = labels.length > 1 && (ROMAN.test(labels[0]) || LETTER.test(labels[0]) || /^\d+\.?$/.test(labels[0])) ? labels[0] : '';
+          const name = labels.slice(code ? 1 : 0).join(' ').trim();
+          if (!name) continue;
+          const weight = cells[header.weightColumn];
+          const startWeek = cells[header.startColumn];
+          const endWeek = cells[header.endColumn];
+          const isLeaf = isNum(weight) && weight > 0 && isNum(startWeek) && isNum(endWeek);
+          if (ROMAN.test(code)) {
+            group = name;
+            subgroup = '';
+          } else if (!isLeaf) {
+            if (!group) group = name;
+            else subgroup = name;
+            continue;
+          }
+          if (!isLeaf) continue;
+
+          const plan = Array(weekCount).fill(0);
+          weekInfo.weeks.forEach(({ column, week }) => {
+            if (isNum(cells[column]) && cells[column] > 0) plan[week - 1] = round(cells[column]);
+          });
+          if (!plan.some(Boolean)) {
+            const from = Math.max(1, Math.round(startWeek));
+            const to = Math.min(weekCount, Math.round(endWeek));
+            for (let week = from; week <= to; week += 1) plan[week - 1] = round(weight / (to - from + 1));
+          }
+          const baseId = [group, subgroup, name].filter(Boolean).join('|').toLowerCase().replace(/[^a-z0-9|]+/g, '-');
+          let id = baseId;
+          for (let suffix = 2; usedIds.has(id); suffix += 1) id = `${baseId}~${suffix}`;
+          usedIds.add(id);
+          items.push({ id, code, group: group || 'Umum', subgroup, name, weight: round(weight), startWeek: Math.round(startWeek), endWeek: Math.round(endWeek), plan });
+        }
+        if (!items.length) throw new Error('Tidak ada item pekerjaan berbobot yang terbaca dari file.');
+
+        const weeklyTotal = Array(weekCount).fill(0);
+        items.forEach((item) => item.plan.forEach((value, index) => { weeklyTotal[index] += value; }));
+        const active = weeklyTotal.map((value, index) => (value > 0 ? index + 1 : 0)).filter(Boolean);
+        const holidays = [];
+        for (let week = active[0]; week < active[active.length - 1]; week += 1) {
+          if (!weeklyTotal[week - 1]) holidays.push(week);
+        }
+        return {
+          title: titleParts.filter((part) => !/^(master\s+)?schedule$|^kurva/i.test(part)).join(' – ') || titleParts.join(' – '),
+          startDate,
+          weekCount,
+          holidays,
+          items,
+          totalWeight: round(items.reduce((sum, item) => sum + item.weight, 0))
+        };
+      }
+
+      async function parseScheduleFile(buffer) {
+        const grids = await readWorkbookGrids(buffer);
+        let lastError = new Error('Sheet jadwal tidak ditemukan di file.');
+        for (const { name, grid } of grids) {
+          try {
+            return { ...parseScheduleGrid(grid), sheetName: name };
+          } catch (error) {
+            lastError = error;
+          }
+        }
+        throw lastError;
+      }
+
+      function clampPercent(value) {
+        return Math.min(100, Math.max(0, Number(value) || 0));
+      }
+
+      function reportedWeeks(schedule) {
+        return Object.keys(schedule?.progress || {}).map(Number)
+          .filter((week) => Number.isInteger(week) && week >= 1 && week <= schedule.weekCount)
+          .sort((first, second) => first - second);
+      }
+
+      function getItemProgressAt(schedule, week) {
+        const result = {};
+        schedule.items.forEach((item) => { result[item.id] = 0; });
+        reportedWeeks(schedule).filter((value) => value <= week).forEach((value) => {
+          Object.entries(schedule.progress[value]?.values || {}).forEach(([itemId, percent]) => {
+            if (itemId in result) result[itemId] = clampPercent(percent);
+          });
+        });
+        return result;
+      }
+
+      function getItemProgressLimit(schedule, week, itemId) {
+        const later = reportedWeeks(schedule).find((value) => value > week && itemId in (schedule.progress[value]?.values || {}));
+        return later ? clampPercent(schedule.progress[later].values[itemId]) : 100;
+      }
+
+      function computeCurve(schedule) {
+        const weekCount = schedule.weekCount;
+        const planWeekly = Array(weekCount).fill(0);
+        schedule.items.forEach((item) => item.plan.forEach((value, index) => { planWeekly[index] += Number(value) || 0; }));
+        const planCumulative = [];
+        planWeekly.reduce((sum, value, index) => (planCumulative[index] = round(sum + value, 4)), 0);
+        const weeks = reportedWeeks(schedule);
+        const lastReportedWeek = weeks.length ? weeks[weeks.length - 1] : 0;
+        const actualCumulative = Array(weekCount).fill(null);
+        const actualWeekly = Array(weekCount).fill(null);
+        const deviation = Array(weekCount).fill(null);
+        const current = {};
+        schedule.items.forEach((item) => { current[item.id] = 0; });
+        let previous = 0;
+        for (let week = 1; week <= lastReportedWeek; week += 1) {
+          Object.entries(schedule.progress[week]?.values || {}).forEach(([itemId, percent]) => {
+            if (itemId in current) current[itemId] = clampPercent(percent);
+          });
+          const total = round(schedule.items.reduce((sum, item) => sum + item.weight * current[item.id] / 100, 0), 4);
+          actualCumulative[week - 1] = total;
+          actualWeekly[week - 1] = round(total - previous, 4);
+          deviation[week - 1] = round(total - planCumulative[week - 1], 4);
+          previous = total;
+        }
+        return {
+          planWeekly: planWeekly.map((value) => round(value, 4)),
+          planCumulative,
+          actualWeekly,
+          actualCumulative,
+          deviation,
+          lastReportedWeek,
+          totalWeight: round(schedule.items.reduce((sum, item) => sum + item.weight, 0), 4)
+        };
+      }
+
+      function getWeekForDate(startDate, dateISO, weekCount) {
+        if (!startDate) return 1;
+        const diff = Math.floor((Date.parse(`${dateISO}T00:00:00Z`) - Date.parse(`${startDate}T00:00:00Z`)) / DAY_MS);
+        if (!Number.isFinite(diff)) return 1;
+        return Math.min(weekCount, Math.max(0, Math.floor(diff / 7) + 1));
+      }
+
+      function getWeekStartDate(startDate, week) {
+        if (!startDate) return '';
+        return new Date(Date.parse(`${startDate}T00:00:00Z`) + (week - 1) * 7 * DAY_MS).toISOString().slice(0, 10);
+      }
+
+      return {
+        parseScheduleFile,
+        parseScheduleGrid,
+        parseSheetXml,
+        computeCurve,
+        getItemProgressAt,
+        getItemProgressLimit,
+        getWeekForDate,
+        getWeekStartDate,
+        excelSerialToISO
+      };
+    })();
   </script>
   <script id="mep-calc-script">
     const mepCalculator = (() => {
