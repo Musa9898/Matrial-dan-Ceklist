@@ -391,33 +391,107 @@ function verifyGoogleIdToken_(idToken) {
   };
 }
 
-const FULL_ACCESS_PERMISSIONS = ['material', 'asset', 'checklist', 'daily_report', 'files', 'create_project'];
-const SUPERVISOR_PERMISSIONS = ['material', 'asset', 'checklist', 'daily_report'];
-const ROLE_PERMISSIONS = {
-  admin: FULL_ACCESS_PERMISSIONS,
-  owner: FULL_ACCESS_PERMISSIONS,
-  engineering: FULL_ACCESS_PERMISSIONS,
-  enginering: FULL_ACCESS_PERMISSIONS,
-  engineer: FULL_ACCESS_PERMISSIONS,
-  spv: SUPERVISOR_PERMISSIONS,
-  supervisor: SUPERVISOR_PERMISSIONS,
-  logistik: ['material', 'asset']
+// Matriks role mengikuti tabel role Orion Team.
+// permissions        = izin di proyek yang diberikan lewat tab Access.
+// allProjects        = role bisa melihat semua proyek.
+// globalPermissions  = izin di proyek lain yang tidak diberikan (khusus role allProjects).
+const ALL_PERMISSIONS = ['create_project', 'kurva_s', 'checklist', 'daily_report', 'material', 'asset', 'files'];
+const ROLE_DEFINITIONS = {
+  developer: { allProjects: true, permissions: ALL_PERMISSIONS, globalPermissions: ALL_PERMISSIONS },
+  business_owner: { allProjects: true, permissions: ['files'], globalPermissions: [] },
+  project_manager: { allProjects: false, permissions: ['create_project', 'kurva_s', 'checklist', 'daily_report', 'files'] },
+  site_manager: { allProjects: false, permissions: ['kurva_s', 'checklist', 'daily_report', 'files'] },
+  admin_project: { allProjects: false, permissions: ['kurva_s', 'daily_report', 'files'] },
+  engineering: { allProjects: false, permissions: ['kurva_s', 'daily_report', 'files'] },
+  drafter: { allProjects: false, permissions: ['files'] },
+  quantity_surveyor: { allProjects: false, permissions: ['kurva_s', 'checklist', 'daily_report', 'files'] },
+  quality_control: { allProjects: false, permissions: ['kurva_s', 'checklist', 'daily_report', 'files'] },
+  supervisor: { allProjects: false, permissions: ['checklist', 'daily_report'] },
+  logistik: { allProjects: false, permissions: ['material', 'asset'] },
+  guest: { allProjects: false, permissions: [] }
+};
+const ROLE_ALIASES = {
+  'business owner': 'business_owner',
+  bo: 'business_owner',
+  developer: 'developer',
+  dev: 'developer',
+  magician: 'developer',
+  'magician developer': 'developer',
+  'project manager': 'project_manager',
+  pm: 'project_manager',
+  'site manager': 'site_manager',
+  sm: 'site_manager',
+  admin: 'admin_project',
+  'admin project': 'admin_project',
+  'project admin': 'admin_project',
+  engineering: 'engineering',
+  enginering: 'engineering',
+  engineer: 'engineering',
+  drafter: 'drafter',
+  qs: 'quantity_surveyor',
+  'quantity surveyor': 'quantity_surveyor',
+  'quantity surveyour': 'quantity_surveyor',
+  qc: 'quality_control',
+  'quality control': 'quality_control',
+  spv: 'supervisor',
+  supervisor: 'supervisor',
+  pelaksana: 'supervisor',
+  'spv lapangan': 'supervisor',
+  'pelaksana spv lapangan': 'supervisor',
+  'pelaksana spv': 'supervisor',
+  logistik: 'logistik',
+  logistic: 'logistik',
+  logistics: 'logistik',
+  owner: 'guest',
+  'owner project': 'guest',
+  'owner project tamu': 'guest',
+  tamu: 'guest',
+  guest: 'guest',
+  viewer: 'guest'
 };
 const SNAPSHOT_SECTIONS = {
   material: ['materialItems', 'deliveryHistory', 'usageHistory'],
   asset: ['assetItems'],
   checklist: ['checklistItems'],
-  daily_report: ['dailyWorkPlans', 'projectSchedule'],
+  daily_report: ['dailyWorkPlans'],
+  kurva_s: ['projectSchedule'],
   files: ['projectFolders']
 };
 
+function normalizeRoleName_(role) {
+  return String(role || '').toLowerCase()
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function getRoleDefinition_(role) {
+  const raw = String(role || '').toLowerCase();
+  const normalized = normalizeRoleName_(role);
+  let key = ROLE_ALIASES[normalized];
+  // Contoh "(QS)" saja: pakai teks di dalam kurung bila nama di luar kurung kosong/tidak dikenal.
+  if (!key) {
+    const inner = (raw.match(/\(([^)]*)\)/) || [])[1];
+    if (inner) key = ROLE_ALIASES[normalizeRoleName_(inner)];
+  }
+  return ROLE_DEFINITIONS[key] || ROLE_DEFINITIONS.guest;
+}
+
 function getRolePermissions_(role) {
-  return (ROLE_PERMISSIONS[String(role || '').trim().toLowerCase()] || []).slice();
+  return getRoleDefinition_(role).permissions.slice();
+}
+
+function isAllProjectsRole_(role) {
+  return Boolean(getRoleDefinition_(role).allProjects);
+}
+
+function isReadOnlyPermissions_(permissions) {
+  return !permissions.some((permission) => Object.prototype.hasOwnProperty.call(SNAPSHOT_SECTIONS, permission));
 }
 
 function withPermissions_(project) {
   const permissions = getRolePermissions_(project.role);
-  return { ...project, permissions: permissions, readOnly: permissions.length === 0 };
+  return { ...project, permissions: permissions, readOnly: isReadOnlyPermissions_(permissions) };
 }
 
 function readActiveAccessRows_(spreadsheet) {
@@ -447,31 +521,44 @@ function readActiveAccessRows_(spreadsheet) {
     .filter((project) => project.projectId && project.projectName);
 }
 
+function buildUserProjects_(rows, email) {
+  const ownRows = rows.filter((row) => row.email === email);
+  if (!ownRows.length) return [];
+  const globalRows = ownRows.filter((row) => isAllProjectsRole_(row.role));
+
+  const projectOrder = [];
+  const projectNames = {};
+  const candidateRows = globalRows.length ? rows : ownRows;
+  candidateRows.forEach((row) => {
+    if (projectNames[row.projectId] !== undefined) return;
+    projectNames[row.projectId] = row.projectName;
+    projectOrder.push(row.projectId);
+  });
+
+  return projectOrder.map((projectId) => {
+    const projectRows = ownRows.filter((row) => row.projectId === projectId);
+    const permissions = [];
+    const addPermissions = (list) => list.forEach((permission) => {
+      if (permissions.indexOf(permission) === -1) permissions.push(permission);
+    });
+    projectRows.forEach((row) => addPermissions(getRolePermissions_(row.role)));
+    globalRows.forEach((row) => addPermissions(getRoleDefinition_(row.role).globalPermissions || []));
+    return {
+      projectId: projectId,
+      projectName: projectNames[projectId],
+      role: (projectRows[0] || globalRows[0]).role,
+      permissions: permissions,
+      readOnly: isReadOnlyPermissions_(permissions)
+    };
+  });
+}
+
 function getAuthorizedProjects_(email) {
-  return readActiveAccessRows_()
-    .filter((row) => row.email === email)
-    .map((row) => withPermissions_({ projectId: row.projectId, projectName: row.projectName, role: row.role }));
+  return buildUserProjects_(readActiveAccessRows_(), email);
 }
 
 function getAccessibleProjects_(email, spreadsheet) {
-  const rows = readActiveAccessRows_(spreadsheet);
-  const ownProjects = rows.filter((row) => row.email === email)
-    .map((row) => withPermissions_({ projectId: row.projectId, projectName: row.projectName, role: row.role }));
-  if (!ownProjects.length) return [];
-
-  const ownIds = new Set(ownProjects.map((project) => project.projectId));
-  const viewOnlyProjects = new Map();
-  rows.forEach((row) => {
-    if (ownIds.has(row.projectId) || viewOnlyProjects.has(row.projectId)) return;
-    viewOnlyProjects.set(row.projectId, {
-      projectId: row.projectId,
-      projectName: row.projectName,
-      role: 'viewer',
-      permissions: [],
-      readOnly: true
-    });
-  });
-  return [...ownProjects, ...viewOnlyProjects.values()];
+  return buildUserProjects_(readActiveAccessRows_(spreadsheet), email);
 }
 
 function requireProjectPermission_(project, permission) {
@@ -530,9 +617,14 @@ function createProjectForUser_(projectName, email) {
   if (name.length > 100) throw new Error('Nama proyek maksimal 100 karakter.');
 
   const currentProjects = getAuthorizedProjects_(email);
-  if (!currentProjects.some((project) => project.permissions.includes('create_project'))) {
-    throw new Error('Hanya admin, owner, atau Engineering yang dapat menambahkan proyek.');
+  const creatorProject = currentProjects.find((project) => project.permissions.includes('create_project'));
+  if (!creatorProject) {
+    throw new Error('Hanya Developer atau Project Manager yang dapat menambahkan proyek.');
   }
+  const creatorRole = readActiveAccessRows_()
+    .filter((row) => row.email === email)
+    .map((row) => row.role)
+    .find((role) => getRolePermissions_(role).includes('create_project')) || creatorProject.role;
 
   const spreadsheet = getSpreadsheet_();
   const accessSheet = spreadsheet.getSheetByName(ACCESS_SHEET_NAME);
@@ -588,7 +680,7 @@ function createProjectForUser_(projectName, email) {
   accessRow[accessIndexes.email] = email;
   accessRow[accessIndexes.projectId] = projectId;
   accessRow[accessIndexes.projectName] = name;
-  accessRow[accessIndexes.role] = 'admin';
+  accessRow[accessIndexes.role] = creatorRole;
   accessRow[accessIndexes.active] = true;
 
   const projectRowIndex = projectsSheet.getLastRow() + 1;
@@ -600,7 +692,7 @@ function createProjectForUser_(projectName, email) {
     throw error;
   }
 
-  return withPermissions_({ projectId: projectId, projectName: name, role: 'admin' });
+  return withPermissions_({ projectId: projectId, projectName: name, role: creatorRole });
 }
 
 function getSchemaSheet_(spreadsheet, sheetName, headers) {
@@ -1314,18 +1406,13 @@ function syncAccessToSupabase_(spreadsheet) {
   if (!rows.length) return 0;
   const stamp = new Date().toISOString();
 
-  const projectNames = {};
-  rows.forEach((row) => { projectNames[row.projectId] = row.projectName; });
-
   const emails = [];
   rows.forEach((row) => { if (emails.indexOf(row.email) === -1) emails.push(row.email); });
 
   const entries = [];
   emails.forEach((email) => {
-    const own = rows.filter((row) => row.email === email);
-    const ownIds = own.map((row) => row.projectId);
-    own.forEach((row) => {
-      const project = withPermissions_({ projectId: row.projectId, projectName: row.projectName, role: row.role });
+    // Sama seperti getAccessibleProjects_: cakupan proyek mengikuti role.
+    buildUserProjects_(rows, email).forEach((project) => {
       entries.push({
         email: email,
         project_id: project.projectId,
@@ -1333,19 +1420,6 @@ function syncAccessToSupabase_(spreadsheet) {
         role: project.role,
         permissions: project.permissions,
         read_only: project.readOnly,
-        updated_at: stamp
-      });
-    });
-    // Sama seperti getAccessibleProjects_: proyek lain tetap terlihat sebagai viewer read-only.
-    Object.keys(projectNames).forEach((projectId) => {
-      if (ownIds.indexOf(projectId) !== -1) return;
-      entries.push({
-        email: email,
-        project_id: projectId,
-        project_name: projectNames[projectId],
-        role: 'viewer',
-        permissions: [],
-        read_only: true,
         updated_at: stamp
       });
     });

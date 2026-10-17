@@ -4982,9 +4982,9 @@
       toggle('button[onclick^="openChecklistModal"]', 'checklist');
       toggle('button[onclick^="saveChecklistStatusUpdate"]', 'checklist');
       toggle('button[onclick^="openDailyWorkReportForm"]', 'daily_report');
-      toggle('#kurvaProgressButton', 'daily_report');
-      toggle('#kurvaImportButton', 'files');
-      toggle('#kurvaRescheduleButton', 'files');
+      toggle('#kurvaProgressButton', 'kurva_s');
+      toggle('#kurvaImportButton', 'kurva_s');
+      toggle('#kurvaRescheduleButton', 'kurva_s');
       toggle('#addProjectFolderButton', 'files');
       toggle('#projectFolderContents button[onclick^="renameProjectFolder"]', 'files');
       toggle('#projectFileUploadButton', 'files');
@@ -5649,7 +5649,7 @@
 
       if (currentGoogleCredential && getAppsScriptUrl()) {
         if (!canCreateProjects()) {
-          showAppNotice('Hanya admin, owner, atau Engineering yang dapat menambahkan proyek.');
+          showAppNotice('Hanya Developer atau Project Manager yang dapat menambahkan proyek.');
           return;
         }
         if (!await persistActiveProjectData()) return;
@@ -8439,9 +8439,9 @@
           <div class="kurva-empty">
             <div class="kurva-empty-icon">📈</div>
             <strong>Belum ada jadwal Kurva S</strong>
-            <p>${canAccess('files')
-              ? 'Import file Excel master schedule proyek ini untuk menampilkan kurva rencana. Setelah itu SPV bisa mengisi progres mingguan.'
-              : 'Minta Admin/Engineering mengimpor file Excel master schedule untuk proyek ini.'}</p>
+            <p>${canAccess('kurva_s')
+              ? 'Import file Excel master schedule proyek ini untuk menampilkan kurva rencana. Setelah itu progres mingguan bisa diisi.'
+              : 'Minta PM, Site Manager, Admin Project, Engineering, QS, QC, atau Developer mengimpor file Excel master schedule untuk proyek ini.'}</p>
           </div>`;
         return;
       }
@@ -8671,7 +8671,7 @@
             });
 
     function openKurvaImportModal(mode = 'import') {
-      if (!requireAccess('files')) return;
+      if (!requireAccess('kurva_s')) return;
       if (mode === 'reschedule' && !projectSchedule) {
         alert('Import jadwal awal terlebih dahulu sebelum membuat reschedule.');
         return;
@@ -8752,7 +8752,7 @@
     }
 
     async function saveKurvaImport() {
-      if (!requireAccess('files') || !kurvaImportDraft) return;
+      if (!requireAccess('kurva_s') || !kurvaImportDraft) return;
       const startDate = document.getElementById('kurvaImportStart').value;
       if (!startDate) {
         alert('Isi tanggal mulai minggu ke-1.');
@@ -8809,7 +8809,7 @@
     }
 
     function openKurvaProgressModal() {
-      if (!requireAccess('daily_report')) return;
+      if (!requireAccess('kurva_s')) return;
       if (!projectSchedule) {
         showAppNotice('Belum ada jadwal Kurva S. Import file Excel master schedule terlebih dahulu.');
         return;
@@ -8875,7 +8875,7 @@
     }
 
     async function saveKurvaProgress() {
-      if (!requireAccess('daily_report') || !projectSchedule) return;
+      if (!requireAccess('kurva_s') || !projectSchedule) return;
       const week = Number(document.getElementById('kurvaProgressWeek').value);
       const previous = kurvaSCore.getItemProgressAt(projectSchedule, week - 1);
       const itemsById = new Map(projectSchedule.items.map((item) => [item.id, item]));
