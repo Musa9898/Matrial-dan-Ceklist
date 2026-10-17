@@ -2428,6 +2428,22 @@
         width: min(860px, 100%);
       }
     }
+
+    /* Desktop/tablet: fill the whole browser window like on phones. */
+    @media (min-width: 640px) {
+      body {
+        padding: 0;
+      }
+
+      .app-container {
+        max-width: none;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+    }
     .login-company {
       margin-left: 14px;
       font-size: 0.78rem;
