@@ -2129,6 +2129,45 @@
     .kurva-bar-plan { background: rgba(41, 55, 125, 0.25); }
     .kurva-bar-actual { background: var(--success-green); height: 4px; top: 2px !important; }
     .kurva-bar-actual.is-behind { background: var(--danger-red); }
+
+    /* Kurva S entrance animations (only when .kurva-animate is set on render). */
+    @keyframes kurvaFadeDown { from { opacity: 0; transform: translateY(-18px); } to { opacity: 1; transform: none; } }
+    @keyframes kurvaDraw { to { stroke-dashoffset: 0; } }
+    @keyframes kurvaGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+    @keyframes kurvaPop { 0% { opacity: 0; transform: scale(0); } 70% { opacity: 1; transform: scale(1.35); } 100% { opacity: 1; transform: scale(1); } }
+    @keyframes kurvaFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes kurvaFill { from { width: 0; } }
+    @keyframes kurvaTipIn { from { opacity: 0; transform: translateY(6px) scale(0.96); } to { opacity: 1; transform: none; } }
+    @keyframes kurvaPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+    @keyframes kurvaGlow { 0%, 100% { r: 3.5; } 50% { r: 5.5; } }
+    .kurva-stat, .kurva-group { transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+    .kurva-stat:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16); border-color: rgba(240, 181, 27, 0.5); }
+    .kurva-group:hover { border-color: rgba(240, 181, 27, 0.45); }
+    .kurva-animate .kurva-meta,
+    .kurva-animate .kurva-stat,
+    .kurva-animate .kurva-alert,
+    .kurva-animate .kurva-chart-card,
+    .kurva-animate .kurva-subtitle,
+    .kurva-animate .kurva-group,
+    .kurva-animate .kurva-table-wrap { animation: kurvaFadeDown 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--kurva-i, 0) * 60ms); }
+    .kurva-animate .kurva-bar { transform-box: fill-box; transform-origin: 50% 100%; animation: kurvaGrow 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(300ms + var(--kurva-i, 0) * 14ms); }
+    .kurva-animate .kurva-holiday,
+    .kurva-animate .kurva-today,
+    .kurva-animate .kurva-today-label { animation: kurvaFadeIn 0.6s ease 0.9s both; }
+    .kurva-animate .kurva-plan { stroke-dasharray: var(--kurva-len, 4000); stroke-dashoffset: var(--kurva-len, 4000); animation: kurvaDraw 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.35s forwards; }
+    .kurva-animate .kurva-actual { stroke-dasharray: var(--kurva-len, 4000); stroke-dashoffset: var(--kurva-len, 4000); animation: kurvaDraw 1.1s cubic-bezier(0.65, 0, 0.35, 1) 1.2s forwards; }
+    .kurva-animate .kurva-actual-dot { transform-box: fill-box; transform-origin: center; animation: kurvaPop 0.4s ease-out both; animation-delay: calc(1.25s + var(--kurva-i, 0) * 70ms); }
+    .kurva-animate .kurva-bar-track span { animation: kurvaFill 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both; }
+    .kurva-today-label { animation: kurvaPulse 2.2s ease-in-out infinite; }
+    .kurva-animate .kurva-today-label { animation: kurvaFadeIn 0.6s ease 0.9s both, kurvaPulse 2.2s ease-in-out 1.5s infinite; }
+    .kurva-actual-dot.is-last { animation: kurvaGlow 1.8s ease-in-out infinite; }
+    .kurva-animate .kurva-actual-dot.is-last { animation: kurvaPop 0.4s ease-out both, kurvaGlow 1.8s ease-in-out 2.2s infinite; animation-delay: calc(1.25s + var(--kurva-i, 0) * 70ms), 2.2s; }
+    .kurva-tip:not([hidden]) { animation: kurvaTipIn 0.18s ease-out; }
+    .kurva-select { transition: x 0.2s ease; }
+    @media (prefers-reduced-motion: reduce) {
+      .kurva-animate *, .kurva-today-label, .kurva-actual-dot.is-last, .kurva-tip:not([hidden]) { animation: none !important; stroke-dashoffset: 0 !important; }
+      .kurva-stat:hover { transform: none; }
+    }
     .kurva-table-wrap { background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 14px; margin-bottom: 10px; }
     .kurva-table-wrap summary { cursor: pointer; padding: 12px; font-size: 0.85rem; font-weight: 700; color: var(--text-dark); }
     .kurva-table-scroll { overflow-x: auto; padding: 0 8px 10px; }
@@ -5510,7 +5549,7 @@
       renderChecklistCards();
       renderDailyWorkReport();
       renderProjectFiles();
-      if (document.getElementById('tabViewKurvaS').style.display !== 'none') renderKurvaS();
+      if (document.getElementById('tabViewKurvaS').style.display !== 'none') renderKurvaS({ animate: false });
     }
 
     async function switchProject(projectId) {
@@ -8297,7 +8336,7 @@
       }
       curve.planWeekly.forEach((value, index) => {
         const barHeight = (value / maxWeekly) * plotHeight * 0.22;
-        if (barHeight > 0) parts.push(`<rect class="kurva-bar" x="${x(index) + 1}" y="${pad.top + plotHeight - barHeight}" width="${Math.max(1, x(index + 1) - x(index) - 2)}" height="${barHeight}"><title>Minggu ${index + 1}: rencana ${formatKurvaPercent(value, 3)}</title></rect>`);
+        if (barHeight > 0) parts.push(`<rect class="kurva-bar" style="--kurva-i:${index}" x="${x(index) + 1}" y="${pad.top + plotHeight - barHeight}" width="${Math.max(1, x(index + 1) - x(index) - 2)}" height="${barHeight}"><title>Minggu ${index + 1}: rencana ${formatKurvaPercent(value, 3)}</title></rect>`);
       });
       for (let week = 1; week <= weeks; week += 1) {
         parts.push(`<text class="kurva-axis kurva-axis-week" x="${x(week - 0.5)}" y="${height - pad.bottom + 16}" text-anchor="middle">${week}</text>`);
@@ -8314,8 +8353,8 @@
         const actualPoints = [`${x(0)},${y(0)}`];
         for (let week = 1; week <= curve.lastReportedWeek; week += 1) actualPoints.push(`${x(week)},${y(curve.actualCumulative[week - 1])}`);
         parts.push(`<polyline class="kurva-actual" points="${actualPoints.join(' ')}"/>`);
-        Object.keys(projectSchedule.progress).map(Number).filter((week) => week >= 1 && week <= curve.lastReportedWeek).forEach((week) => {
-          parts.push(`<circle class="kurva-actual-dot" cx="${x(week)}" cy="${y(curve.actualCumulative[week - 1])}" r="3.5"/>`);
+        Object.keys(projectSchedule.progress).map(Number).filter((week) => week >= 1 && week <= curve.lastReportedWeek).sort((a, b) => a - b).forEach((week, order) => {
+          parts.push(`<circle class="kurva-actual-dot${week === curve.lastReportedWeek ? ' is-last' : ''}" style="--kurva-i:${order}" cx="${x(week)}" cy="${y(curve.actualCumulative[week - 1])}" r="3.5"/>`);
         });
       }
       for (let week = 1; week <= weeks; week += 1) {
@@ -8324,9 +8363,11 @@
       return `<svg class="kurva-chart" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Grafik kurva S rencana dan realisasi">${parts.join('')}</svg><div class="kurva-tip" hidden></div>`;
     }
 
-    function renderKurvaS() {
+    function renderKurvaS(options = {}) {
+      const animate = options.animate !== false;
       const container = document.getElementById('kurvaContent');
       if (!container) return;
+      container.classList.remove('kurva-animate');
       if (!projectSchedule) {
         container.innerHTML = `
           <div class="kurva-empty">
@@ -8402,17 +8443,17 @@
           </div>
           <div class="kurva-stat">
             <span>Rencana kumulatif</span>
-            <strong class="color-purple">${formatKurvaPercent(currentWeek >= 1 ? curve.planCumulative[planWeek - 1] : 0)}</strong>
+            <strong class="color-purple" data-kurva-count="${currentWeek >= 1 ? curve.planCumulative[planWeek - 1] : 0}">${formatKurvaPercent(currentWeek >= 1 ? curve.planCumulative[planWeek - 1] : 0)}</strong>
             <small>s.d. minggu ke-${Math.max(0, currentWeek)}</small>
           </div>
           <div class="kurva-stat">
             <span>Realisasi kumulatif</span>
-            <strong class="color-green">${formatKurvaPercent(actual)}</strong>
+            <strong class="color-green" data-kurva-count="${actual}">${formatKurvaPercent(actual)}</strong>
             <small>${reported ? `laporan s.d. minggu ke-${reported}` : 'belum ada laporan'}</small>
           </div>
           <div class="kurva-stat ${deviationClass}">
             <span>Deviasi</span>
-            <strong>${deviation === null ? '–' : `${deviation > 0 ? '+' : ''}${formatKurvaPercent(deviation)}`}</strong>
+            <strong${deviation === null ? '' : ` data-kurva-count="${deviation}" data-kurva-signed="1"`}>${deviation === null ? '–' : `${deviation > 0 ? '+' : ''}${formatKurvaPercent(deviation)}`}</strong>
             <small>${deviationLabel}</small>
           </div>
         </div>
@@ -8440,6 +8481,7 @@
         <p class="form-hint">Sumber: ${escapeHtml(projectSchedule.fileName || 'Excel')}${projectSchedule.importedBy ? ` · diimpor oleh ${escapeHtml(projectSchedule.importedBy)}` : ''}${projectSchedule.importedAt ? ` · ${escapeHtml(formatKurvaDate(projectSchedule.importedAt.slice(0, 10), true))}` : ''}</p>`;
 
               const chartScroll = container.querySelector('.kurva-chart-scroll');
+      if (animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) startKurvaAnimation(container);
       if (chartScroll) {
         chartScroll.addEventListener('click', (event) => {
           if (event.target.closest('.kurva-tip') && !event.target.closest('.kurva-tip-close')) return;
@@ -8455,6 +8497,35 @@
             }
 
             let kurvaRenderedWidth = 0;
+
+    function startKurvaAnimation(container) {
+      const staggered = container.querySelectorAll('.kurva-meta, .kurva-stat, .kurva-alert, .kurva-chart-card, .kurva-subtitle, .kurva-group, .kurva-table-wrap');
+      staggered.forEach((element, index) => element.style.setProperty('--kurva-i', Math.min(index, 14)));
+      container.querySelectorAll('.kurva-plan, .kurva-actual').forEach((line) => {
+        const length = typeof line.getTotalLength === 'function' ? Math.ceil(line.getTotalLength()) : 4000;
+        line.style.setProperty('--kurva-len', length || 4000);
+      });
+      void container.offsetWidth;
+      container.classList.add('kurva-animate');
+
+      const duration = 1100;
+      const counters = [...container.querySelectorAll('[data-kurva-count]')].map((element) => ({
+        element,
+        target: Number(element.dataset.kurvaCount) || 0,
+        signed: element.dataset.kurvaSigned === '1'
+      }));
+      const startTime = performance.now();
+      const tick = (now) => {
+        const progress = Math.min(1, (now - startTime) / duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        counters.forEach(({ element, target, signed }) => {
+          const value = target * eased;
+          element.textContent = `${signed && value > 0 ? '+' : ''}${formatKurvaPercent(progress === 1 ? target : value)}`;
+        });
+        if (progress < 1 && container.isConnected) requestAnimationFrame(tick);
+      };
+      if (counters.length) requestAnimationFrame(tick);
+    }
 
     function showKurvaWeekTip(chartScroll, curve, week) {
       const tip = chartScroll.querySelector('.kurva-tip');
@@ -8507,7 +8578,7 @@
                 const container = document.getElementById('kurvaContent');
                 const tab = document.getElementById('tabViewKurvaS');
                 if (!projectSchedule || !container || !tab || tab.style.display === 'none') return;
-                if (Math.abs(container.clientWidth - kurvaRenderedWidth) > 4) renderKurvaS();
+                if (Math.abs(container.clientWidth - kurvaRenderedWidth) > 4) renderKurvaS({ animate: false });
               }, 200);
             });
 
