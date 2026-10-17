@@ -81,7 +81,7 @@ Data operasional dipisah ke tab agar mudah difilter dan dianalisis:
 - `ProjectData`: snapshot JSON per proyek, termasuk chunk untuk snapshot besar.
 - `Materials`: stok, satuan, jumlah masuk/keluar, status, dan URL foto kedatangan.
 - `Assets`: identitas alat, kondisi, lokasi, dan URL foto.
-- `Checklists`: tanggal, area, pekerjaan, status, progres, PIC, dan URL foto.
+- `Checklists`: tanggal, area, bidang (`discipline`: MEP / Sipil Struktur / Sipil Arsitektur), pekerjaan, status, progres, PIC, dan URL foto.
 - `DailyReports`: judul, tanggal, SPV, jumlah tugas/orang, dan ringkasan tugas.
 - `ProjectFiles`: metadata file Drive, folder, URL, ukuran, dan tipe file.
 - `ProjectFolders`: ID dan nama folder logis tiap proyek, sehingga struktur folder tampil lintas perangkat.
@@ -113,6 +113,8 @@ Script membagikan foto sebagai **Anyone with the link – Viewer**, sesuai permi
 ## Hak akses per role
 
 Daftar aset menggunakan kartu ringkas seperti material (kategori, kondisi, nama, kode, jumlah, lokasi/pemegang). Klik kartu atau tekan Enter/Spasi untuk membuka detail aset, termasuk foto dan waktu pembaruan. Tombol Ubah/Hapus berada di detail dan tetap mengikuti izin role. Klik foto aset, foto surat jalan material, atau foto ceklist untuk membuka preview ukuran besar; tutup dengan tombol silang, Escape, atau klik di luar preview. Preview tidak mengubah data/foto yang tersimpan.
+
+Input foto (ceklist, surat jalan material, aset) punya tombol **📷 Kamera** dan **🖼️ Galeri / File**. Foto yang diambil lewat tombol Kamera otomatis diberi watermark di bagian bawah: Victory Construction + nama proyek, hari/tanggal/jam foto, lalu detail form (ceklist: area, bidang–pekerjaan, SPV; material: nama, jumlah, surat jalan, user; aset: nama/kode, lokasi, user). Foto dari Galeri / File disimpan tanpa watermark.
 
 Kolom `role` pada tab `Access` menentukan apa yang boleh dilakukan pengguna di proyeknya:
 

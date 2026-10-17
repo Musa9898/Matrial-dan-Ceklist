@@ -26,6 +26,10 @@
       --badge-plumbing-text: #755000;
       --badge-electrical-bg: var(--brand-blue-soft);
       --badge-electrical-text: var(--brand-navy);
+      --badge-structure-bg: #e5e7eb;
+      --badge-structure-text: #374151;
+      --badge-architecture-bg: #dcfce7;
+      --badge-architecture-text: #166534;
     }
 
     * {
@@ -855,6 +859,9 @@
 
     .badge-plumbing { background: var(--badge-plumbing-bg); color: var(--badge-plumbing-text); }
     .badge-electrical { background: var(--badge-electrical-bg); color: var(--badge-electrical-text); }
+    .badge-structure { background: var(--badge-structure-bg); color: var(--badge-structure-text); }
+    .badge-architecture { background: var(--badge-architecture-bg); color: var(--badge-architecture-text); }
+    .checklist-work-other { margin-top: 8px; }
 
     .status-text {
       font-size: 0.75rem;
@@ -1918,6 +1925,42 @@
       color: #e1e9f8;
     }
 
+    .photo-picker {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .photo-picker button {
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      background: #ffffff;
+      color: var(--brand-navy);
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .photo-picker button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    body.theme-dark .photo-picker button {
+      border-color: #3a4962;
+      background: #1b2940;
+      color: #e1e9f8;
+    }
+
+    .photo-picker-name {
+      grid-column: 1 / -1;
+      font-size: 0.75rem;
+      color: var(--text-muted, #64748b);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .account-info strong,
     .account-info span {
       display: block;
@@ -2009,6 +2052,10 @@
       --badge-plumbing-text: #ffe08a;
       --badge-electrical-bg: #253452;
       --badge-electrical-text: #d3def8;
+      --badge-structure-bg: #33373d;
+      --badge-structure-text: #e5e7eb;
+      --badge-architecture-bg: #183a2a;
+      --badge-architecture-text: #bbf7d0;
       --warning-orange: #f4c66f;
       --success-green: #4ade80;
       background-color: #070b14;
@@ -3177,7 +3224,7 @@
     <main class="scroll-content" id="tabViewCeklist" style="display: none;">
       <div class="section-header">
         <div class="section-title">
-          <span>📋</span> Ceklist MEP Lapangan
+          <span>📋</span> Ceklist Lapangan (MEP &amp; Sipil)
         </div>
         <button class="btn-action-primary" onclick="openChecklistModal()">
           + Inspeksi Baru
@@ -3216,6 +3263,8 @@
                 <option value="Electrical">Electrical</option>
                 <option value="Electronic">Electronic</option>
                 <option value="Tata Udara">Tata Udara</option>
+                <option value="Sipil Struktur">Sipil – Struktur</option>
+                <option value="Sipil Arsitektur">Sipil – Arsitektur</option>
               </select>
               <select id="checklistWorkFilter" onchange="renderChecklistCards()" aria-label="Filter nama pekerjaan">
                 <option value="">Semua Pekerjaan</option>
@@ -3259,6 +3308,8 @@
                 <option value="Electrical">Electrical</option>
                 <option value="Electronic">Electronic</option>
                 <option value="Tata Udara">Tata Udara</option>
+                <option value="Sipil Struktur">Sipil – Struktur</option>
+                <option value="Sipil Arsitektur">Sipil – Arsitektur</option>
               </select>
               <input id="dailyWorkDateFrom" type="date" onchange="renderDailyWorkReport()" aria-label="Laporan mulai tanggal">
               <input id="dailyWorkDateTo" type="date" onchange="renderDailyWorkReport()" aria-label="Laporan sampai tanggal">
@@ -3359,7 +3410,7 @@
         </div>
         <div class="form-row">
           <label for="assetPhotoInput">Foto Alat (opsional)</label>
-          <input id="assetPhotoInput" type="file" accept="image/*" onchange="previewAssetPhoto(this.files[0])">
+          <input id="assetPhotoInput" type="file" accept="image/*" data-photo-picker data-photo-picker-name onchange="previewAssetPhoto(this.files[0])">
           <button class="project-photo-button" id="assetPhotoPreviewButton" type="button" aria-label="Buka preview foto aset" hidden>
             <img class="asset-photo" id="assetPhotoPreview" alt="Pratinjau foto aset" hidden>
           </button>
@@ -3441,7 +3492,7 @@
           <h4>Tambah Penugasan</h4>
           <div class="form-row">
             <label class="required-label">Bidang</label>
-            <input type="text" id="dailyTaskDiscipline" placeholder="Contoh: Plumbing, Sprinkler, Elektrikal">
+            <input type="text" id="dailyTaskDiscipline" placeholder="Contoh: Plumbing, Elektrikal, Struktur, Arsitektur">
           </div>
           <div class="form-row">
             <label class="required-label">Jenis Pekerjaan</label>
@@ -3509,7 +3560,7 @@
         </div>
         <div class="form-row">
           <label>Foto Surat Jalan</label>
-          <input type="file" id="modalPhoto" accept="image/*">
+          <input type="file" id="modalPhoto" accept="image/*" data-photo-picker data-photo-picker-name>
           <div class="photo-upload-status" id="materialPhotoUploadStatus" role="status" aria-live="polite" aria-busy="false" hidden>
             <span class="loading-spinner" id="materialPhotoUploadSpinner" hidden aria-hidden="true"></span>
             <span id="materialPhotoUploadMessage"></span>
@@ -3718,7 +3769,16 @@
 
     <div class="modal-backdrop" id="modalChecklist">
       <div class="modal-sheet">
-        <h3>Form Inspeksi Ceklist MEP</h3>
+        <h3 id="formChecklistTitle">Form Inspeksi Ceklist MEP</h3>
+
+        <div class="form-row">
+          <label class="required-label" for="formDiscipline">Bidang Pekerjaan</label>
+          <select id="formDiscipline" onchange="updateChecklistDisciplineControls()">
+            <option value="MEP">MEP (Mekanikal, Elektrikal, Plumbing)</option>
+            <option value="Sipil Struktur">Sipil – Struktur</option>
+            <option value="Sipil Arsitektur">Sipil – Arsitektur</option>
+          </select>
+        </div>
 
         <div class="scope-toggle">
           <button class="scope-btn active" id="btnScopeUnit" onclick="setScope('unit')">Area</button>
@@ -3748,8 +3808,9 @@
           </div>
 
           <div class="form-row">
-            <label id="formKategoriLabel">Jenis Pekerjaan MEP</label>
-            <input type="text" id="formKategoriMEP" placeholder="Contoh: Instalasi Penerangan, Fire Alarm">
+            <label id="formKategoriLabel" for="formKategoriSelect">Jenis Pekerjaan MEP</label>
+            <select id="formKategoriSelect" onchange="syncChecklistWorkSelect('formKategoriSelect', 'formKategoriMEP')"></select>
+            <input type="text" id="formKategoriMEP" class="checklist-work-other" autocomplete="off" placeholder="Contoh: Instalasi Penerangan, Fire Alarm" style="display: none;">
           </div>
         </div>
 
@@ -3760,8 +3821,9 @@
               <input type="text" id="formShaftNo" placeholder="Contoh: Shaft 1, Shaft Utama">
             </div>
             <div class="form-row">
-              <label id="formShaftItemLabel">Item Riser / Pekerjaan</label>
-              <input type="text" id="formShaftItem" placeholder="Contoh: Riser Air Bersih, Tes Glontor">
+              <label id="formShaftItemLabel" for="formShaftItemSelect">Item Riser / Pekerjaan</label>
+              <select id="formShaftItemSelect" onchange="syncChecklistWorkSelect('formShaftItemSelect', 'formShaftItem')"></select>
+              <input type="text" id="formShaftItem" class="checklist-work-other" autocomplete="off" placeholder="Contoh: Riser Air Bersih, Tes Glontor" style="display: none;">
             </div>
           </div>
         </div>
@@ -3800,7 +3862,7 @@
 
         <div class="form-row">
           <label id="formPhotoLabel">Foto Dokumentasi</label>
-          <input type="file" id="formPhoto" accept="image/*" multiple onchange="addChecklistPhotos(this.files)">
+          <input type="file" id="formPhoto" accept="image/*" multiple data-photo-picker onchange="addChecklistPhotos(this.files)">
           <span class="form-hint" id="checklistPhotoCount" aria-live="polite"></span>
           <div class="photo-upload-status" id="checklistPhotoUploadStatus" role="status" aria-live="polite" aria-busy="false" hidden>
             <span class="loading-spinner" id="checklistPhotoUploadSpinner" hidden aria-hidden="true"></span>
@@ -4394,7 +4456,12 @@
       let succeeded = false;
       try {
         if (photoFile) {
-          photo = await readChecklistPhoto(photoFile);
+          const watermark = buildPhotoWatermark(photoFile, [
+            ['Aset', `${name} (${code})`],
+            ['Lokasi', document.getElementById('assetLocation').value],
+            ['Oleh', getSignedInName()]
+          ]);
+          photo = await readChecklistPhoto(photoFile, watermark);
           setPhotoUploadStatus('asset', 'loading', 'Menyimpan foto dan data aset…');
         }
         const asset = {
@@ -6313,7 +6380,7 @@
               ${tasks.map((task) => `
                 <article class="item-card daily-work-item">
                   <div class="item-card-top">
-                    <span class="badge-category ${/elektrik|electrical/i.test(discipline) ? 'badge-electrical' : 'badge-plumbing'}">${escapeHtml(discipline)}</span>
+                    <span class="badge-category ${{ 'Sipil Struktur': 'badge-structure', 'Sipil Arsitektur': 'badge-architecture' }[getChecklistWorkCategory({ discipline })] || (/elektrik|electrical/i.test(discipline) ? 'badge-electrical' : 'badge-plumbing')}">${escapeHtml(discipline)}</span>
                     <span class="status-text text-kurang">${escapeHtml(task.workers)} orang</span>
                   </div>
                   <div class="item-card-name">${escapeHtml(task.title)}</div>
@@ -6635,7 +6702,14 @@
 
       let succeeded = false;
       try {
-        const photo = await readFileAsDataUrl(photoFile);
+        const materialWatermark = buildPhotoWatermark(photoFile, [
+          ['Material', `${mat} · ${qty} ${unit}`],
+          ['Surat Jalan', sj],
+          ['Oleh', getSignedInName()]
+        ]);
+        const photo = materialWatermark
+          ? await readChecklistPhoto(photoFile, materialWatermark)
+          : await readFileAsDataUrl(photoFile);
         if (photoFile) setPhotoUploadStatus('material', 'loading', 'Menyimpan foto dan data material…');
         const existingIndex = materialItems.findIndex((item) => normalizeMaterialName(item.name) === normalizeMaterialName(mat));
         const canonicalName = existingIndex >= 0 ? materialItems[existingIndex].name : mat;
@@ -6707,6 +6781,8 @@
       document.getElementById('formSPV').value = '';
       document.getElementById('formKategoriMEP').value = '';
       document.getElementById('formShaftItem').value = '';
+      document.getElementById('formDiscipline').value = 'MEP';
+      updateChecklistDisciplineControls();
       document.getElementById('formKamar').value = '';
       document.getElementById('formCatatan').value = '';
       document.getElementById('formPengetesan').value = '';
@@ -6818,6 +6894,182 @@
       setChecklistFieldRequired('formShaftItem', 'formShaftItemLabel', !isUnit);
     }
 
+    function refreshPhotoPicker(input) {
+      const picker = input && input.photoPicker;
+      if (!picker) return;
+      picker.querySelectorAll('button').forEach((button) => { button.disabled = input.disabled; });
+      const name = picker.querySelector('.photo-picker-name');
+      if (name) {
+        name.textContent = input.files && input.files.length ? `Dipilih: ${input.files[0].name}` : 'Belum ada foto dipilih.';
+      }
+    }
+
+    function openPhotoPicker(input, useCamera) {
+      if (input.disabled) return;
+      input.dataset.source = useCamera ? 'camera' : 'file';
+      if (useCamera) input.setAttribute('capture', 'environment');
+      else input.removeAttribute('capture');
+      input.click();
+    }
+
+    const cameraPhotoFiles = new WeakSet();
+
+    function getActiveProjectName() {
+      return projectRegistry.find((project) => project.id === activeProjectId)?.name || 'Proyek';
+    }
+
+    function getSignedInName() {
+      const name = document.getElementById('settingsAccountName')?.textContent.trim();
+      return name && name !== 'Belum masuk' ? name : '';
+    }
+
+    function formatWatermarkTime(timestamp) {
+      const date = new Date(Number.isFinite(timestamp) && timestamp > 0 ? timestamp : Date.now());
+      const day = date.toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
+      const time = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.', ':');
+      return `${day} · ${time}`;
+    }
+
+    function buildPhotoWatermark(file, details) {
+      if (!file || !cameraPhotoFiles.has(file)) return null;
+      return [
+        formatWatermarkTime(file.lastModified),
+        ...details.filter(([, value]) => String(value || '').trim()).map(([label, value]) => `${label}: ${String(value).trim()}`)
+      ];
+    }
+
+    function drawPhotoWatermark(context, width, height, lines) {
+      const fontSize = Math.max(13, Math.round(Math.min(width, height) * 0.032));
+      const lineHeight = Math.round(fontSize * 1.35);
+      const padding = Math.round(fontSize * 0.9);
+      const brand = `VICTORY CONSTRUCTION · ${getActiveProjectName()}`;
+      const allLines = [brand, ...lines];
+      const boxHeight = padding * 2 + lineHeight * allLines.length;
+      const top = height - boxHeight;
+      const gradient = context.createLinearGradient(0, top - fontSize * 2, 0, height);
+      gradient.addColorStop(0, 'rgba(8, 18, 38, 0)');
+      gradient.addColorStop(0.25, 'rgba(8, 18, 38, 0.62)');
+      gradient.addColorStop(1, 'rgba(8, 18, 38, 0.82)');
+      context.fillStyle = gradient;
+      context.fillRect(0, top - fontSize * 2, width, boxHeight + fontSize * 2);
+      context.fillStyle = '#f5b400';
+      context.fillRect(padding * 0.5, top + padding * 0.6, Math.max(3, fontSize * 0.22), lineHeight * allLines.length);
+      context.textBaseline = 'top';
+      context.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      context.shadowBlur = Math.round(fontSize * 0.25);
+      const maxWidth = width - padding * 2.2;
+      allLines.forEach((line, index) => {
+        context.font = `${index === 0 ? '800' : '600'} ${fontSize}px "Segoe UI", Roboto, Arial, sans-serif`;
+        context.fillStyle = index === 0 ? '#ffd45c' : '#ffffff';
+        let text = line;
+        while (text.length > 4 && context.measureText(text).width > maxWidth) text = `${text.slice(0, -2)}…`;
+        context.fillText(text, padding * 1.2, top + padding + index * lineHeight);
+      });
+      context.shadowBlur = 0;
+    }
+
+    function initPhotoPickers() {
+      document.querySelectorAll('input[type="file"][data-photo-picker]').forEach((input) => {
+        if (input.photoPicker) return;
+        const picker = document.createElement('div');
+        picker.className = 'photo-picker';
+        const multiple = input.multiple ? ' (bisa banyak)' : '';
+        picker.innerHTML = `
+          <button type="button" data-camera aria-label="Ambil foto dengan kamera">📷 Kamera</button>
+          <button type="button" aria-label="Pilih foto dari galeri atau file">🖼️ Galeri / File${multiple}</button>
+          ${input.hasAttribute('data-photo-picker-name') ? '<span class="photo-picker-name" aria-live="polite"></span>' : ''}`;
+        picker.querySelectorAll('button').forEach((button) => {
+          button.addEventListener('click', () => openPhotoPicker(input, button.hasAttribute('data-camera')));
+        });
+        input.hidden = true;
+        input.insertAdjacentElement('afterend', picker);
+        input.photoPicker = picker;
+        // Capture phase runs before the input's own onchange, which may clear input.files.
+        input.parentElement.addEventListener('change', (event) => {
+          if (event.target !== input || input.dataset.source !== 'camera') return;
+          [...(input.files || [])].forEach((file) => cameraPhotoFiles.add(file));
+        }, true);
+        input.addEventListener('change', () => refreshPhotoPicker(input));
+        new MutationObserver(() => refreshPhotoPicker(input)).observe(input, { attributes: true, attributeFilter: ['disabled'] });
+        const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+        Object.defineProperty(input, 'value', {
+          get() { return valueSetter.get.call(this); },
+          set(next) { valueSetter.set.call(this, next); refreshPhotoPicker(this); }
+        });
+        const disabledSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'disabled');
+        Object.defineProperty(input, 'disabled', {
+          get() { return disabledSetter.get.call(this); },
+          set(next) { disabledSetter.set.call(this, next); refreshPhotoPicker(this); }
+        });
+        refreshPhotoPicker(input);
+      });
+    }
+
+    initPhotoPickers();
+
+    const CHECKLIST_DISCIPLINES = {
+      MEP: {
+        title: 'Form Inspeksi Ceklist MEP',
+        label: 'Jenis Pekerjaan MEP',
+        placeholder: 'Contoh: Instalasi Penerangan, Fire Alarm',
+        shaftPlaceholder: 'Contoh: Riser Air Bersih, Tes Glontor',
+        works: [
+          'Instalasi Penerangan', 'Stop Kontak & Saklar', 'Panel & Feeder', 'Grounding', 'Fire Alarm', 'CCTV',
+          'Data & Telepon', 'Pipa Air Bersih', 'Pipa Air Kotor / Bekas', 'Tes Tekanan Pipa', 'Tes Glontor',
+          'Sprinkler', 'Hydrant', 'Ducting & Diffuser', 'Unit AC / FCU', 'Riser Air Bersih', 'Riser Air Kotor / Bekas', 'Riser Kabel / Busduct'
+        ]
+      },
+      'Sipil Struktur': {
+        title: 'Form Inspeksi Ceklist Sipil – Struktur',
+        label: 'Jenis Pekerjaan Struktur',
+        placeholder: 'Contoh: Pembesian Balok, Pengecoran Plat',
+        shaftPlaceholder: 'Contoh: Dinding Shaft, Plat Bukaan Shaft',
+        works: [
+          'Marking & Uitzet', 'Galian & Urugan', 'Pondasi / Pile Cap', 'Tie Beam / Sloof', 'Bekisting', 'Pembesian',
+          'Pengecoran', 'Kolom', 'Balok', 'Plat Lantai', 'Tangga Beton', 'Core Wall / Dinding Geser',
+          'Tes Slump', 'Tes Kuat Tekan (Kubus / Silinder)', 'Curing Beton', 'Bongkar Bekisting'
+        ]
+      },
+      'Sipil Arsitektur': {
+        title: 'Form Inspeksi Ceklist Sipil – Arsitektur',
+        label: 'Jenis Pekerjaan Arsitektur',
+        placeholder: 'Contoh: Pasangan Bata, Pemasangan Keramik',
+        shaftPlaceholder: 'Contoh: Pasangan Dinding Shaft, Pintu Shaft',
+        works: [
+          'Pasangan Bata / Hebel', 'Plesteran & Acian', 'Waterproofing', 'Keramik / Granit Lantai', 'Keramik Dinding',
+          'Rangka & Penutup Plafon', 'Partisi Gypsum', 'Pengecatan Dinding', 'Kusen Pintu & Jendela',
+          'Daun Pintu & Hardware', 'Kaca & Aluminium', 'Sanitair & Aksesoris', 'Railing / Handrail', 'Skirting & Nat'
+        ]
+      }
+    };
+
+    function updateChecklistDisciplineControls() {
+      const config = CHECKLIST_DISCIPLINES[document.getElementById('formDiscipline').value] || CHECKLIST_DISCIPLINES.MEP;
+      document.getElementById('formChecklistTitle').textContent = config.title;
+      document.getElementById('formKategoriLabel').textContent = config.label;
+      document.getElementById('formKategoriMEP').placeholder = config.placeholder;
+      document.getElementById('formShaftItem').placeholder = config.shaftPlaceholder;
+      [['formKategoriSelect', 'formKategoriMEP'], ['formShaftItemSelect', 'formShaftItem']].forEach(([selectId, inputId]) => {
+        document.getElementById(selectId).replaceChildren(
+          new Option('— Pilih jenis pekerjaan —', ''),
+          ...config.works.map((work) => new Option(work, work)),
+          new Option('Lainnya (ketik manual)…', CHECKLIST_WORK_OTHER)
+        );
+        syncChecklistWorkSelect(selectId, inputId);
+      });
+    }
+
+    const CHECKLIST_WORK_OTHER = '__other__';
+
+    function syncChecklistWorkSelect(selectId, inputId) {
+      const select = document.getElementById(selectId);
+      const input = document.getElementById(inputId);
+      const isOther = select.value === CHECKLIST_WORK_OTHER;
+      input.style.display = isOther ? '' : 'none';
+      input.value = isOther ? '' : select.value;
+      if (isOther && document.getElementById('modalChecklist').style.display === 'flex') input.focus();
+    }
+
     function updateProgressLabel() {
       const progressInput = document.getElementById('formProgres');
       document.getElementById('valProgres').innerText = `${progressInput.value}%`;
@@ -6903,6 +7155,9 @@
     }
 
     function getChecklistWorkCategory(item) {
+      const disciplineText = String(item.discipline || '').toLocaleLowerCase('id-ID');
+      if (/struktur|structur/.test(disciplineText)) return 'Sipil Struktur';
+      if (/arsitek|architect/.test(disciplineText)) return 'Sipil Arsitektur';
       const text = `${item.discipline || ''} ${item.work || ''}`.toLocaleLowerCase('id-ID');
       if (/tata\s*udara|hvac|air\s*conditioning|\bac\b|ahu|fcu|chiller|duct|diffuser|ventilasi/.test(text)) return 'Tata Udara';
       if (/electronic|elektronik|cctv|fire\s*alarm|fire\s*detection|access\s*control|data\s*network|telepon|sound\s*system|intercom|bms/.test(text)) return 'Electronic';
@@ -6957,7 +7212,7 @@
         if (supervisorFilter.value && item.supervisor !== supervisorFilter.value) return false;
         if (dateFrom && item.date < dateFrom) return false;
         if (dateTo && item.date > dateTo) return false;
-        const searchable = [item.floor, getChecklistArea(item), item.work, item.supervisor, item.note, item.testingNote, item.assignee]
+        const searchable = [item.floor, getChecklistArea(item), item.work, item.discipline, item.supervisor, item.note, item.testingNote, item.assignee]
           .join(' ').toLocaleLowerCase('id-ID');
         return !query || searchable.includes(query);
       });
@@ -6968,7 +7223,10 @@
         const statusClass = getChecklistStatusClass(item.status);
         const progress = Math.max(0, Math.min(100, Number(item.progress) || 0));
         const isComplete = item.status === 'Selesai';
-        const badgeClass = /penerangan|stop kontak|mcb|electrical|feeder/i.test(item.work) ? 'badge-electrical' : 'badge-plumbing';
+        const category = getChecklistWorkCategory(item);
+        const badgeClass = category === 'Sipil Struktur' ? 'badge-structure'
+          : category === 'Sipil Arsitektur' ? 'badge-architecture'
+          : /penerangan|stop kontak|mcb|electrical|feeder/i.test(item.work) ? 'badge-electrical' : 'badge-plumbing';
         const note = item.note ? `<div class="checklist-note">Catatan: ${escapeHtml(item.note)}</div>` : '';
         const testing = item.testingNote ? `<div class="checklist-testing"><strong>Pengetesan:</strong> ${escapeHtml(item.testingNote)}</div>` : '';
         const followup = item.assignee || item.dueDate
@@ -6987,7 +7245,7 @@
             </div>
             <div class="item-card-name">${work}</div>
             <div class="item-card-meta">
-              <span>${escapeHtml(formatChecklistDate(item.date))} · SPV: ${escapeHtml(item.supervisor)}</span>
+              <span>${escapeHtml(category)} · ${escapeHtml(formatChecklistDate(item.date))} · SPV: ${escapeHtml(item.supervisor)}</span>
               <b>Progres: ${progress}%</b>
             </div>
             <div class="bar-track"><div class="${isComplete ? 'bar-fill green' : 'bar-fill'}" style="width: ${progress}%;"></div></div>
@@ -7626,7 +7884,7 @@
       openChecklistDetail(item.id);
     }
 
-    function readChecklistPhoto(file) {
+    function readChecklistPhoto(file, watermarkLines = null) {
       return new Promise((resolve, reject) => {
         if (!file) return resolve(null);
         const image = new Image();
@@ -7636,7 +7894,9 @@
           const canvas = document.createElement('canvas');
           canvas.width = Math.round(image.width * scale);
           canvas.height = Math.round(image.height * scale);
-          canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+          const context = canvas.getContext('2d');
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+          if (watermarkLines && watermarkLines.length) drawPhotoWatermark(context, canvas.width, canvas.height, watermarkLines);
           URL.revokeObjectURL(objectUrl);
           resolve(canvas.toDataURL('image/jpeg', 0.75));
         };
@@ -7705,6 +7965,7 @@
       const item = {
         id: globalThis.crypto?.randomUUID?.() || `checklist-${Date.now()}-${Math.random().toString(16).slice(2)}`,
         scope: currentScope,
+        discipline: document.getElementById('formDiscipline').value || 'MEP',
         floor,
         roomType: currentScope === 'unit' ? roomType : '',
         room: currentScope === 'unit' ? room : '',
@@ -7740,7 +8001,11 @@
         for (let index = 0; index < photoFiles.length; index++) {
           const file = photoFiles[index];
           setPhotoUploadStatus('checklist', 'loading', `Memproses foto ${index + 1}/${photoFiles.length}: ${file.name}`);
-          photos.push(await readChecklistPhoto(file));
+          photos.push(await readChecklistPhoto(file, buildPhotoWatermark(file, [
+            ['Area', getChecklistArea(item)],
+            ['Pekerjaan', `${item.discipline} – ${item.work}`],
+            ['SPV', item.supervisor]
+          ])));
         }
         item.photos = photos;
         if (photoFiles.length) setPhotoUploadStatus('checklist', 'loading', 'Menyimpan foto dan data ceklist…');
