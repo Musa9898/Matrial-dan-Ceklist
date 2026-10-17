@@ -2481,6 +2481,20 @@
         min-height: 0;
         border-radius: 0;
         box-shadow: none;
+        display: block;
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
+      }
+
+      /* Same as mobile: header scrolls away with the content; nav, modals and badge stay on screen. */
+      .app-container .scroll-content {
+        overflow: visible;
+      }
+
+      .app-container .bottom-bar,
+      .app-container .modal-backdrop,
+      .app-container::after {
+        position: fixed;
       }
     }
     .login-company {
@@ -3224,8 +3238,8 @@
   <div class="sync-loading-overlay" id="syncLoadingOverlay" tabindex="-1" hidden>
     <div class="sync-loading-card" role="status" aria-live="polite">
       <span class="loading-spinner" aria-hidden="true"></span>
-      <strong id="syncLoadingMessage">Menyinkronkan data dengan Spreadsheet...</strong>
-      <small>Tunggu hingga selesai. Pengisian data dan pilihan lain dikunci sementara.</small>
+      <strong id="syncLoadingMessage">Menyelaraskan data proyek...</strong>
+      <small>Mohon tunggu sebentar, data sedang diproses dengan aman.</small>
     </div>
   </div>
 
@@ -5234,10 +5248,10 @@
     async function appsScriptRequest(action, payload = {}, method = 'POST') {
       if (action === 'ping') return performAppsScriptRequest(action, payload, method);
       const message = action === 'login'
-        ? 'Memverifikasi akun dan memuat daftar proyek...'
+        ? 'Memverifikasi akun Anda...'
         : action === 'load'
-          ? 'Memuat data proyek dari Spreadsheet...'
-          : 'Menyimpan dan menyinkronkan data dengan Spreadsheet...';
+          ? 'Memuat data proyek...'
+          : 'Menyimpan perubahan...';
       return withSyncLoading(message, () => performAppsScriptRequest(action, payload, method));
     }
 
@@ -5304,7 +5318,7 @@
     }
 
     async function runWithAutoRetry(task, onRetry) {
-      return withSyncLoading('Menyinkronkan data dengan Spreadsheet...', async () => {
+      return withSyncLoading('Menyelaraskan data proyek...', async () => {
         for (let attempt = 1; ; attempt++) {
           try {
             return await task();
@@ -5407,7 +5421,7 @@
         mutationId: globalThis.crypto?.randomUUID?.() || `save-${Date.now()}-${Math.random().toString(16).slice(2)}`
       };
       try {
-        const result = await withSyncLoading('Menyimpan perubahan ke Spreadsheet...', async () => {
+        const result = await withSyncLoading('Menyimpan perubahan...', async () => {
           setAppsScriptStatus('menyimpan ke Sheets…');
           try {
             return await runWithAutoRetry(
@@ -5554,7 +5568,7 @@
 
     async function switchProject(projectId) {
       if (syncLoadingCount) return;
-      return withSyncLoading('Mengganti proyek dan menyinkronkan data...', () => switchProjectData(projectId));
+      return withSyncLoading('Membuka proyek...', () => switchProjectData(projectId));
     }
 
     async function switchProjectData(projectId) {
@@ -5601,7 +5615,7 @@
 
     async function createProject() {
       if (syncLoadingCount) return;
-      return withSyncLoading('Membuat proyek dan menyinkronkan data...', createProjectData);
+      return withSyncLoading('Menyiapkan proyek baru...', createProjectData);
     }
 
     async function createProjectData() {
@@ -7835,7 +7849,7 @@
       }
       setLoginLoading(true, 'Memuat data proyek yang dipilih...');
       try {
-        await withSyncLoading('Memuat data proyek yang dipilih dari Spreadsheet...', async () => {
+        await withSyncLoading('Menyiapkan ruang kerja proyek...', async () => {
           activeProjectId = projectId;
           authorizedProjectId = projectId;
           activeFileFolderId = null;
