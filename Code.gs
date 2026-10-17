@@ -235,7 +235,9 @@ function doPost(e) {
     acquireWriteLock_(lock);
     const saved = getSavedMutation_(projectId, identity.email, request.mutationId);
     if (saved) return jsonOutput_(saved);
-    const permittedSnapshot = mergeSnapshotByPermissions_(project, request.snapshot, projectId);
+    const permittedSnapshot = validateKurvaRevisionHistory_(
+      mergeSnapshotByPermissions_(project, request.snapshot, projectId)
+    );
     const uploadedFiles = [];
     const cleanSnapshot = replaceBase64Images_(permittedSnapshot, projectId, uploadedFiles);
     const records = buildMonitoringRecords_(project, cleanSnapshot, identity.email, uploadedFiles);
@@ -498,6 +500,28 @@ function mergeSnapshotByPermissions_(project, requestedSnapshot, projectId) {
     });
   });
   return merged;
+}
+
+function validateKurvaRevisionHistory_(snapshot) {
+  const schedule = snapshot && snapshot.projectSchedule;
+  if (!schedule || typeof schedule !== 'object' || Array.isArray(schedule) || schedule.revisions === undefined) return snapshot;
+  if (!Array.isArray(schedule.revisions)) throw new Error('Riwayat revisi Kurva S tidak valid.');
+
+  const revisions = schedule.revisions.map((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new Error('Entri riwayat revisi Kurva S tidak valid.');
+    }
+    const rawRevision = entry.revision;
+    const revision = Number(rawRevision);
+    if ((typeof rawRevision !== 'number' && typeof rawRevision !== 'string')
+      || (typeof rawRevision === 'string' && rawRevision.trim() === '')
+      || !Number.isSafeInteger(revision) || revision < 0) {
+      throw new Error('Nomor revisi Kurva S harus berupa bilangan bulat positif atau nol.');
+    }
+    return { ...entry, revision: revision };
+  });
+
+  return { ...snapshot, projectSchedule: { ...schedule, revisions: revisions } };
 }
 
 function createProjectForUser_(projectName, email) {

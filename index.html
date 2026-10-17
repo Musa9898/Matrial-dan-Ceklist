@@ -8309,7 +8309,15 @@
         progress: value.progress && typeof value.progress === 'object' && !Array.isArray(value.progress) ? value.progress : {},
         revision: Math.max(0, Math.round(Number(value.revision) || 0)),
         baseline: value.baseline && Array.isArray(value.baseline.planCumulative) && value.baseline.planCumulative.length ? value.baseline : null,
-        revisions: Array.isArray(value.revisions) ? value.revisions.filter((entry) => entry && typeof entry === 'object') : []
+        revisions: Array.isArray(value.revisions)
+          ? value.revisions
+            .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry)
+              && ['number', 'string'].includes(typeof entry.revision)
+              && String(entry.revision).trim() !== ''
+              && Number.isSafeInteger(Number(entry.revision))
+              && Number(entry.revision) >= 0)
+            .map((entry) => ({ ...entry, revision: Number(entry.revision) }))
+          : []
       };
     }
 
@@ -8496,7 +8504,7 @@
       const shiftLabel = !baselineFinish ? '' : shiftWeeks > 0 ? `selesai mundur ${shiftWeeks} minggu dari jadwal awal` : shiftWeeks < 0 ? `selesai maju ${-shiftWeeks} minggu dari jadwal awal` : 'tanggal selesai sama dengan jadwal awal';
       const revisionHistory = [...(projectSchedule.revisions || [])].reverse().map((entry) => `
         <li class="${entry.revision === revision ? 'is-active' : ''}">
-          <div><strong>${entry.revision ? `Revisi ke-${entry.revision}` : 'Jadwal awal (baseline)'}</strong>${entry.revision === revision ? '<em>Aktif</em>' : ''}</div>
+          <div><strong>${entry.revision ? `Revisi ke-${escapeHtml(entry.revision)}` : 'Jadwal awal (baseline)'}</strong>${entry.revision === revision ? '<em>Aktif</em>' : ''}</div>
           <small>${escapeHtml(entry.importedAt ? formatKurvaDate(entry.importedAt.slice(0, 10), true) : '-')}${entry.importedBy ? ` · ${escapeHtml(entry.importedBy)}` : ''} · ${Number(entry.weekCount) || '-'} minggu · mulai ${escapeHtml(formatKurvaDate(entry.startDate, true))}</small>
           ${entry.revision ? `<p>${escapeHtml(entry.note || '-')}</p>` : ''}
           <small>${escapeHtml(entry.fileName || '')}</small>
