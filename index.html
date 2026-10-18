@@ -2130,6 +2130,199 @@
       line-height: 1.5;
     }
 
+    /* Ping sinyal di header */
+    .net-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+      margin-top: 6px;
+      padding: 3px 9px;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      color: #f2f4fb;
+      font: inherit;
+      font-size: 0.7rem;
+      font-weight: 700;
+      line-height: 1.3;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .net-chip:hover { background: rgba(255, 255, 255, 0.2); }
+
+    .net-chip-dot {
+      flex: 0 0 auto;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+
+    .net-chip[data-level="good"] .net-chip-dot { background: #34d399; }
+    .net-chip[data-level="fair"] .net-chip-dot { background: #fbbf24; }
+    .net-chip[data-level="poor"] .net-chip-dot { background: #f87171; }
+    .net-chip[data-level="offline"] .net-chip-dot { background: #111827; box-shadow: 0 0 0 1px #f87171; }
+
+    .net-info-list,
+    .bug-report-meta {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+      font-size: 0.84rem;
+    }
+
+    .net-info-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+
+    .net-info-row span { color: var(--text-muted); }
+    .net-info-row strong { color: var(--text-dark); text-align: right; }
+
+    .net-info-note,
+    .bug-report-hint {
+      margin: 0 0 14px;
+      color: var(--text-muted);
+      font-size: 0.76rem;
+      line-height: 1.5;
+    }
+
+    .settings-support-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .settings-support-actions button {
+      min-height: 40px;
+      padding: 9px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--brand-navy);
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .bug-shot-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .bug-shot-item {
+      position: relative;
+      width: 72px;
+      height: 72px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .bug-shot-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .bug-shot-item button {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.75);
+      color: #fff;
+      font-size: 0.85rem;
+      line-height: 22px;
+      cursor: pointer;
+    }
+
+    .bug-report-list {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .bug-report-card {
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      color: var(--text-dark);
+    }
+
+    .bug-report-card-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .bug-report-card-head strong { margin-right: auto; }
+
+    .bug-badge {
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 0.68rem;
+      font-weight: 800;
+    }
+
+    .bug-badge[data-status="Baru"] { background: #dbeafe; color: #1d4ed8; }
+    .bug-badge[data-status="Diproses"] { background: #fef3c7; color: #92400e; }
+    .bug-badge[data-status="Selesai"] { background: #dcfce7; color: #166534; }
+    .bug-badge[data-status="Ditolak"] { background: #fee2e2; color: #991b1b; }
+    .bug-badge[data-severity="Tinggi"], .bug-badge[data-severity="Kritis"] { background: #fee2e2; color: #991b1b; }
+
+    .bug-report-sub { color: var(--text-muted); font-size: 0.72rem; margin-bottom: 6px; }
+    .bug-report-desc { white-space: pre-wrap; word-break: break-word; line-height: 1.45; }
+    .bug-report-note { margin-top: 8px; padding: 8px; border-radius: 8px; background: #f1f5f9; white-space: pre-wrap; word-break: break-word; }
+    .bug-report-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .bug-report-links a { color: #2563eb; font-weight: 700; }
+    .bug-report-card details { margin-top: 8px; }
+    .bug-report-card pre { max-height: 220px; overflow: auto; padding: 8px; border-radius: 8px; background: #0f172a; color: #e2e8f0; font-size: 0.68rem; white-space: pre-wrap; word-break: break-word; }
+    .bug-report-admin { display: grid; gap: 6px; margin-top: 10px; }
+    .bug-report-admin select,
+    .bug-report-admin textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--text-dark);
+      font: inherit;
+      font-size: 0.82rem;
+    }
+    body.theme-dark .bug-report-admin select,
+    body.theme-dark .bug-report-admin textarea { border-color: #3a4962; background: #1b2940; color: #e1e9f8; }
+    .bug-report-admin textarea { min-height: 56px; }
+    .bug-report-empty { padding: 18px; text-align: center; color: var(--text-muted); font-size: 0.84rem; }
+
+    body.theme-dark .net-info-row,
+    body.theme-dark .bug-report-card,
+    body.theme-dark .bug-shot-item { border-color: #3a4962; }
+
+    body.theme-dark .settings-support-actions button {
+      border-color: #3a4962;
+      background: #1b2940;
+      color: #e1e9f8;
+    }
+
+    body.theme-dark .bug-report-note { background: #1b2940; }
+    body.theme-dark .bug-report-links a { color: #93c5fd; }
+
     .scope-btn.active {
       border: 1px solid var(--brand-gold);
     }
@@ -3535,6 +3728,10 @@
           <div class="dot-pulse"></div>
           <span id="headerSessionLabel">Victory Construction · Sesi belum aktif</span>
         </div>
+        <button class="net-chip" id="netChip" type="button" data-level="unknown" onclick="openNetworkInfo()" aria-label="Kualitas sinyal" title="Kualitas sinyal">
+          <span class="net-chip-dot" aria-hidden="true"></span>
+          <span id="netChipText">Cek sinyal…</span>
+        </button>
       </div>
       <button class="mep-calc-trigger" id="mep-calc-open" type="button" aria-haspopup="dialog" aria-controls="mep-calc-dialog" aria-label="Kalkulator MEP" title="Kalkulator MEP">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M8 6h8v4H8zM8 14h2m4 0h2m-8 4h2m4 0h2"/></svg>
@@ -4321,9 +4518,84 @@
             <button class="scope-btn" id="themeDarkButton" type="button" onclick="setAppTheme('dark')" aria-pressed="false">Gelap</button>
           </div>
         </div>
+        <div class="form-row">
+          <label>Bantuan</label>
+          <div class="settings-support-actions">
+            <button type="button" onclick="openBugReportForm()">🐞 Laporkan Masalah</button>
+            <button type="button" onclick="openBugReportList()">📋 Laporan Saya</button>
+          </div>
+        </div>
         <div class="btn-group">
           <button class="logout-button" onclick="logoutAppSession()">Keluar</button>
           <button class="btn-cancel" onclick="closeSettingsModal()">Tutup</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalNetworkInfo">
+      <div class="modal-sheet">
+        <h3>Kualitas Sinyal</h3>
+        <div class="net-info-list" id="netInfoList"></div>
+        <p class="net-info-note">Ping diukur ringan setiap 30 detik ke server Google (dijeda saat aplikasi di latar belakang atau sedang sinkron/upload). "Respons server" adalah waktu balasan Apps Script pada permintaan terakhir — angka ini wajar lebih besar.</p>
+        <div class="btn-group">
+          <button class="btn-save" type="button" id="netInfoRefresh" onclick="refreshNetworkInfo()">Cek Sekarang</button>
+          <button class="btn-cancel" type="button" onclick="closeNetworkInfo()">Tutup</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalBugReport">
+      <div class="modal-sheet">
+        <h3>🐞 Laporkan Masalah</h3>
+        <p class="bug-report-hint">Ceritakan apa yang terjadi. Info teknis (proyek, tab, perangkat, sinyal, error terakhir) ikut terkirim otomatis agar developer mudah menelusuri.</p>
+        <div class="grid-2">
+          <div class="form-row">
+            <label for="bugReportType">Jenis</label>
+            <select id="bugReportType">
+              <option>Error / Bug</option>
+              <option>Tampilan</option>
+              <option>Data tidak sesuai</option>
+              <option>Lambat</option>
+              <option>Saran</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="bugReportSeverity">Tingkat</label>
+            <select id="bugReportSeverity">
+              <option>Rendah</option>
+              <option selected>Sedang</option>
+              <option>Tinggi</option>
+              <option>Kritis</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="required-label" for="bugReportDescription">Deskripsi</label>
+          <textarea id="bugReportDescription" rows="5" maxlength="4000" placeholder="Contoh: Saat simpan ceklist di tab Ceklist, muncul pesan gagal. Langkah: buka item → ubah status → Simpan."></textarea>
+        </div>
+        <div class="form-row">
+          <label>Screenshot (opsional, maks 3)</label>
+          <div class="photo-picker">
+            <button type="button" id="bugReportShotButton" onclick="document.getElementById('bugReportShotInput').click()">Pilih Gambar</button>
+            <span class="photo-picker-name" id="bugReportShotInfo">Belum ada screenshot</span>
+          </div>
+          <input type="file" id="bugReportShotInput" accept="image/*" multiple hidden onchange="addBugReportScreenshots(this.files); this.value='';">
+          <div class="bug-shot-list" id="bugReportShotList"></div>
+        </div>
+        <div class="btn-group">
+          <button class="btn-save" type="button" id="bugReportSubmit" onclick="submitBugReport()">Kirim Laporan</button>
+          <button class="btn-cancel" type="button" onclick="closeBugReportForm()">Batal</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalBugReportList">
+      <div class="modal-sheet">
+        <h3 id="bugReportListTitle">📋 Laporan Saya</h3>
+        <div class="bug-report-list" id="bugReportListBody"></div>
+        <div class="btn-group">
+          <button class="btn-save" type="button" onclick="openBugReportList()">Muat Ulang</button>
+          <button class="btn-cancel" type="button" onclick="closeBugReportList()">Tutup</button>
         </div>
       </div>
     </div>
@@ -6180,7 +6452,11 @@
         ? 'Memverifikasi akun Anda...'
         : action === 'load'
           ? 'Memuat data proyek...'
-          : 'Menyimpan perubahan...';
+          : action === 'submitBugReport'
+            ? 'Mengirim laporan masalah...'
+            : action === 'listBugReports'
+              ? 'Memuat daftar laporan...'
+              : 'Menyimpan perubahan...';
       return withSyncLoading(message, () => performAppsScriptRequest(action, payload, method));
     }
 
@@ -6197,7 +6473,7 @@
       const timeoutMs = getAppsScriptTimeout(action);
       const quiet = action === 'ping';
       const onSlow = quiet ? null : () => setAppsScriptStatus('server lambat, masih menunggu…');
-      const repeatable = !['createProject', 'uploadFile', 'uploadChunk', 'startUpload'].includes(action);
+      const repeatable = !['createProject', 'uploadFile', 'uploadChunk', 'startUpload', 'submitBugReport'].includes(action);
       const uploadUsesBridge = action === 'uploadFile' || action === 'uploadChunk';
 
       // Baca lewat cermin Supabase dulu; tulis tetap ke Apps Script.
@@ -6212,14 +6488,16 @@
 
       if (!appsScriptPreferBridge && !uploadUsesBridge) {
         try {
-          return await appsScriptFetch(request, timeoutMs, onSlow, method);
+          const fetchStartedAt = performance.now();
+          return recordServerLatency(action, fetchStartedAt, await appsScriptFetch(request, timeoutMs, onSlow, method));
         } catch (error) {
           const canFallback = repeatable
             && ['timeout', 'network', 'badresponse'].includes(error.code);
           if (!canFallback) throw error;
         }
       }
-      const result = await appsScriptBridgeRequest(request, timeoutMs);
+      const bridgeStartedAt = performance.now();
+      const result = recordServerLatency(action, bridgeStartedAt, await appsScriptBridgeRequest(request, timeoutMs));
       appsScriptPreferBridge = true;
       return result;
     }
@@ -6264,6 +6542,7 @@
 
     function showConnectionProblem(error, retryHandler) {
       connectionRetryHandler = retryHandler || null;
+      recordClientLog('connection', `${error?.code || ''} ${error?.message || ''}`);
       document.getElementById('connectionBannerText').textContent = describeAppsScriptError(error);
       document.getElementById('connectionBannerRetry').hidden = !connectionRetryHandler;
       document.getElementById('connectionBanner').hidden = false;
@@ -8715,6 +8994,7 @@
     }
 
     function showAppNotice(message) {
+      recordClientLog('notice', message);
       document.getElementById('appNoticeMessage').textContent = String(message ?? '');
       document.getElementById('modalAppNotice').style.display = 'flex';
     }
@@ -8816,6 +9096,7 @@
 
     function showDashboard() {
       transitionAppScreen('dashboard');
+      window.setTimeout(() => measureNetworkLatency(), 600);
     }
 
     function setLoginStatus(message) {
@@ -9166,6 +9447,9 @@
     function initializeModalCloseButtons() {
       const closeActions = {
         modalSettings: closeSettingsModal,
+        modalNetworkInfo: closeNetworkInfo,
+        modalBugReport: closeBugReportForm,
+        modalBugReportList: closeBugReportList,
         modalAppNotice: closeAppNotice,
         modalAssetForm: closeAssetForm,
         modalAssetDetail: closeAssetDetail,
@@ -10047,8 +10331,366 @@
       renderKurvaS();
     }
 
+    // ==== NETWORK & BUG REPORT CLIENT START ====
+    const NET_PING_URL = 'https://www.google.com/generate_204';
+    const NET_PING_INTERVAL_MS = 30000;
+    const NET_PING_TIMEOUT_MS = 5000;
+    const CLIENT_LOG_LIMIT = 10;
+    const BUG_REPORT_MAX_SHOTS = 3;
+    const SERVER_LATENCY_SKIP_ACTIONS = ['uploadFile', 'uploadChunk', 'startUpload', 'finishUpload', 'uploadStatus', 'cancelUpload', 'submitBugReport'];
+    const networkState = { latencyMs: null, failed: false, checkedAt: 0, serverMs: null, serverAction: '', serverAt: 0, busy: false, timer: null };
+    const clientLogBuffer = [];
+    let bugReportShots = [];
+    let bugReportListCache = { isDeveloper: false, reports: [] };
+
+    function classifyNetworkLatency(latencyMs, online = true, failed = false) {
+      if (online === false) return { level: 'offline', label: 'Offline' };
+      if (failed) return { level: 'poor', label: 'Lemah' };
+      if (!Number.isFinite(latencyMs)) return { level: 'unknown', label: 'Cek sinyal…' };
+      if (latencyMs < 150) return { level: 'good', label: 'Bagus' };
+      if (latencyMs < 400) return { level: 'fair', label: 'Sedang' };
+      return { level: 'poor', label: 'Lemah' };
+    }
+
+    function recordClientLog(kind, message) {
+      try {
+        const text = String(message ?? '').replace(/\s+/g, ' ').trim().slice(0, 300);
+        if (!text) return;
+        clientLogBuffer.push({ at: new Date().toISOString(), kind: String(kind).slice(0, 20), message: text });
+        while (clientLogBuffer.length > CLIENT_LOG_LIMIT) clientLogBuffer.shift();
+      } catch (error) { /* log tidak boleh mengganggu aplikasi */ }
+    }
+
+    function recordServerLatency(action, startedAt, result) {
+      try {
+        if (!SERVER_LATENCY_SKIP_ACTIONS.includes(action)) {
+          networkState.serverMs = Math.round(performance.now() - startedAt);
+          networkState.serverAction = action;
+          networkState.serverAt = Date.now();
+        }
+      } catch (error) { /* abaikan */ }
+      return result;
+    }
+
+    function getConnectionInfo() {
+      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      if (!connection) return null;
+      return {
+        effectiveType: connection.effectiveType || '',
+        downlinkMbps: Number.isFinite(connection.downlink) ? connection.downlink : null,
+        rttMs: Number.isFinite(connection.rtt) ? connection.rtt : null,
+        saveData: Boolean(connection.saveData)
+      };
+    }
+
+    function renderNetworkChip() {
+      const chip = document.getElementById('netChip');
+      if (!chip) return;
+      const quality = classifyNetworkLatency(networkState.latencyMs, navigator.onLine !== false, networkState.failed);
+      chip.dataset.level = quality.level;
+      let text = quality.label;
+      if (quality.level === 'poor' && networkState.failed) text = 'Lemah · timeout';
+      else if (Number.isFinite(networkState.latencyMs) && quality.level !== 'offline') text = `${networkState.latencyMs} ms · ${quality.label}`;
+      document.getElementById('netChipText').textContent = text;
+      chip.title = `Kualitas sinyal: ${text}`;
+      if (document.getElementById('modalNetworkInfo')?.style.display === 'flex') renderNetworkInfo();
+    }
+
+    async function measureNetworkLatency(force = false) {
+      if (networkState.busy) return;
+      if (navigator.onLine === false) {
+        networkState.latencyMs = null;
+        networkState.failed = false;
+        renderNetworkChip();
+        return;
+      }
+      if (!force && (document.hidden || syncLoadingCount > 0 || document.getElementById('dashboardApp')?.hidden)) return;
+      networkState.busy = true;
+      const controller = typeof AbortController === 'function' ? new AbortController() : null;
+      const timer = window.setTimeout(() => controller?.abort(), NET_PING_TIMEOUT_MS);
+      const startedAt = performance.now();
+      try {
+        await fetch(`${NET_PING_URL}?t=${Date.now()}`, { mode: 'no-cors', cache: 'no-store', signal: controller?.signal });
+        networkState.latencyMs = Math.round(performance.now() - startedAt);
+        networkState.failed = false;
+      } catch (error) {
+        networkState.latencyMs = null;
+        networkState.failed = true;
+      } finally {
+        window.clearTimeout(timer);
+        networkState.busy = false;
+        networkState.checkedAt = Date.now();
+        renderNetworkChip();
+      }
+    }
+
+    function initializeNetworkMonitor() {
+      try {
+        renderNetworkChip();
+        window.addEventListener('online', () => measureNetworkLatency(true));
+        window.addEventListener('offline', renderNetworkChip);
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden && Date.now() - networkState.checkedAt > NET_PING_INTERVAL_MS) measureNetworkLatency();
+        });
+        networkState.timer = window.setInterval(() => measureNetworkLatency(), NET_PING_INTERVAL_MS);
+        window.setTimeout(() => measureNetworkLatency(), 3000);
+      } catch (error) {
+        console.warn('Monitor sinyal tidak aktif:', error);
+      }
+    }
+
+    function formatClockTime(timestamp) {
+      if (!timestamp) return '-';
+      return new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    function renderNetworkInfo() {
+      const quality = classifyNetworkLatency(networkState.latencyMs, navigator.onLine !== false, networkState.failed);
+      const connection = getConnectionInfo();
+      const rows = [
+        ['Status internet', navigator.onLine === false ? 'Offline' : 'Online'],
+        ['Kualitas', quality.label],
+        ['Ping', Number.isFinite(networkState.latencyMs) ? `${networkState.latencyMs} ms` : (networkState.failed ? 'Timeout (> 5 detik)' : '-')],
+        ['Terakhir dicek', formatClockTime(networkState.checkedAt)],
+        ['Respons server', Number.isFinite(networkState.serverMs) ? `${networkState.serverMs} ms (${networkState.serverAction}, ${formatClockTime(networkState.serverAt)})` : 'Belum ada']
+      ];
+      if (connection?.effectiveType) rows.push(['Jenis jaringan', connection.effectiveType.toUpperCase() + (connection.downlinkMbps !== null ? ` · ±${connection.downlinkMbps} Mbps` : '')]);
+      document.getElementById('netInfoList').innerHTML = rows
+        .map(([label, value]) => `<div class="net-info-row"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`)
+        .join('');
+    }
+
+    function openNetworkInfo() {
+      renderNetworkInfo();
+      document.getElementById('modalNetworkInfo').style.display = 'flex';
+    }
+
+    function closeNetworkInfo() {
+      document.getElementById('modalNetworkInfo').style.display = 'none';
+    }
+
+    async function refreshNetworkInfo() {
+      const button = document.getElementById('netInfoRefresh');
+      button.disabled = true;
+      button.textContent = 'Mengecek…';
+      try {
+        await measureNetworkLatency(true);
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Cek Sekarang';
+        renderNetworkInfo();
+      }
+    }
+
+    function getActiveTabLabel() {
+      return document.querySelector('.nav-button.active')?.textContent.replace(/\s+/g, ' ').trim() || '';
+    }
+
+    function buildBugReportContext() {
+      const project = authorizedProjects.find((entry) => entry.projectId === activeProjectId);
+      return {
+        time: new Date().toISOString(),
+        page: location.origin + location.pathname,
+        tab: getActiveTabLabel(),
+        theme: document.body.classList.contains('theme-dark') ? 'dark' : 'light',
+        project: { id: activeProjectId || '', name: document.getElementById('activeProjectName')?.textContent || '', role: project?.role || '' },
+        device: {
+          userAgent: navigator.userAgent,
+          language: navigator.language,
+          screen: `${screen.width}x${screen.height}`,
+          viewport: `${window.innerWidth}x${window.innerHeight}`,
+          pixelRatio: window.devicePixelRatio || 1
+        },
+        network: {
+          online: navigator.onLine !== false,
+          pingMs: networkState.latencyMs,
+          pingFailed: networkState.failed,
+          serverMs: networkState.serverMs,
+          serverAction: networkState.serverAction,
+          connection: getConnectionInfo()
+        },
+        recentErrors: clientLogBuffer.slice()
+      };
+    }
+
+    function renderBugReportShots() {
+      document.getElementById('bugReportShotList').innerHTML = bugReportShots
+        .map((shot, index) => `<div class="bug-shot-item"><img src="${escapeHtml(shot)}" alt="Screenshot ${index + 1}"><button type="button" onclick="removeBugReportScreenshot(${index})" aria-label="Hapus screenshot">×</button></div>`)
+        .join('');
+      document.getElementById('bugReportShotInfo').textContent = bugReportShots.length
+        ? `${bugReportShots.length}/${BUG_REPORT_MAX_SHOTS} screenshot dipilih`
+        : 'Belum ada screenshot';
+      document.getElementById('bugReportShotButton').disabled = bugReportShots.length >= BUG_REPORT_MAX_SHOTS;
+    }
+
+    async function addBugReportScreenshots(fileList) {
+      const files = Array.from(fileList || []).filter((file) => /^image\//.test(file.type));
+      const room = BUG_REPORT_MAX_SHOTS - bugReportShots.length;
+      if (!files.length || room <= 0) return;
+      try {
+        for (const file of files.slice(0, room)) {
+          const dataUrl = await readChecklistPhoto(file);
+          if (dataUrl) bugReportShots.push(dataUrl);
+        }
+      } catch (error) {
+        showAppNotice(error.message || 'Screenshot tidak dapat dibaca.');
+      }
+      if (files.length > room) showAppNotice(`Maksimal ${BUG_REPORT_MAX_SHOTS} screenshot per laporan.`);
+      renderBugReportShots();
+    }
+
+    function removeBugReportScreenshot(index) {
+      bugReportShots.splice(index, 1);
+      renderBugReportShots();
+    }
+
+    function openBugReportForm() {
+      closeSettingsModal();
+      document.getElementById('bugReportType').value = 'Error / Bug';
+      document.getElementById('bugReportSeverity').value = 'Sedang';
+      document.getElementById('bugReportDescription').value = '';
+      bugReportShots = [];
+      renderBugReportShots();
+      document.getElementById('modalBugReport').style.display = 'flex';
+    }
+
+    function closeBugReportForm() {
+      document.getElementById('modalBugReport').style.display = 'none';
+    }
+
+    function isBugReportServerAvailable() {
+      return Boolean(currentGoogleCredential) && !currentAuthProfile?.isPreview;
+    }
+
+    async function submitBugReport() {
+      const description = document.getElementById('bugReportDescription').value.trim();
+      if (description.length < 10) {
+        document.getElementById('bugReportDescription').focus();
+        showAppNotice('Jelaskan masalahnya minimal 10 karakter agar developer mudah memahami.');
+        return;
+      }
+      if (!isBugReportServerAvailable()) {
+        showAppNotice('Preview Mode: laporan tidak dikirim ke server. Masuk dengan akun Google untuk mengirim laporan.');
+        return;
+      }
+      const button = document.getElementById('bugReportSubmit');
+      button.disabled = true;
+      try {
+        const result = await appsScriptRequest('submitBugReport', {
+          report: {
+            type: document.getElementById('bugReportType').value,
+            severity: document.getElementById('bugReportSeverity').value,
+            description,
+            projectId: activeProjectId || '',
+            screenshots: bugReportShots.slice(0, BUG_REPORT_MAX_SHOTS),
+            context: buildBugReportContext()
+          }
+        });
+        closeBugReportForm();
+        bugReportShots = [];
+        showAppNotice(`Terima kasih! Laporan ${result.reportId || ''} sudah terkirim. Pantau statusnya di Pengaturan → Laporan Saya.`);
+      } catch (error) {
+        showAppNotice(`Laporan gagal dikirim: ${error.code === 'ratelimit' ? error.message : describeAppsScriptError(error)}`);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function formatBugReportDate(value) {
+      const date = new Date(value);
+      if (!value || Number.isNaN(date.getTime())) return String(value || '-');
+      return date.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function renderBugReportList() {
+      const { isDeveloper, reports } = bugReportListCache;
+      document.getElementById('bugReportListTitle').textContent = isDeveloper ? '📋 Semua Laporan Masalah' : '📋 Laporan Saya';
+      const body = document.getElementById('bugReportListBody');
+      if (!reports.length) {
+        body.innerHTML = '<div class="bug-report-empty">Belum ada laporan.</div>';
+        return;
+      }
+      body.innerHTML = reports.map((report, index) => {
+        const shots = report.screenshots.filter((url) => /^https:\/\//.test(url))
+          .map((url, shotIndex) => `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Screenshot ${shotIndex + 1}</a>`)
+          .join('');
+        const statusOptions = ['Baru', 'Diproses', 'Selesai', 'Ditolak']
+          .map((status) => `<option${status === report.status ? ' selected' : ''}>${status}</option>`)
+          .join('');
+        let contextText = report.context || '';
+        try { if (contextText) contextText = JSON.stringify(JSON.parse(contextText), null, 2); } catch (error) { /* tampilkan apa adanya */ }
+        return `<div class="bug-report-card">
+          <div class="bug-report-card-head">
+            <strong>${escapeHtml(report.reportId)}</strong>
+            <span class="bug-badge" data-status="${escapeHtml(report.status)}">${escapeHtml(report.status)}</span>
+            <span class="bug-badge" data-severity="${escapeHtml(report.severity)}">${escapeHtml(report.severity)}</span>
+          </div>
+          <div class="bug-report-sub">${escapeHtml(report.type)} · ${escapeHtml(formatBugReportDate(report.createdAt))}${report.projectName ? ` · ${escapeHtml(report.projectName)}` : ''}${isDeveloper ? ` · ${escapeHtml(report.name || report.email)} (${escapeHtml(report.email)}${report.role ? `, ${escapeHtml(report.role)}` : ''})` : ''}</div>
+          <div class="bug-report-desc">${escapeHtml(report.description)}</div>
+          ${shots ? `<div class="bug-report-links">${shots}</div>` : ''}
+          ${report.devNote ? `<div class="bug-report-note"><b>Catatan developer:</b> ${escapeHtml(report.devNote)}</div>` : ''}
+          ${isDeveloper ? `<div class="bug-report-admin">
+            <select id="bugAdminStatus${index}" aria-label="Status laporan">${statusOptions}</select>
+            <textarea id="bugAdminNote${index}" maxlength="2000" placeholder="Catatan untuk pelapor">${escapeHtml(report.devNote)}</textarea>
+            <button class="btn-save" type="button" onclick="saveBugReportStatus(${index})">Simpan Status</button>
+          </div>
+          ${contextText ? `<details><summary>Info teknis</summary><pre>${escapeHtml(contextText)}</pre></details>` : ''}` : ''}
+        </div>`;
+      }).join('');
+    }
+
+    async function openBugReportList() {
+      closeSettingsModal();
+      if (!isBugReportServerAvailable()) {
+        showAppNotice('Preview Mode: daftar laporan hanya tersedia setelah masuk dengan akun Google.');
+        return;
+      }
+      try {
+        const result = await appsScriptRequest('listBugReports', {});
+        bugReportListCache = {
+          isDeveloper: Boolean(result.isDeveloper),
+          reports: (Array.isArray(result.reports) ? result.reports : []).map((report) => ({
+            ...report,
+            screenshots: Array.isArray(report.screenshots) ? report.screenshots : []
+          }))
+        };
+        renderBugReportList();
+        document.getElementById('modalBugReportList').style.display = 'flex';
+      } catch (error) {
+        showAppNotice(`Daftar laporan gagal dimuat: ${describeAppsScriptError(error)}`);
+      }
+    }
+
+    function closeBugReportList() {
+      document.getElementById('modalBugReportList').style.display = 'none';
+    }
+
+    async function saveBugReportStatus(index) {
+      const report = bugReportListCache.reports[index];
+      if (!report || !bugReportListCache.isDeveloper) return;
+      try {
+        await appsScriptRequest('updateBugReport', {
+          reportId: report.reportId,
+          status: document.getElementById(`bugAdminStatus${index}`).value,
+          devNote: document.getElementById(`bugAdminNote${index}`).value
+        });
+        await openBugReportList();
+      } catch (error) {
+        showAppNotice(`Status gagal disimpan: ${describeAppsScriptError(error)}`);
+      }
+    }
+
+    window.addEventListener('error', (event) => {
+      recordClientLog('error', `${event.message || 'Error'}${event.filename ? ` @ ${String(event.filename).split('/').pop()}:${event.lineno || 0}` : ''}`);
+    });
+    window.addEventListener('unhandledrejection', (event) => {
+      recordClientLog('promise', event.reason?.message || event.reason);
+    });
+    // ==== NETWORK & BUG REPORT CLIENT END ====
+
     initializeAppTheme();
     initializeModalCloseButtons();
+    initializeNetworkMonitor();
     initializePhotoPreview();
     initializeProjectManager();
     closeSearchFilterPopovers();

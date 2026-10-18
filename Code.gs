@@ -34,7 +34,7 @@ const PROJECT_FILE_HEADERS = [
   'Uploaded By', 'Created At', 'MIME Type', 'Payload JSON'
 ];
 const PROJECT_FOLDER_HEADERS = ['Folder ID', 'Project ID', 'Folder Name', 'Created At', 'Created By'];
-const BACKEND_VERSION = '2026-10-18-office-cad-files';
+const BACKEND_VERSION = '2026-10-19-bug-report';
 const FRONTEND_ORIGINS = [
   'https://musa9898.github.io',
   'http://localhost:8000',
@@ -200,6 +200,16 @@ function doPost(e) {
         folders: saveProjectFolders_(projectId, request.folders, identity.email)
       });
     }
+    if (request.action === 'submitBugReport') {
+      return jsonOutput_(Object.assign({ status: 'success' }, submitBugReport_(request, identity)));
+    }
+    if (request.action === 'listBugReports') {
+      return jsonOutput_(Object.assign({ status: 'success' }, listBugReports_(identity)));
+    }
+    if (request.action === 'updateBugReport') {
+      acquireWriteLock_(lock);
+      return jsonOutput_({ status: 'success', report: updateBugReport_(request, identity) });
+    }
 
     const projectId = String(request.projectId || '');
     const project = getAuthorizedProjects_(identity.email).find((entry) => entry.projectId === projectId);
@@ -286,6 +296,229 @@ function doPost(e) {
     if (lock.hasLock()) lock.releaseLock();
   }
 }
+
+// ==== BUG REPORT START ====
+const BUG_REPORT_SHEET_NAME = 'BugReports';
+const BUG_REPORT_FOLDER_NAME = 'Bug Reports';
+const BUG_REPORT_HEADERS = [
+  'report_id', 'created_at', 'email', 'name', 'role', 'project_id', 'project_name',
+  'type', 'severity', 'description', 'status', 'dev_note', 'updated_at', 'updated_by',
+  'screenshot_urls', 'context_json'
+];
+const BUG_REPORT_TYPES = ['Error / Bug', 'Tampilan', 'Data tidak sesuai', 'Lambat', 'Saran'];
+const BUG_REPORT_SEVERITIES = ['Rendah', 'Sedang', 'Tinggi', 'Kritis'];
+const BUG_REPORT_STATUSES = ['Baru', 'Diproses', 'Selesai', 'Ditolak'];
+const BUG_REPORT_RATE_LIMIT = 5;
+const BUG_REPORT_RATE_WINDOW_MS = 60 * 60 * 1000;
+const BUG_REPORT_MAX_SCREENSHOTS = 3;
+const BUG_REPORT_MAX_SCREENSHOT_BYTES = 1500000;
+const BUG_REPORT_LIST_LIMIT = 100;
+
+function bugReportError_(message, code) {
+  const error = new Error(message);
+  error.code = code || 'validation';
+  return error;
+}
+
+// Teks diawali = + - @ dianggap rumus oleh Sheets; beri awalan ' agar tetap teks biasa.
+function sanitizeBugText_(value, maxLength) {
+  let text = String(value === null || value === undefined ? '' : value).replace(/\u0000/g, '').trim();
+  if (text.length > maxLength) text = text.slice(0, maxLength);
+  if (/^[=+\-@\t\r]/.test(text)) text = "'" + text;
+  return text;
+}
+
+function getBugReportAccess_(email) {
+  const ownRows = readActiveAccessRows_().filter((row) => row.email === email);
+  if (!ownRows.length) throw bugReportError_('Akun belum terdaftar di tab Access.', 'auth');
+  return {
+    rows: ownRows,
+    isDeveloper: ownRows.some((row) => getRoleDefinition_(row.role) === ROLE_DEFINITIONS.developer)
+  };
+}
+
+function readBugReportRate_(email) {
+  const raw = CacheService.getScriptCache().get('bug-rate:' + email);
+  let stamps = [];
+  try { stamps = JSON.parse(raw || '[]'); } catch (error) { stamps = []; }
+  const now = Date.now();
+  return (Array.isArray(stamps) ? stamps : []).filter((stamp) => Number(stamp) > now - BUG_REPORT_RATE_WINDOW_MS);
+}
+
+function checkBugReportRate_(email) {
+  if (readBugReportRate_(email).length >= BUG_REPORT_RATE_LIMIT) {
+    throw bugReportError_('Batas ' + BUG_REPORT_RATE_LIMIT + ' laporan per jam tercapai. Coba lagi nanti.', 'ratelimit');
+  }
+}
+
+function recordBugReportRate_(email) {
+  const stamps = readBugReportRate_(email);
+  stamps.push(Date.now());
+  CacheService.getScriptCache().put('bug-rate:' + email, JSON.stringify(stamps), 3600);
+}
+
+function getBugReportSheet_() {
+  const spreadsheet = getSpreadsheet_();
+  let sheet = spreadsheet.getSheetByName(BUG_REPORT_SHEET_NAME);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(BUG_REPORT_SHEET_NAME);
+    sheet.getRange(1, 1, sheet.getMaxRows(), BUG_REPORT_HEADERS.length).setNumberFormat('@');
+  }
+  if (sheet.getLastRow() < 1) {
+    sheet.appendRow(BUG_REPORT_HEADERS);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function getBugReportFolder_() {
+  const parent = DriveApp.getFolderById(FOLDER_ID);
+  const folders = parent.getFoldersByName(BUG_REPORT_FOLDER_NAME);
+  return folders.hasNext() ? folders.next() : parent.createFolder(BUG_REPORT_FOLDER_NAME);
+}
+
+function parseBugScreenshots_(screenshots) {
+  if (screenshots === undefined || screenshots === null) return [];
+  if (!Array.isArray(screenshots)) throw bugReportError_('Format screenshot tidak valid.');
+  if (screenshots.length > BUG_REPORT_MAX_SCREENSHOTS) {
+    throw bugReportError_('Maksimal ' + BUG_REPORT_MAX_SCREENSHOTS + ' screenshot per laporan.');
+  }
+  return screenshots.map((dataUrl) => {
+    const match = String(dataUrl || '').match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);
+    if (!match) throw bugReportError_('Screenshot harus berupa gambar JPG, PNG, atau WEBP.');
+    const bytes = Utilities.base64Decode(match[2]);
+    if (bytes.length > BUG_REPORT_MAX_SCREENSHOT_BYTES) throw bugReportError_('Ukuran screenshot terlalu besar.');
+    return { mimeType: 'image/' + match[1], extension: match[1] === 'jpeg' ? 'jpg' : match[1], bytes: bytes };
+  });
+}
+
+function bugReportRowToObject_(headers, row, includePrivate) {
+  const value = (name) => {
+    const index = headers.indexOf(name);
+    if (index < 0) return '';
+    const cell = row[index];
+    return cell instanceof Date ? cell.toISOString() : String(cell === null || cell === undefined ? '' : cell);
+  };
+  const report = {
+    reportId: value('report_id'),
+    createdAt: value('created_at'),
+    email: value('email'),
+    name: value('name'),
+    role: value('role'),
+    projectId: value('project_id'),
+    projectName: value('project_name'),
+    type: value('type'),
+    severity: value('severity'),
+    description: value('description'),
+    status: value('status') || 'Baru',
+    devNote: value('dev_note'),
+    updatedAt: value('updated_at'),
+    updatedBy: value('updated_by'),
+    screenshots: value('screenshot_urls').split(/\s+/).filter(Boolean)
+  };
+  if (includePrivate) report.context = value('context_json');
+  return report;
+}
+
+function submitBugReport_(request, identity) {
+  const email = identity.email;
+  const access = getBugReportAccess_(email);
+  const report = request.report && typeof request.report === 'object' ? request.report : {};
+  const description = sanitizeBugText_(report.description, 4000);
+  if (description.replace(/^'/, '').length < 10) throw bugReportError_('Jelaskan masalahnya minimal 10 karakter.');
+  const type = BUG_REPORT_TYPES.indexOf(report.type) >= 0 ? report.type : BUG_REPORT_TYPES[0];
+  const severity = BUG_REPORT_SEVERITIES.indexOf(report.severity) >= 0 ? report.severity : 'Sedang';
+  const screenshots = parseBugScreenshots_(report.screenshots);
+  checkBugReportRate_(email);
+
+  const projectId = String(report.projectId || '').slice(0, 120);
+  const project = projectId
+    ? getAuthorizedProjects_(email).find((entry) => entry.projectId === projectId)
+    : null;
+  let context = '';
+  try { context = JSON.stringify(report.context || {}); } catch (error) { context = '{}'; }
+
+  const reportId = 'BUG-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Jakarta', 'yyyyMMdd')
+    + '-' + Utilities.getUuid().slice(0, 6).toUpperCase();
+  const screenshotUrls = [];
+  if (screenshots.length) {
+    const folder = getBugReportFolder_();
+    screenshots.forEach((shot, index) => {
+      const blob = Utilities.newBlob(shot.bytes, shot.mimeType, reportId + '_' + (index + 1) + '.' + shot.extension);
+      const file = folder.createFile(blob);
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      screenshotUrls.push(file.getUrl());
+    });
+  }
+
+  const now = new Date().toISOString();
+  getBugReportSheet_().appendRow([
+    reportId,
+    now,
+    email,
+    sanitizeBugText_(identity.name || '', 120),
+    sanitizeBugText_(project ? project.role : access.rows[0].role, 80),
+    sanitizeBugText_(project ? project.projectId : '', 120),
+    sanitizeBugText_(project ? project.projectName : '', 200),
+    type,
+    severity,
+    description,
+    'Baru',
+    '',
+    now,
+    email,
+    screenshotUrls.join('\n'),
+    sanitizeBugText_(context, 20000)
+  ]);
+  recordBugReportRate_(email);
+  return { reportId: reportId, status: 'Baru', createdAt: now, screenshots: screenshotUrls };
+}
+
+function listBugReports_(identity) {
+  const access = getBugReportAccess_(identity.email);
+  const sheet = getSpreadsheet_().getSheetByName(BUG_REPORT_SHEET_NAME);
+  if (!sheet || sheet.getLastRow() < 2) return { isDeveloper: access.isDeveloper, reports: [] };
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0].map((header) => String(header).trim().toLowerCase());
+  const emailIndex = headers.indexOf('email');
+  const reports = values.slice(1)
+    .filter((row) => access.isDeveloper || String(row[emailIndex]).trim().toLowerCase() === identity.email)
+    .map((row) => bugReportRowToObject_(headers, row, access.isDeveloper))
+    .filter((report) => report.reportId)
+    .sort((left, right) => String(right.createdAt).localeCompare(String(left.createdAt)))
+    .slice(0, BUG_REPORT_LIST_LIMIT);
+  return { isDeveloper: access.isDeveloper, reports: reports };
+}
+
+function updateBugReport_(request, identity) {
+  const access = getBugReportAccess_(identity.email);
+  if (!access.isDeveloper) throw bugReportError_('Hanya developer yang dapat mengubah status laporan.', 'forbidden');
+  const reportId = String(request.reportId || '').trim();
+  const status = String(request.status || '');
+  if (!reportId) throw bugReportError_('ID laporan tidak valid.');
+  if (BUG_REPORT_STATUSES.indexOf(status) < 0) throw bugReportError_('Status laporan tidak valid.');
+  const sheet = getSpreadsheet_().getSheetByName(BUG_REPORT_SHEET_NAME);
+  if (!sheet || sheet.getLastRow() < 2) throw bugReportError_('Laporan tidak ditemukan.', 'notfound');
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0].map((header) => String(header).trim().toLowerCase());
+  const rowOffset = values.slice(1).findIndex((row) => String(row[headers.indexOf('report_id')]) === reportId);
+  if (rowOffset < 0) throw bugReportError_('Laporan tidak ditemukan.', 'notfound');
+  const rowNumber = rowOffset + 2;
+  const row = values[rowOffset + 1].slice();
+  const setValue = (name, value) => {
+    const index = headers.indexOf(name);
+    if (index < 0) return;
+    row[index] = value;
+    // Tulis per sel agar teks lain (mis. deskripsi berawalan "=") tidak ditulis ulang sebagai rumus.
+    sheet.getRange(rowNumber, index + 1).setValue(value);
+  };
+  setValue('status', status);
+  setValue('dev_note', sanitizeBugText_(request.devNote, 2000));
+  setValue('updated_at', new Date().toISOString());
+  setValue('updated_by', identity.email);
+  return bugReportRowToObject_(headers, row, true);
+}
+// ==== BUG REPORT END ====
 
 function acquireWriteLock_(lock) {
   if (lock.tryLock(20000)) return;

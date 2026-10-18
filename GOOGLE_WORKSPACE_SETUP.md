@@ -136,3 +136,11 @@ Tab **Kurva S** di menu bawah menampilkan kurva rencana vs realisasi per proyek.
 3. Realisasi mingguan, realisasi kumulatif, dan deviasi dihitung otomatis dari bobot (`bobot × progres%`). Minggu berjalan dihitung dari tanggal hari ini.
 
 Data tersimpan di snapshot proyek sebagai `projectSchedule` (ikut tersinkron ke Spreadsheet). Karena `SNAPSHOT_SECTIONS` di `Code.gs` berubah (`projectSchedule` masuk izin `daily_report`), `Code.gs` harus di-paste ulang dan di-deploy sebagai New version.
+
+## Laporan Masalah (Bug Report) dan Ping Sinyal
+
+- **Ping sinyal**: chip kecil di header (di bawah nama akun) menampilkan ping ke `https://www.google.com/generate_204` setiap 30 detik: hijau < 150 ms (Bagus), kuning < 400 ms (Sedang), merah ≥ 400 ms/timeout (Lemah), hitam saat offline. Ping dijeda saat tab tidak aktif atau saat sinkron/upload berjalan. Ketuk chip untuk detail, termasuk waktu respons Apps Script terakhir.
+- **Laporkan Masalah**: menu Pengaturan → **🐞 Laporkan Masalah** (jenis, tingkat, deskripsi, maks. 3 screenshot). Info teknis (proyek, tab, perangkat, sinyal, 10 error/pesan terakhir) ikut terkirim otomatis; token login tidak ikut.
+- Laporan disimpan ke tab `BugReports` (dibuat otomatis) dan screenshot ke subfolder Drive `Bug Reports` di dalam `FOLDER_ID`. Teks yang diawali `= + - @` diberi awalan `'` agar tidak dieksekusi sebagai rumus.
+- Hanya email aktif di tab `Access` yang bisa mengirim laporan, maksimal 5 laporan per jam per akun. **Laporan Saya** menampilkan laporan milik sendiri; role Developer melihat semua laporan dan dapat mengubah status (`Baru`, `Diproses`, `Selesai`, `Ditolak`) beserta catatan untuk pelapor.
+- Laporan tidak mengubah data proyek dan tidak memicu sinkronisasi Supabase. Pengujian: `node --test tests\bug-report.test.js`.
