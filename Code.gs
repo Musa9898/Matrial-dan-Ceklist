@@ -9,6 +9,7 @@ const MATERIALS_SHEET_NAME = 'Materials';
 const ASSETS_SHEET_NAME = 'Assets';
 const CHECKLISTS_SHEET_NAME = 'Checklists';
 const DAILY_REPORTS_SHEET_NAME = 'DailyReports';
+const TESTS_SHEET_NAME = 'Tests';
 const PROJECT_FILES_SHEET_NAME = 'ProjectFiles';
 const PROJECT_FOLDERS_SHEET_NAME = 'ProjectFolders';
 const PROJECT_HEADERS = ['Project ID', 'Project Name', 'Owner Email', 'Created At'];
@@ -29,12 +30,16 @@ const DAILY_REPORT_HEADERS = [
   'record_id', 'project_id', 'report_title', 'date', 'supervisor', 'task_count',
   'total_workers', 'task_summary', 'payload_json', 'updated_at', 'email'
 ];
+const TEST_HEADERS = [
+  'record_id', 'project_id', 'date', 'test_type', 'system', 'area', 'result',
+  'tested_by', 'witnesses', 'summary', 'drive_url', 'payload_json', 'updated_at', 'email'
+];
 const PROJECT_FILE_HEADERS = [
   'File ID', 'Project ID', 'Folder ID', 'File Name', 'Drive URL', 'Size',
   'Uploaded By', 'Created At', 'MIME Type', 'Payload JSON'
 ];
 const PROJECT_FOLDER_HEADERS = ['Folder ID', 'Project ID', 'Folder Name', 'Created At', 'Created By'];
-const BACKEND_VERSION = '2026-10-19-original-file-names';
+const BACKEND_VERSION = '2026-10-21-test-reports-hvac';
 const FRONTEND_ORIGINS = [
   'https://musa9898.github.io',
   'http://localhost:8000',
@@ -708,7 +713,7 @@ const ROLE_ALIASES = {
 const SNAPSHOT_SECTIONS = {
   material: ['materialItems', 'deliveryHistory', 'usageHistory'],
   asset: ['assetItems'],
-  checklist: ['checklistItems'],
+  checklist: ['checklistItems', 'testReports'],
   daily_report: ['dailyWorkPlans'],
   kurva_s: ['projectSchedule'],
   files: ['projectFolders']
@@ -1317,6 +1322,25 @@ function buildMonitoringRecords_(project, snapshot, email, uploadedFiles) {
       email: email
     });
   });
+
+  // Tab Tests hanya cermin baca dari snapshot; tidak dipakai untuk rekonsiliasi.
+  (snapshot.testReports || []).forEach((report, index) => {
+    if (!report || typeof report !== 'object') return;
+    records.push({
+      recordId: 'test:' + (report.id || report.date + ':' + index),
+      projectId: project.projectId,
+      recordType: 'test',
+      itemName: report.typeLabel || report.type || 'Pengetesan',
+      status: report.result || '',
+      date: report.date || now,
+      reporter: report.testedBy || email,
+      notes: report.summary || report.notes || '',
+      driveUrl: firstPhotoUrl_([].concat(report.photos || [], report.photosBefore || [], report.photosAfter || [])),
+      payload: report,
+      updatedAt: now,
+      email: email
+    });
+  });
   return records;
 }
 
@@ -1377,6 +1401,15 @@ function structuredRecordRow_(sheet, record, headers = getSheetHeaderIndexes_(sh
     values.task_count = tasks.length;
     values.total_workers = tasks.reduce((total, task) => total + (Number(task.workers) || 0), 0);
     values.task_summary = record.notes;
+  } else if (record.recordType === 'test') {
+    const witnesses = payload.witnesses && typeof payload.witnesses === 'object' ? payload.witnesses : {};
+    values.test_type = record.itemName;
+    values.system = payload.system || '';
+    values.area = payload.area || '';
+    values.result = record.status;
+    values.tested_by = payload.testedBy || record.reporter;
+    values.witnesses = Object.keys(witnesses).map((role) => witnesses[role] ? role + ': ' + witnesses[role] : '').filter(Boolean).join(' | ');
+    values.summary = record.notes;
   }
 
   return sheetRowFromObject_(sheet, values, headers);
@@ -1470,7 +1503,8 @@ function replaceProjectRecords_(projectId, records) {
     { type: 'material', name: MATERIALS_SHEET_NAME, headers: MATERIAL_HEADERS, itemName: 'material_name' },
     { type: 'asset', name: ASSETS_SHEET_NAME, headers: ASSET_HEADERS, itemName: 'asset_name' },
     { type: 'checklist', name: CHECKLISTS_SHEET_NAME, headers: CHECKLIST_HEADERS, itemName: 'work' },
-    { type: 'daily_report', name: DAILY_REPORTS_SHEET_NAME, headers: DAILY_REPORT_HEADERS, itemName: 'report_title' }
+    { type: 'daily_report', name: DAILY_REPORTS_SHEET_NAME, headers: DAILY_REPORT_HEADERS, itemName: 'report_title' },
+    { type: 'test', name: TESTS_SHEET_NAME, headers: TEST_HEADERS, itemName: 'test_type' }
   ];
 
   tableDefinitions.forEach((definition) => {

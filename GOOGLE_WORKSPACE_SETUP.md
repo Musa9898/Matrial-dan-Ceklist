@@ -83,6 +83,7 @@ Data operasional dipisah ke tab agar mudah difilter dan dianalisis:
 - `Assets`: identitas alat, kondisi, lokasi, dan URL foto.
 - `Checklists`: tanggal, area, bidang (`discipline`: MEP / Sipil Struktur / Sipil Arsitektur), pekerjaan, status, progres, PIC, dan URL foto.
 - `DailyReports`: judul, tanggal, SPV, jumlah tugas/orang, dan ringkasan tugas.
+- `Tests`: laporan pengetesan (jenis tes, sistem, area, hasil Lulus/Gagal, penguji, saksi, ringkasan, URL foto pertama). Tab dibuat otomatis dan hanya berupa cermin dari snapshot; menghapus baris di tab ini tidak menghapus data di aplikasi.
 - `ProjectFiles`: metadata file Drive, folder, URL, ukuran, dan tipe file.
 - `ProjectFolders`: ID dan nama folder logis tiap proyek, sehingga struktur folder tampil lintas perangkat.
 - Jika metadata folder lama belum ada, aplikasi memulihkan nama dari cache/snapshot. Jika hanya `Folder ID` yang tersisa di `ProjectFiles`, aplikasi menampilkan folder bernama `Folder <ID>` agar file tetap bisa diakses; nama itu dapat diubah dari tampilan folder.
@@ -136,6 +137,28 @@ Tab **Kurva S** di menu bawah menampilkan kurva rencana vs realisasi per proyek.
 3. Realisasi mingguan, realisasi kumulatif, dan deviasi dihitung otomatis dari bobot (`bobot × progres%`). Minggu berjalan dihitung dari tanggal hari ini.
 
 Data tersimpan di snapshot proyek sebagai `projectSchedule` (ikut tersinkron ke Spreadsheet). Karena `SNAPSHOT_SECTIONS` di `Code.gs` berubah (`projectSchedule` masuk izin `daily_report`), `Code.gs` harus di-paste ulang dan di-deploy sebagai New version.
+
+## Pengetesan & Commissioning
+
+Di tab **Ceklist** ada pilihan **📋 Ceklist | 🧪 Pengetesan**. Tampilan Pengetesan dipakai untuk Tes Pipa, Megger, Grounding, Tes Tata Udara (HVAC), Uji Fungsi/Commissioning, dan Lainnya. Pada Tes Pipa, metode mengikuti sistem pipa: Air Bersih, Air Panas, Hydrant, dan Sprinkler memakai **Hydrotest** (isi tekanan uji, awal, akhir); Air Kotor, Air Bekas, dan Air Hujan memakai **Tes Glontor** (kondisi aliran + kebocoran) atau **Tes Rendam** (durasi rendam, muka air, kebocoran) tanpa isian tekanan.
+
+**Tes Tata Udara (HVAC)** menggantikan Flushing (data Flushing lama tetap bisa dibuka). Pilih item yang diuji, lalu metodenya:
+
+| Item | Metode | Lulus bila |
+|---|---|---|
+| Ducting | Duct Leakage Test (SMACNA) | Kebocoran terukur ≤ kebocoran diizinkan (L/s) |
+| Ducting | Smoke Test (Asap) | Tidak ada asap keluar dari sambungan |
+| Ducting / Unit / Fan | Air Balancing (Debit Udara) | Deviasi debit terukur vs rencana ≤ toleransi (default 10%) |
+| Pipa Refrigerant | Tes Tekanan Nitrogen | Tekanan awal ≥ tekanan uji dan penurunan ≤ toleransi (default 0 psi, tahan 24 jam) |
+| Pipa Refrigerant | Tes Vakum | Vakum tercapai ≤ target (default 500 micron) dan setelah ditahan ≤ batas (default 1000 micron) |
+| Pipa Drain AC | Tes Aliran Drain | Aliran lancar, kemiringan sesuai, tidak bocor/rembes |
+| Unit AC / FCU / AHU | Uji Performa Unit | ΔT (return − supply) ≥ minimum (default 8 °C), arus ≤ FLA, suara/getaran normal |
+
+1. **+ Tes Baru** (izin Checklist): pilih jenis tes, isi area, data hasil uji, **Diuji oleh (SPV)**, saksi, dan foto bukti (kamera/galeri, maksimal 8 foto). Khusus **Tes Pipa** (Hydrotest/Glontor/Rendam) ada kolom **Foto Sebelum (Open)** dan **Foto Sesudah (Close)**, masing-masing maksimal 4 foto, dengan watermark tahap.
+2. Hasil **Lulus/Gagal** dihitung otomatis dari data uji (misalnya penurunan tekanan ≤ toleransi, tahanan isolasi ≥ batas minimum, tahanan grounding ≤ batas maksimum). Hasil bisa diganti manual; laporan mencatat hasil otomatis aslinya.
+3. Laporan bisa dicari/difilter (jenis, hasil, tanggal) dan diekspor ke PDF lengkap dengan foto (dikelompokkan Sebelum/Sesudah/Lainnya).
+
+Data tersimpan di snapshot proyek sebagai `testReports` (izin `checklist`, foto tahap di `photosBefore`/`photosAfter`) dan dicerminkan ke tab `Tests`. `Code.gs` versi `2026-10-21-test-reports-hvac` harus di-paste ulang dan di-deploy sebagai New version.
 
 ## Laporan Masalah (Bug Report) dan Ping Sinyal
 

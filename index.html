@@ -1825,7 +1825,8 @@
       overflow-wrap: anywhere;
     }
 
-    body.theme-dark #modalAssetDetail .detail-stat strong {
+    body.theme-dark #modalAssetDetail .detail-stat strong,
+    body.theme-dark #modalTestReportDetail .detail-stat strong {
       color: var(--text-dark);
     }
 
@@ -1933,6 +1934,185 @@
     .checklist-card:focus-visible {
       outline: 2px solid #4f46e5;
       outline-offset: 2px;
+    }
+
+    .checklist-view-toggle {
+      margin-bottom: 14px;
+    }
+
+    .checklist-view-toggle .scope-btn {
+      padding: 10px 8px;
+      font-size: 0.85rem;
+    }
+
+    .test-report-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .test-report-summary > div {
+      padding: 10px 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 10px;
+      background: var(--card-bg, #fff);
+    }
+
+    .test-report-summary span {
+      display: block;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .test-report-summary strong {
+      font-size: 1.2rem;
+    }
+
+    .test-report-summary .test-result-pass strong { color: var(--success-green); }
+    .test-report-summary .test-result-fail strong { color: var(--danger-red); }
+
+    .test-result-badge {
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .test-result-badge.test-result-pass { background: #dcfce7; color: #166534; }
+    .test-result-badge.test-result-fail { background: #fee2e2; color: #b91c1c; }
+    .test-result-badge.test-result-pending { background: #fef3c7; color: #92400e; }
+
+    .test-report-reasons {
+      color: #b91c1c;
+    }
+
+    .test-report-params {
+      margin: 4px 0 10px;
+      padding: 10px 12px 2px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 10px;
+    }
+
+    .test-report-params legend {
+      padding: 0 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    .test-report-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 10px;
+    }
+
+    .test-report-grid label small {
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .test-report-readings {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .test-report-readings-title {
+      margin: 4px 0 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    .test-report-readings-title small {
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .test-photo-group-title {
+      margin: 8px 0 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .test-photo-group-title:first-child {
+      margin-top: 0;
+    }
+
+    @media (max-width: 560px) {
+      .test-report-stage-photos {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .test-report-result-box {
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .test-report-result-box.test-result-pass { background: #dcfce7; color: #166534; }
+    .test-report-result-box.test-result-fail { background: #fee2e2; color: #991b1b; }
+    .test-report-result-box .test-report-reasons { margin-top: 4px; font-size: 0.78rem; }
+
+    .test-report-detail-params {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 12px;
+      font-size: 0.8rem;
+    }
+
+    .test-report-detail-params span {
+      display: block;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+    }
+
+    .btn-delete-test {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      background: #fff1f2;
+      color: #b91c1c;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    body.theme-dark .test-report-summary > div,
+    body.theme-dark .test-report-params {
+      border-color: #334155;
+      background: transparent;
+    }
+
+    body.theme-dark .test-result-badge.test-result-pass,
+    body.theme-dark .test-report-result-box.test-result-pass { background: rgba(34, 197, 94, 0.16); color: #86efac; }
+    body.theme-dark .test-result-badge.test-result-fail,
+    body.theme-dark .test-report-result-box.test-result-fail { background: rgba(239, 68, 68, 0.16); color: #fca5a5; }
+    body.theme-dark .test-result-badge.test-result-pending,
+    body.theme-dark .test-report-result-box { background: rgba(245, 158, 11, 0.14); color: #fcd34d; }
+    body.theme-dark .test-report-reasons { color: #fca5a5; }
+    body.theme-dark .btn-delete-test { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; }
+
+    @media (max-width: 540px) {
+      .test-report-grid,
+      .test-report-detail-params {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .test-report-readings {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .test-report-summary strong {
+        font-size: 1.05rem;
+      }
     }
 
     .checklist-status-history {
@@ -3888,6 +4068,51 @@
     </main>
 
     <main class="scroll-content" id="tabViewCeklist" style="display: none;">
+      <div class="scope-toggle checklist-view-toggle" role="group" aria-label="Pilih tampilan ceklist">
+        <button class="scope-btn active" type="button" id="checklistViewInspectionButton" aria-pressed="true" onclick="setChecklistView('inspection')">📋 Ceklist</button>
+        <button class="scope-btn" type="button" id="checklistViewTestingButton" aria-pressed="false" onclick="setChecklistView('testing')">🧪 Pengetesan</button>
+      </div>
+
+      <div id="testReportView" hidden>
+        <div class="section-header">
+          <div class="section-title">
+            <span>🧪</span> Pengetesan &amp; Commissioning
+          </div>
+          <div class="section-actions">
+            <button class="btn-pdf-export" type="button" data-pdf-tab="pengetesan" onclick="openPdfExportDialog('pengetesan')">📄 PDF</button>
+            <button class="btn-action-primary" type="button" onclick="openTestReportForm()">+ Tes Baru</button>
+          </div>
+        </div>
+        <div class="test-report-summary" id="testReportSummary"></div>
+        <div class="global-file-search">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M8.5 3a5.5 5.5 0 103.477 9.763l3.63 3.63a.75.75 0 101.06-1.061l-3.63-3.63A5.5 5.5 0 008.5 3zM4.5 8.5a4 4 0 118 0 4 4 0 01-8 0z" clip-rule="evenodd"/></svg>
+          <input class="checklist-search" id="testReportSearch" type="search" placeholder="Cari jenis tes, sistem, area, atau penguji" oninput="renderTestReports()" aria-label="Cari pengetesan">
+          <button id="testReportSearchClear" type="button" onclick="clearTestReportFilters()" aria-label="Bersihkan pencarian dan filter pengetesan" hidden>×</button>
+          <details class="search-filter-popover" id="testReportFilterPopover">
+            <summary aria-label="Buka filter pengetesan" title="Filter pengetesan">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 3.5h15l-5.8 6.2v5.1l-3.4 1.7V9.7L2.5 3.5z"/></svg>
+              <span class="filter-count" id="testReportFilterCount"></span>
+            </summary>
+            <div class="search-filter-options">
+              <div class="checklist-filters">
+                <select id="testReportTypeFilter" onchange="renderTestReports()" aria-label="Filter jenis tes">
+                  <option value="">Semua Jenis Tes</option>
+                </select>
+                <select id="testReportResultFilter" onchange="renderTestReports()" aria-label="Filter hasil tes">
+                  <option value="">Semua Hasil</option>
+                  <option value="Lulus">Lulus</option>
+                  <option value="Gagal">Gagal</option>
+                </select>
+                <input id="testReportDateFrom" type="date" onchange="renderTestReports()" aria-label="Pengetesan mulai tanggal">
+                <input id="testReportDateTo" type="date" onchange="renderTestReports()" aria-label="Pengetesan sampai tanggal">
+              </div>
+            </div>
+          </details>
+        </div>
+        <div id="testReportList"></div>
+      </div>
+
+      <div id="checklistInspectionView">
       <div class="section-header">
         <div class="section-title">
           <span>📋</span> Ceklist Lapangan (MEP &amp; Sipil)
@@ -3948,6 +4173,7 @@
         </details>
       </div>
       <div id="checklistCardList"></div>
+      </div>
     </main>
 
     <main class="scroll-content" id="tabViewSuratJalan" style="display: none;">
@@ -4730,6 +4956,134 @@
       </div>
     </div>
 
+    <div class="modal-backdrop" id="modalTestReport">
+      <div class="modal-sheet">
+        <h3 id="testReportFormTitle">Form Pengetesan</h3>
+
+        <div class="form-row">
+          <label class="required-label" for="testReportType">Jenis Pengetesan</label>
+          <select id="testReportType" onchange="renderTestReportTypeFields()"></select>
+          <span class="form-hint" id="testReportTypeHint"></span>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-row">
+            <label class="required-label" for="testReportDate">Tanggal Tes</label>
+            <input type="date" id="testReportDate" required>
+          </div>
+          <div class="form-row">
+            <label class="required-label" for="testReportArea">Area / Lokasi</label>
+            <input type="text" id="testReportArea" placeholder="Contoh: Lantai 5 Shaft 2">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-row">
+            <label for="testReportSystem">Sistem / Item Diuji</label>
+            <input type="text" id="testReportSystem" placeholder="Contoh: Riser Air Bersih Ø2&quot;">
+          </div>
+          <div class="form-row">
+            <label for="testReportStandard">Standar / Acuan</label>
+            <input type="text" id="testReportStandard" placeholder="Contoh: SNI 03-6481, spesifikasi teknis">
+          </div>
+        </div>
+
+        <fieldset class="test-report-params">
+          <legend>Data Hasil Uji</legend>
+          <div class="test-report-fields" id="testReportFields"></div>
+        </fieldset>
+
+        <div class="test-report-result-box" id="testReportAutoResult" aria-live="polite"></div>
+
+        <div class="form-row">
+          <label for="testReportResultOverride" id="testReportResultLabel">Hasil Akhir</label>
+          <select id="testReportResultOverride" onchange="updateTestReportResultPreview()">
+            <option value="">Otomatis dari data uji</option>
+            <option value="Lulus">Lulus (manual)</option>
+            <option value="Gagal">Gagal (manual)</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label class="required-label" for="testReportTestedBy">Diuji oleh (SPV)</label>
+          <input type="text" id="testReportTestedBy" placeholder="Nama SPV penguji">
+        </div>
+
+        <div class="grid-2 test-report-witnesses">
+          <div class="form-row">
+            <label for="testReportWitnessQc">Saksi QC</label>
+            <input type="text" id="testReportWitnessQc" placeholder="Nama QC">
+          </div>
+          <div class="form-row">
+            <label for="testReportWitnessOwner">Saksi Konsultan / Owner</label>
+            <input type="text" id="testReportWitnessOwner" placeholder="Nama konsultan / owner">
+          </div>
+        </div>
+
+        <div class="grid-2 test-report-stage-photos" id="testReportStagePhotos" hidden>
+          <div class="form-row">
+            <label>Foto Sebelum (Open)</label>
+            <input type="file" id="testReportPhotoBefore" accept="image/*" multiple data-photo-picker onchange="addTestReportStagePhotos('before', this.files)">
+            <span class="form-hint" id="testReportPhotoBeforeCount" aria-live="polite"></span>
+            <div class="checklist-photo-selection" id="testReportPhotoBeforeSelection"></div>
+          </div>
+          <div class="form-row">
+            <label>Foto Sesudah (Close)</label>
+            <input type="file" id="testReportPhotoAfter" accept="image/*" multiple data-photo-picker onchange="addTestReportStagePhotos('after', this.files)">
+            <span class="form-hint" id="testReportPhotoAfterCount" aria-live="polite"></span>
+            <div class="checklist-photo-selection" id="testReportPhotoAfterSelection"></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label id="testReportPhotoLabel">Foto Bukti Tes (gauge / alat ukur)</label>
+          <input type="file" id="testReportPhoto" accept="image/*" multiple data-photo-picker onchange="addTestReportPhotos(this.files)">
+          <span class="form-hint" id="testReportPhotoCount" aria-live="polite"></span>
+          <div class="photo-upload-status" id="testReportPhotoUploadStatus" role="status" aria-live="polite" aria-busy="false" hidden>
+            <span class="loading-spinner" id="testReportPhotoUploadSpinner" hidden aria-hidden="true"></span>
+            <span id="testReportPhotoUploadMessage"></span>
+          </div>
+          <div class="checklist-photo-selection" id="testReportPhotoSelection"></div>
+        </div>
+
+        <div class="form-row">
+          <label for="testReportNotes">Catatan</label>
+          <textarea id="testReportNotes" rows="2" placeholder="Catatan kondisi, temuan, atau tindak lanjut"></textarea>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn-cancel" type="button" onclick="closeTestReportForm()">Batal</button>
+          <button class="btn-save" type="button" id="saveTestReportButton" onclick="saveTestReport()">Simpan Pengetesan</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalTestReportDetail">
+      <div class="detail-modal-sheet">
+        <h3>Detail Pengetesan</h3>
+        <div class="detail-title" id="testReportDetailTitle">-</div>
+        <div class="test-report-detail-result" id="testReportDetailResult"></div>
+        <div class="detail-grid checklist-detail-grid" id="testReportDetailInfo"></div>
+        <div class="detail-section">
+          <h4>Data Hasil Uji</h4>
+          <div class="test-report-detail-params" id="testReportDetailParams"></div>
+        </div>
+        <div class="detail-section">
+          <h4>Foto Bukti Tes</h4>
+          <div id="testReportDetailPhotos"></div>
+        </div>
+        <div class="detail-section">
+          <h4>Saksi &amp; Catatan</h4>
+          <div id="testReportDetailNotes"></div>
+        </div>
+        <div class="btn-group">
+          <button class="btn-cancel" type="button" onclick="closeTestReportDetail()">Tutup</button>
+          <button class="btn-delete-test" type="button" id="deleteTestReportButton" onclick="deleteTestReport()">Hapus</button>
+          <button class="btn-save" type="button" id="editTestReportButton" onclick="editTestReportFromDetail()">Edit</button>
+        </div>
+      </div>
+    </div>
+
     <div class="connection-banner" id="connectionBanner" role="alert" hidden>
       <span id="connectionBannerText"></span>
       <button type="button" id="connectionBannerRetry" onclick="retryConnection()">Coba Lagi</button>
@@ -5501,6 +5855,7 @@
     let dailyWorkPlans = loadDailyWorkPlans();
     let dailyWorkDraftTasks = [];
     let projectSchedule = null;
+    let testReports = [];
 
     function persistDailyWorkPlans() {
       return persistActiveProjectData();
@@ -5524,7 +5879,7 @@
     }
 
     function getEmptyProjectData() {
-      return { materialItems: [], assetItems: [], deliveryHistory: {}, usageHistory: {}, checklistItems: [], dailyWorkPlans: [], projectFolders: [], projectSchedule: null };
+      return { materialItems: [], assetItems: [], deliveryHistory: {}, usageHistory: {}, checklistItems: [], dailyWorkPlans: [], projectFolders: [], projectSchedule: null, testReports: [] };
     }
 
     function replaceProjectMap(target, source) {
@@ -5542,6 +5897,7 @@
       dailyWorkPlans = Array.isArray(safeData.dailyWorkPlans) ? safeData.dailyWorkPlans : [];
       projectFolders = Array.isArray(safeData.projectFolders) ? safeData.projectFolders : [];
       projectSchedule = normalizeProjectSchedule(safeData.projectSchedule);
+      testReports = Array.isArray(safeData.testReports) ? safeData.testReports.filter((report) => report && typeof report === 'object') : [];
       mergeDuplicateMaterials();
     }
 
@@ -5554,7 +5910,8 @@
         checklistItems,
         dailyWorkPlans,
         projectFolders,
-        projectSchedule
+        projectSchedule,
+        testReports
       };
     }
 
@@ -5614,6 +5971,9 @@
       toggle('button[onclick^="deleteAssetItem"]', 'asset');
       toggle('button[onclick^="openChecklistModal"]', 'checklist');
       toggle('button[onclick^="saveChecklistStatusUpdate"]', 'checklist');
+      toggle('button[onclick^="openTestReportForm"]', 'checklist');
+      toggle('#editTestReportButton', 'checklist');
+      toggle('#deleteTestReportButton', 'checklist');
       toggle('button[onclick^="openDailyWorkReportForm"]', 'daily_report');
       toggle('#kurvaProgressButton', 'kurva_s');
       toggle('#kurvaImportButton', 'kurva_s');
@@ -5639,6 +5999,7 @@
       material: 'material',
       assets: 'asset',
       ceklist: 'checklist',
+      pengetesan: 'checklist',
       suratjalan: 'daily_report',
       kurvas: 'kurva_s',
       calculator: null
@@ -5686,6 +6047,7 @@
       material: 'Laporan Material (Stok, Masuk & Keluar)',
       assets: 'Laporan Aset Alat Kerja',
       ceklist: 'Laporan Ceklist Lapangan',
+      pengetesan: 'Laporan Pengetesan & Commissioning',
       suratjalan: 'Laporan Harian MEP',
       kurvas: 'Laporan Kurva S Progres Proyek',
       calculator: 'Laporan Kalkulator MEP'
@@ -5711,7 +6073,7 @@
       const usesDates = !['assets', 'calculator'].includes(tab);
       document.getElementById('pdfExportTitle').textContent = `📄 Export PDF · ${PDF_TAB_TITLES[tab].replace(/^Laporan /, '')}`;
       document.getElementById('pdfExportDateWrap').hidden = !usesDates;
-      const filterIds = { ceklist: ['checklistDateFrom', 'checklistDateTo'], suratjalan: ['dailyWorkDateFrom', 'dailyWorkDateTo'] }[tab];
+      const filterIds = { ceklist: ['checklistDateFrom', 'checklistDateTo'], pengetesan: ['testReportDateFrom', 'testReportDateTo'], suratjalan: ['dailyWorkDateFrom', 'dailyWorkDateTo'] }[tab];
       const fromInput = document.getElementById('pdfExportDateFrom');
       const toInput = document.getElementById('pdfExportDateTo');
       fromInput.value = filterIds ? (document.getElementById(filterIds[0])?.value || '') : '';
@@ -6028,6 +6390,7 @@
       if (tab === 'material') body = buildPdfMaterialReport(options);
       else if (tab === 'assets') body = buildPdfAssetReport();
       else if (tab === 'ceklist') body = buildPdfChecklistReport(options);
+      else if (tab === 'pengetesan') body = buildPdfTestReport(options);
       else if (tab === 'suratjalan') body = buildPdfDailyReport(options);
       else if (tab === 'kurvas') body = buildPdfKurvaReport(options);
       else if (tab === 'calculator') {
@@ -6778,6 +7141,7 @@
       renderMaterialCards();
       renderAssetCards();
       renderChecklistCards();
+      renderTestReports();
       renderDailyWorkReport();
       renderProjectFiles();
       if (document.getElementById('tabViewKurvaS').style.display !== 'none') renderKurvaS({ animate: false });
@@ -9471,7 +9835,9 @@
         modalIssue: closeIssueModal,
         modalChecklistDetail: closeChecklistDetail,
         modalProjectManager: closeProjectManager,
-        modalChecklist: closeChecklistModal
+        modalChecklist: closeChecklistModal,
+        modalTestReport: closeTestReportForm,
+        modalTestReportDetail: closeTestReportDetail
       };
 
       document.querySelectorAll('.modal-backdrop').forEach((backdrop) => {
@@ -9728,6 +10094,971 @@
           if (succeeded) setPhotoUploadStatus('checklist', 'success', `${photoFiles.length} foto berhasil disimpan.`);
         }
       }
+    }
+
+    // ==== TEST REPORT CORE START ====
+    const MEGGER_PAIRS = ['R-S', 'S-T', 'T-R', 'R-N', 'S-N', 'T-N', 'R-G', 'S-G', 'T-G', 'N-G'];
+    const PRESSURE_PIPE_SYSTEMS = ['Air Bersih', 'Air Panas', 'Hydrant', 'Sprinkler'];
+    const GRAVITY_PIPE_SYSTEMS = ['Air Kotor', 'Air Bekas', 'Air Hujan'];
+    const PIPE_TEST_METHODS = ['Hydrotest', 'Tes Glontor', 'Tes Rendam'];
+
+    function getPipeTestMethodOptions(params = {}) {
+      if (PRESSURE_PIPE_SYSTEMS.includes(params.pipeSystem)) return ['Hydrotest'];
+      if (GRAVITY_PIPE_SYSTEMS.includes(params.pipeSystem)) return ['Tes Glontor', 'Tes Rendam'];
+      return PIPE_TEST_METHODS;
+    }
+
+    function getPipeTestMethod(params = {}) {
+      const allowed = getPipeTestMethodOptions(params);
+      const chosen = String(params.testMethod ?? '').trim();
+      if (allowed.includes(chosen)) return chosen;
+      if (allowed.length === 1) return allowed[0];
+      // Data lama (sebelum ada pilihan metode) yang berisi tekanan dianggap Hydrotest.
+      if (!chosen && allowed.includes('Hydrotest')
+        && (parseTestNumber(params.testPressure) !== null || parseTestNumber(params.startPressure) !== null)) return 'Hydrotest';
+      return '';
+    }
+
+    const pipeMethodIs = (...methods) => (params) => methods.includes(getPipeTestMethod(params));
+    const HVAC_TEST_METHODS = {
+      Ducting: ['Duct Leakage Test', 'Smoke Test (Asap)', 'Air Balancing (Debit Udara)'],
+      'Pipa Refrigerant': ['Tes Tekanan Nitrogen', 'Tes Vakum'],
+      'Pipa Drain AC': ['Tes Aliran Drain'],
+      'Unit AC / FCU / AHU': ['Uji Performa Unit', 'Air Balancing (Debit Udara)'],
+      'Fan (Exhaust / Fresh Air / Pressurized)': ['Air Balancing (Debit Udara)']
+    };
+
+    function getHvacTestMethodOptions(params = {}) {
+      return HVAC_TEST_METHODS[params.hvacItem] || [];
+    }
+
+    function getHvacTestMethod(params = {}) {
+      const allowed = getHvacTestMethodOptions(params);
+      const chosen = String(params.hvacMethod ?? '').trim();
+      if (allowed.includes(chosen)) return chosen;
+      return allowed.length === 1 ? allowed[0] : '';
+    }
+
+    const hvacMethodIs = (...methods) => (params) => methods.includes(getHvacTestMethod(params));
+    const TEST_REPORT_TYPES = {
+      pressure: {
+        label: 'Tes Pipa (Hydrotest / Glontor / Rendam)',
+        icon: '💧',
+        hint: 'Air Bersih, Air Panas, Hydrant, Sprinkler: Hydrotest (tekanan). Air Kotor, Air Bekas, Air Hujan: Tes Glontor atau Tes Rendam (tanpa tekanan).',
+        fields: [
+          { key: 'pipeSystem', label: 'Sistem Pipa', type: 'select', options: [...PRESSURE_PIPE_SYSTEMS, ...GRAVITY_PIPE_SYSTEMS, 'Lainnya'], required: true, rerender: true },
+          { key: 'testMethod', label: 'Metode Tes', type: 'select', options: getPipeTestMethodOptions, value: getPipeTestMethod, required: true, rerender: true, when: (params) => Boolean(String(params.pipeSystem ?? '').trim()) },
+          { key: 'testPressure', label: 'Tekanan Uji', unit: 'bar', type: 'number', required: true, when: pipeMethodIs('Hydrotest') },
+          { key: 'duration', label: 'Durasi Uji', unit: 'menit', type: 'number', required: true, when: pipeMethodIs('Hydrotest', 'Tes Glontor') },
+          { key: 'startPressure', label: 'Tekanan Awal', unit: 'bar', type: 'number', required: true, when: pipeMethodIs('Hydrotest') },
+          { key: 'endPressure', label: 'Tekanan Akhir', unit: 'bar', type: 'number', required: true, when: pipeMethodIs('Hydrotest') },
+          { key: 'maxDrop', label: 'Toleransi Turun Maks', unit: 'bar', type: 'number', defaultValue: '0', when: pipeMethodIs('Hydrotest') },
+          { key: 'soakDuration', label: 'Durasi Rendam', unit: 'jam', type: 'number', defaultValue: '24', required: true, when: pipeMethodIs('Tes Rendam') },
+          { key: 'waterLevel', label: 'Muka Air Setelah Rendam', type: 'select', options: ['Tetap', 'Turun'], required: true, when: pipeMethodIs('Tes Rendam') },
+          { key: 'flowCondition', label: 'Kondisi Aliran', type: 'select', options: ['Lancar', 'Tersendat', 'Tersumbat'], required: true, when: pipeMethodIs('Tes Glontor') },
+          { key: 'leak', label: 'Kebocoran', type: 'select', options: ['Tidak Ada', 'Ada Bocor'], required: true, when: pipeMethodIs('Tes Glontor', 'Tes Rendam') }
+        ]
+      },
+      megger: {
+        label: 'Megger / Tahanan Isolasi',
+        icon: '⚡',
+        hint: 'Isi minimal satu hasil ukur. Lulus bila semua hasil ≥ batas minimum.',
+        fields: [
+          { key: 'cable', label: 'Kabel / Sirkuit', type: 'text', placeholder: 'Contoh: NYY 4x16 mm² feeder LP-3' },
+          { key: 'testVoltage', label: 'Tegangan Uji', unit: 'V DC', type: 'select', options: ['250', '500', '1000', '2500', '5000'], defaultValue: '500', required: true },
+          { key: 'minResistance', label: 'Batas Minimum', unit: 'MΩ', type: 'number', defaultValue: '1', required: true },
+          ...MEGGER_PAIRS.map((pair) => ({ key: `ir${pair.replace('-', '')}`, label: pair, unit: 'MΩ', type: 'number', reading: true }))
+        ]
+      },
+      grounding: {
+        label: 'Tahanan Pentanahan / Grounding',
+        icon: '🌍',
+        hint: 'Lulus bila tahanan terukur ≤ batas maksimum (umumnya 5 Ω, sistem khusus bisa ≤ 1 Ω).',
+        fields: [
+          { key: 'electrode', label: 'Titik / Elektroda', type: 'text', placeholder: 'Contoh: BC-1 Panel LVMDP' },
+          { key: 'method', label: 'Metode Ukur', type: 'select', options: ['3 Titik (Fall of Potential)', 'Clamp Meter', 'Lainnya'], defaultValue: '3 Titik (Fall of Potential)' },
+          { key: 'resistance', label: 'Tahanan Terukur', unit: 'Ω', type: 'number', required: true },
+          { key: 'maxResistance', label: 'Batas Maksimum', unit: 'Ω', type: 'number', defaultValue: '5', required: true }
+        ]
+      },
+      hvac: {
+        label: 'Tes Tata Udara (HVAC)',
+        icon: '❄️',
+        hint: 'Ducting: Duct Leakage / Smoke Test / Air Balancing. Pipa Refrigerant: Tekanan Nitrogen & Vakum. Pipa Drain AC: Tes Aliran. Unit AC/FCU/AHU: Uji Performa.',
+        fields: [
+          { key: 'hvacItem', label: 'Item Diuji', type: 'select', options: Object.keys(HVAC_TEST_METHODS), required: true, rerender: true },
+          { key: 'hvacMethod', label: 'Metode Tes', type: 'select', options: getHvacTestMethodOptions, value: getHvacTestMethod, required: true, rerender: true, when: (params) => Boolean(String(params.hvacItem ?? '').trim()) },
+          { key: 'ductClass', label: 'Kelas Tekanan Duct', type: 'select', options: ['Low Pressure (≤ 500 Pa)', 'Medium Pressure (≤ 1500 Pa)', 'High Pressure (> 1500 Pa)'], when: hvacMethodIs('Duct Leakage Test') },
+          { key: 'ductTestPressure', label: 'Tekanan Uji', unit: 'Pa', type: 'number', required: true, when: hvacMethodIs('Duct Leakage Test') },
+          { key: 'ductAllowedLeak', label: 'Kebocoran Diizinkan', unit: 'L/s', type: 'number', required: true, when: hvacMethodIs('Duct Leakage Test') },
+          { key: 'ductMeasuredLeak', label: 'Kebocoran Terukur', unit: 'L/s', type: 'number', required: true, when: hvacMethodIs('Duct Leakage Test') },
+          { key: 'smokeLeak', label: 'Asap Keluar dari Sambungan', type: 'select', options: ['Tidak Ada', 'Ada'], required: true, when: hvacMethodIs('Smoke Test (Asap)') },
+          { key: 'designAirflow', label: 'Debit Rencana', unit: 'CMH', type: 'number', required: true, when: hvacMethodIs('Air Balancing (Debit Udara)') },
+          { key: 'measuredAirflow', label: 'Debit Terukur', unit: 'CMH', type: 'number', required: true, when: hvacMethodIs('Air Balancing (Debit Udara)') },
+          { key: 'airflowTolerance', label: 'Toleransi Deviasi', unit: '%', type: 'number', defaultValue: '10', required: true, when: hvacMethodIs('Air Balancing (Debit Udara)') },
+          { key: 'refrigerant', label: 'Jenis Refrigerant', type: 'select', options: ['R32', 'R410A', 'R22', 'R134a', 'Lainnya'], required: true, when: hvacMethodIs('Tes Tekanan Nitrogen', 'Tes Vakum') },
+          { key: 'n2TestPressure', label: 'Tekanan Uji N₂', unit: 'psi', type: 'number', required: true, when: hvacMethodIs('Tes Tekanan Nitrogen') },
+          { key: 'n2HoldDuration', label: 'Durasi Tahan', unit: 'jam', type: 'number', defaultValue: '24', required: true, when: hvacMethodIs('Tes Tekanan Nitrogen') },
+          { key: 'n2Start', label: 'Tekanan Awal', unit: 'psi', type: 'number', required: true, when: hvacMethodIs('Tes Tekanan Nitrogen') },
+          { key: 'n2End', label: 'Tekanan Akhir', unit: 'psi', type: 'number', required: true, when: hvacMethodIs('Tes Tekanan Nitrogen') },
+          { key: 'n2MaxDrop', label: 'Toleransi Turun Maks', unit: 'psi', type: 'number', defaultValue: '0', when: hvacMethodIs('Tes Tekanan Nitrogen') },
+          { key: 'vacuumTarget', label: 'Target Vakum Maks', unit: 'micron', type: 'number', defaultValue: '500', required: true, when: hvacMethodIs('Tes Vakum') },
+          { key: 'vacuumReached', label: 'Vakum Tercapai', unit: 'micron', type: 'number', required: true, when: hvacMethodIs('Tes Vakum') },
+          { key: 'vacuumHoldTime', label: 'Durasi Tahan', unit: 'menit', type: 'number', defaultValue: '15', required: true, when: hvacMethodIs('Tes Vakum') },
+          { key: 'vacuumAfterHold', label: 'Vakum Setelah Ditahan', unit: 'micron', type: 'number', required: true, when: hvacMethodIs('Tes Vakum') },
+          { key: 'vacuumMaxAfterHold', label: 'Batas Setelah Ditahan', unit: 'micron', type: 'number', defaultValue: '1000', required: true, when: hvacMethodIs('Tes Vakum') },
+          { key: 'drainDuration', label: 'Durasi Tes', unit: 'menit', type: 'number', when: hvacMethodIs('Tes Aliran Drain') },
+          { key: 'drainFlow', label: 'Kondisi Aliran', type: 'select', options: ['Lancar', 'Tersendat', 'Tersumbat'], required: true, when: hvacMethodIs('Tes Aliran Drain') },
+          { key: 'drainSlope', label: 'Kemiringan Pipa', type: 'select', options: ['Sesuai', 'Tidak Sesuai'], required: true, when: hvacMethodIs('Tes Aliran Drain') },
+          { key: 'drainLeak', label: 'Kebocoran / Rembes', type: 'select', options: ['Tidak Ada', 'Ada Bocor'], required: true, when: hvacMethodIs('Tes Aliran Drain') },
+          { key: 'unitTag', label: 'Kode Unit', type: 'text', placeholder: 'Contoh: FCU-05, AHU-1, ODU-3', when: hvacMethodIs('Uji Performa Unit') },
+          { key: 'returnTemp', label: 'Suhu Return', unit: '°C', type: 'number', required: true, when: hvacMethodIs('Uji Performa Unit') },
+          { key: 'supplyTemp', label: 'Suhu Supply', unit: '°C', type: 'number', required: true, when: hvacMethodIs('Uji Performa Unit') },
+          { key: 'minDeltaT', label: 'ΔT Minimum', unit: '°C', type: 'number', defaultValue: '8', required: true, when: hvacMethodIs('Uji Performa Unit') },
+          { key: 'unitCurrent', label: 'Arus Terukur', unit: 'A', type: 'number', when: hvacMethodIs('Uji Performa Unit') },
+          { key: 'unitRatedCurrent', label: 'Arus Nominal (FLA)', unit: 'A', type: 'number', when: hvacMethodIs('Uji Performa Unit') },
+          { key: 'unitCondition', label: 'Suara & Getaran', type: 'select', options: ['Normal', 'Tidak Normal'], required: true, when: hvacMethodIs('Uji Performa Unit') }
+        ]
+      },
+      flushing: {
+        label: 'Flushing / Tes Aliran',
+        icon: '🚿',
+        hidden: true,
+        hint: 'Lulus bila air jernih, aliran lancar, dan tidak ada kebocoran.',
+        fields: [
+          { key: 'pipeSystem', label: 'Sistem Pipa', type: 'select', options: ['Air Bersih', 'Air Panas', 'Air Kotor / Bekas', 'Hydrant', 'Sprinkler', 'Drainase', 'Lainnya'], required: true },
+          { key: 'duration', label: 'Durasi Flushing', unit: 'menit', type: 'number', required: true },
+          { key: 'waterCondition', label: 'Kondisi Air', type: 'select', options: ['Jernih', 'Agak Keruh', 'Keruh'], required: true },
+          { key: 'flowCondition', label: 'Kondisi Aliran', type: 'select', options: ['Lancar', 'Tersendat', 'Tersumbat'], required: true },
+          { key: 'leak', label: 'Kebocoran', type: 'select', options: ['Tidak Ada', 'Ada Bocor'], required: true }
+        ]
+      },
+      commissioning: {
+        label: 'Uji Fungsi / Commissioning',
+        icon: '⚙️',
+        hint: 'Lulus bila fungsi normal dan arus terukur tidak melebihi arus nominal (jika diisi).',
+        fields: [
+          { key: 'equipment', label: 'Peralatan', type: 'text', placeholder: 'Contoh: Pompa Transfer P-1, Panel LP-2, AC FCU-05', required: true },
+          { key: 'voltage', label: 'Tegangan Terukur', unit: 'V', type: 'number' },
+          { key: 'current', label: 'Arus Terukur', unit: 'A', type: 'number' },
+          { key: 'ratedCurrent', label: 'Arus Nominal (FLA)', unit: 'A', type: 'number' },
+          { key: 'functionResult', label: 'Hasil Fungsi', type: 'select', options: ['Normal', 'Tidak Normal'], required: true }
+        ]
+      },
+      other: {
+        label: 'Lainnya',
+        icon: '📝',
+        hint: 'Tes bebas. Pilih hasil akhir Lulus/Gagal secara manual.',
+        fields: [
+          { key: 'testName', label: 'Nama Tes', type: 'text', placeholder: 'Contoh: Tes Kebocoran Duct', required: true },
+          { key: 'criteria', label: 'Kriteria Lulus', type: 'text', placeholder: 'Contoh: Tidak ada kebocoran udara' },
+          { key: 'measuredValue', label: 'Hasil Ukur / Pengamatan', type: 'text', placeholder: 'Contoh: Tidak ada kebocoran' }
+        ],
+        manual: true
+      }
+    };
+
+    function parseTestNumber(value) {
+      if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+      const text = String(value ?? '').trim().replace(',', '.');
+      if (!text) return null;
+      const number = Number(text);
+      return Number.isFinite(number) ? number : null;
+    }
+
+    function formatTestNumber(value) {
+      const number = parseTestNumber(value);
+      return number === null ? '-' : number.toLocaleString('id-ID', { maximumFractionDigits: 3 });
+    }
+
+    function getTestReportType(type) {
+      return TEST_REPORT_TYPES[type] || TEST_REPORT_TYPES.other;
+    }
+
+    function getTestReportLabel(report) {
+      if (!report) return 'Pengetesan';
+      if (report.type === 'other' && report.params?.testName) return String(report.params.testName);
+      return getTestReportType(report.type).label;
+    }
+
+    function isTestFieldVisible(field, params = {}) {
+      return !field.when || field.when(params);
+    }
+
+    function getTestFieldValue(field, params = {}) {
+      return field.value ? field.value(params) : params[field.key];
+    }
+
+    function getTestFieldOptions(field, params = {}) {
+      return typeof field.options === 'function' ? field.options(params) : (field.options || []);
+    }
+
+    function evaluateTestReport(type, params = {}) {
+      const definition = getTestReportType(type);
+      const value = (key) => params[key];
+      const number = (key) => parseTestNumber(params[key]);
+      const missing = definition.fields
+        .filter((field) => field.required && isTestFieldVisible(field, params))
+        .filter((field) => (field.type === 'number'
+          ? parseTestNumber(getTestFieldValue(field, params)) === null
+          : !String(getTestFieldValue(field, params) ?? '').trim()))
+        .map((field) => field.label);
+      const reasons = [];
+      if (type === 'megger' && !MEGGER_PAIRS.some((pair) => number(`ir${pair.replace('-', '')}`) !== null)) {
+        missing.push('Minimal satu hasil ukur tahanan isolasi');
+      }
+      if (missing.length || definition.manual || !TEST_REPORT_TYPES[type]) return { result: '', reasons, missing };
+
+      if (type === 'pressure') {
+        const method = getPipeTestMethod(params);
+        if (method === 'Tes Glontor') {
+          if (value('flowCondition') !== 'Lancar') reasons.push(`Aliran ${String(value('flowCondition')).toLowerCase()}`);
+          if (value('leak') !== 'Tidak Ada') reasons.push('Ada kebocoran');
+          return { result: reasons.length ? 'Gagal' : 'Lulus', reasons, missing };
+        }
+        if (method === 'Tes Rendam') {
+          if (value('waterLevel') !== 'Tetap') reasons.push('Muka air turun setelah direndam');
+          if (value('leak') !== 'Tidak Ada') reasons.push('Ada kebocoran');
+          return { result: reasons.length ? 'Gagal' : 'Lulus', reasons, missing };
+        }
+        const drop = number('startPressure') - number('endPressure');
+        const maxDrop = number('maxDrop') ?? 0;
+        if (number('startPressure') < number('testPressure')) {
+          reasons.push(`Tekanan awal ${formatTestNumber(number('startPressure'))} bar di bawah tekanan uji ${formatTestNumber(number('testPressure'))} bar`);
+        }
+        if (drop > maxDrop + 1e-9) {
+          reasons.push(`Tekanan turun ${formatTestNumber(drop)} bar melebihi toleransi ${formatTestNumber(maxDrop)} bar`);
+        }
+      } else if (type === 'megger') {
+        const min = number('minResistance');
+        MEGGER_PAIRS.forEach((pair) => {
+          const reading = number(`ir${pair.replace('-', '')}`);
+          if (reading !== null && reading < min) reasons.push(`${pair} ${formatTestNumber(reading)} MΩ < ${formatTestNumber(min)} MΩ`);
+        });
+      } else if (type === 'grounding') {
+        if (number('resistance') > number('maxResistance')) {
+          reasons.push(`Tahanan ${formatTestNumber(number('resistance'))} Ω melebihi batas ${formatTestNumber(number('maxResistance'))} Ω`);
+        }
+      } else if (type === 'hvac') {
+        const method = getHvacTestMethod(params);
+        if (method === 'Duct Leakage Test') {
+          if (number('ductMeasuredLeak') > number('ductAllowedLeak')) {
+            reasons.push(`Kebocoran ${formatTestNumber(number('ductMeasuredLeak'))} L/s melebihi izin ${formatTestNumber(number('ductAllowedLeak'))} L/s`);
+          }
+        } else if (method === 'Smoke Test (Asap)') {
+          if (value('smokeLeak') !== 'Tidak Ada') reasons.push('Asap keluar dari sambungan duct');
+        } else if (method === 'Air Balancing (Debit Udara)') {
+          const design = number('designAirflow');
+          const deviation = design ? Math.abs(number('measuredAirflow') - design) / design * 100 : 0;
+          if (deviation > number('airflowTolerance') + 1e-9) {
+            reasons.push(`Deviasi debit ${formatTestNumber(Math.round(deviation * 10) / 10)}% melebihi toleransi ${formatTestNumber(number('airflowTolerance'))}%`);
+          }
+        } else if (method === 'Tes Tekanan Nitrogen') {
+          const drop = number('n2Start') - number('n2End');
+          const maxDrop = number('n2MaxDrop') ?? 0;
+          if (number('n2Start') < number('n2TestPressure')) {
+            reasons.push(`Tekanan awal ${formatTestNumber(number('n2Start'))} psi di bawah tekanan uji ${formatTestNumber(number('n2TestPressure'))} psi`);
+          }
+          if (drop > maxDrop + 1e-9) {
+            reasons.push(`Tekanan turun ${formatTestNumber(drop)} psi melebihi toleransi ${formatTestNumber(maxDrop)} psi`);
+          }
+        } else if (method === 'Tes Vakum') {
+          if (number('vacuumReached') > number('vacuumTarget')) {
+            reasons.push(`Vakum ${formatTestNumber(number('vacuumReached'))} micron belum mencapai target ${formatTestNumber(number('vacuumTarget'))} micron`);
+          }
+          if (number('vacuumAfterHold') > number('vacuumMaxAfterHold')) {
+            reasons.push(`Vakum naik ke ${formatTestNumber(number('vacuumAfterHold'))} micron melebihi batas ${formatTestNumber(number('vacuumMaxAfterHold'))} micron`);
+          }
+        } else if (method === 'Tes Aliran Drain') {
+          if (value('drainFlow') !== 'Lancar') reasons.push(`Aliran drain ${String(value('drainFlow')).toLowerCase()}`);
+          if (value('drainSlope') !== 'Sesuai') reasons.push('Kemiringan pipa tidak sesuai');
+          if (value('drainLeak') !== 'Tidak Ada') reasons.push('Ada kebocoran / rembes');
+        } else if (method === 'Uji Performa Unit') {
+          const deltaT = number('returnTemp') - number('supplyTemp');
+          if (deltaT < number('minDeltaT') - 1e-9) {
+            reasons.push(`ΔT ${formatTestNumber(Math.round(deltaT * 10) / 10)} °C di bawah minimum ${formatTestNumber(number('minDeltaT'))} °C`);
+          }
+          const current = number('unitCurrent');
+          const rated = number('unitRatedCurrent');
+          if (current !== null && rated !== null && current > rated) {
+            reasons.push(`Arus ${formatTestNumber(current)} A melebihi nominal ${formatTestNumber(rated)} A`);
+          }
+          if (value('unitCondition') !== 'Normal') reasons.push('Suara / getaran tidak normal');
+        }
+      } else if (type === 'flushing') {
+        if (value('waterCondition') !== 'Jernih') reasons.push(`Air masih ${String(value('waterCondition')).toLowerCase()}`);
+        if (value('flowCondition') !== 'Lancar') reasons.push(`Aliran ${String(value('flowCondition')).toLowerCase()}`);
+        if (value('leak') !== 'Tidak Ada') reasons.push('Ada kebocoran');
+      } else if (type === 'commissioning') {
+        if (value('functionResult') !== 'Normal') reasons.push('Fungsi peralatan tidak normal');
+        const current = number('current');
+        const rated = number('ratedCurrent');
+        if (current !== null && rated !== null && current > rated) {
+          reasons.push(`Arus ${formatTestNumber(current)} A melebihi nominal ${formatTestNumber(rated)} A`);
+        }
+      }
+      return { result: reasons.length ? 'Gagal' : 'Lulus', reasons, missing };
+    }
+
+    function resolveTestReportResult(autoResult, override) {
+      return ['Lulus', 'Gagal'].includes(override) ? override : (autoResult || '');
+    }
+
+    function summarizeTestReport(type, params = {}) {
+      const number = (key) => parseTestNumber(params[key]);
+      const parts = [];
+      if (type === 'pressure') {
+        const method = getPipeTestMethod(params);
+        if (method === 'Tes Glontor' || method === 'Tes Rendam') {
+          parts.push(params.pipeSystem, method);
+          if (method === 'Tes Glontor') {
+            parts.push(number('duration') !== null ? `${formatTestNumber(number('duration'))} menit` : '',
+              params.flowCondition ? `aliran ${String(params.flowCondition).toLowerCase()}` : '');
+          } else {
+            parts.push(number('soakDuration') !== null ? `rendam ${formatTestNumber(number('soakDuration'))} jam` : '',
+              params.waterLevel ? `muka air ${String(params.waterLevel).toLowerCase()}` : '');
+          }
+          parts.push(params.leak ? (params.leak === 'Tidak Ada' ? 'tidak bocor' : 'bocor') : '');
+          return parts.map((part) => String(part ?? '').trim()).filter(Boolean).join(' · ');
+        }
+        parts.push(params.pipeSystem, number('testPressure') !== null ? `uji ${formatTestNumber(number('testPressure'))} bar` : '',
+          number('duration') !== null ? `${formatTestNumber(number('duration'))} menit` : '');
+        if (number('startPressure') !== null && number('endPressure') !== null) {
+          parts.push(`${formatTestNumber(number('startPressure'))} → ${formatTestNumber(number('endPressure'))} bar`);
+        }
+      } else if (type === 'megger') {
+        const readings = MEGGER_PAIRS
+          .map((pair) => ({ pair, value: number(`ir${pair.replace('-', '')}`) }))
+          .filter((entry) => entry.value !== null);
+        parts.push(params.cable, params.testVoltage ? `${params.testVoltage} V` : '',
+          number('minResistance') !== null ? `min ${formatTestNumber(number('minResistance'))} MΩ` : '');
+        if (readings.length) {
+          const lowest = readings.reduce((low, entry) => (entry.value < low.value ? entry : low));
+          parts.push(`terendah ${lowest.pair} ${formatTestNumber(lowest.value)} MΩ`);
+        }
+      } else if (type === 'grounding') {
+        parts.push(params.electrode, number('resistance') !== null ? `${formatTestNumber(number('resistance'))} Ω` : '',
+          number('maxResistance') !== null ? `maks ${formatTestNumber(number('maxResistance'))} Ω` : '');
+      } else if (type === 'hvac') {
+        const method = getHvacTestMethod(params);
+        parts.push(params.hvacItem, method);
+        if (method === 'Duct Leakage Test') {
+          parts.push(number('ductTestPressure') !== null ? `${formatTestNumber(number('ductTestPressure'))} Pa` : '',
+            number('ductMeasuredLeak') !== null ? `bocor ${formatTestNumber(number('ductMeasuredLeak'))}/${formatTestNumber(number('ductAllowedLeak'))} L/s` : '');
+        } else if (method === 'Smoke Test (Asap)') {
+          parts.push(params.smokeLeak ? (params.smokeLeak === 'Tidak Ada' ? 'tidak ada asap keluar' : 'asap keluar') : '');
+        } else if (method === 'Air Balancing (Debit Udara)') {
+          parts.push(number('measuredAirflow') !== null ? `${formatTestNumber(number('measuredAirflow'))}/${formatTestNumber(number('designAirflow'))} CMH` : '');
+        } else if (method === 'Tes Tekanan Nitrogen') {
+          parts.push(params.refrigerant, number('n2TestPressure') !== null ? `uji ${formatTestNumber(number('n2TestPressure'))} psi` : '',
+            number('n2HoldDuration') !== null ? `${formatTestNumber(number('n2HoldDuration'))} jam` : '',
+            number('n2Start') !== null && number('n2End') !== null ? `${formatTestNumber(number('n2Start'))} → ${formatTestNumber(number('n2End'))} psi` : '');
+        } else if (method === 'Tes Vakum') {
+          parts.push(params.refrigerant, number('vacuumReached') !== null ? `${formatTestNumber(number('vacuumReached'))} micron` : '',
+            number('vacuumAfterHold') !== null ? `tahan ${formatTestNumber(number('vacuumHoldTime'))} mnt → ${formatTestNumber(number('vacuumAfterHold'))} micron` : '');
+        } else if (method === 'Tes Aliran Drain') {
+          parts.push(params.drainFlow ? `aliran ${String(params.drainFlow).toLowerCase()}` : '',
+            params.drainLeak ? (params.drainLeak === 'Tidak Ada' ? 'tidak bocor' : 'bocor') : '');
+        } else if (method === 'Uji Performa Unit') {
+          const deltaT = number('returnTemp') !== null && number('supplyTemp') !== null ? number('returnTemp') - number('supplyTemp') : null;
+          parts.push(params.unitTag, deltaT !== null ? `ΔT ${formatTestNumber(Math.round(deltaT * 10) / 10)} °C` : '',
+            number('unitCurrent') !== null ? `${formatTestNumber(number('unitCurrent'))} A` : '');
+        }
+      } else if (type === 'flushing') {
+        parts.push(params.pipeSystem, number('duration') !== null ? `${formatTestNumber(number('duration'))} menit` : '',
+          params.waterCondition ? `air ${String(params.waterCondition).toLowerCase()}` : '',
+          params.flowCondition ? `aliran ${String(params.flowCondition).toLowerCase()}` : '');
+      } else if (type === 'commissioning') {
+        parts.push(params.equipment, number('voltage') !== null ? `${formatTestNumber(number('voltage'))} V` : '',
+          number('current') !== null ? `${formatTestNumber(number('current'))} A` : '',
+          params.functionResult ? `fungsi ${String(params.functionResult).toLowerCase()}` : '');
+      } else {
+        parts.push(params.testName, params.measuredValue);
+      }
+      return parts.map((part) => String(part ?? '').trim()).filter(Boolean).join(' · ');
+    }
+
+    function summarizeTestReportCounts(reports) {
+      const list = Array.isArray(reports) ? reports : [];
+      return {
+        total: list.length,
+        passed: list.filter((report) => report.result === 'Lulus').length,
+        failed: list.filter((report) => report.result === 'Gagal').length
+      };
+    }
+    function getSelectableTestReportTypes(currentType = '') {
+      return Object.keys(TEST_REPORT_TYPES).filter((key) => !TEST_REPORT_TYPES[key].hidden || key === currentType);
+    }
+
+    function hasTestReportStagePhotos(type) {
+      return type === 'pressure';
+    }
+
+    function getTestReportPhotoGroups(report) {
+      const list = (value) => (Array.isArray(value) ? value.filter(Boolean) : []);
+      const before = list(report?.photosBefore);
+      const after = list(report?.photosAfter);
+      const general = list(report?.photos);
+      if (!before.length && !after.length) return general.length ? [{ label: 'Foto Bukti Tes', photos: general }] : [];
+      return [
+        { label: 'Sebelum (Open)', photos: before },
+        { label: 'Sesudah (Close)', photos: after },
+        { label: 'Foto Bukti Lainnya', photos: general }
+      ].filter((group) => group.photos.length);
+    }
+
+    function getTestReportParamRows(type, params = {}) {
+      return getTestReportType(type).fields
+        .filter((field) => isTestFieldVisible(field, params))
+        .map((field) => ({ field, raw: getTestFieldValue(field, params) }))
+        .filter(({ raw }) => String(raw ?? '').trim())
+        .map(({ field, raw }) => ({
+          label: field.label,
+          value: `${field.type === 'number' ? formatTestNumber(raw) : String(raw)}${field.unit ? ` ${field.unit}` : ''}`
+        }));
+    }
+    // ==== TEST REPORT CORE END ====
+
+    const MAX_TEST_REPORT_PHOTOS = 8;
+    const MAX_TEST_REPORT_STAGE_PHOTOS = 4;
+    let checklistView = 'inspection';
+    let editingTestReportId = '';
+    let selectedTestReportId = '';
+    let selectedTestReportPhotoFiles = [];
+    let testReportExistingPhotos = [];
+    let testReportStagePhotos = { before: { existing: [], files: [] }, after: { existing: [], files: [] } };
+
+    function setChecklistView(view) {
+      checklistView = view === 'testing' ? 'testing' : 'inspection';
+      const isTesting = checklistView === 'testing';
+      document.getElementById('checklistInspectionView').hidden = isTesting;
+      document.getElementById('testReportView').hidden = !isTesting;
+      [['checklistViewInspectionButton', !isTesting], ['checklistViewTestingButton', isTesting]].forEach(([id, active]) => {
+        const button = document.getElementById(id);
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+      if (isTesting) renderTestReports();
+    }
+
+    function clearTestReportFilters() {
+      ['testReportSearch', 'testReportTypeFilter', 'testReportResultFilter', 'testReportDateFrom', 'testReportDateTo']
+        .forEach((id) => { document.getElementById(id).value = ''; });
+      renderTestReports();
+    }
+
+    function getTestReportResultClass(result) {
+      if (result === 'Lulus') return 'test-result-pass';
+      if (result === 'Gagal') return 'test-result-fail';
+      return 'test-result-pending';
+    }
+
+    function renderTestReports() {
+      const list = document.getElementById('testReportList');
+      if (!list) return;
+      const typeFilter = document.getElementById('testReportTypeFilter');
+      if (typeFilter.options.length <= 1) {
+        const usedTypes = new Set(testReports.map((report) => report.type));
+        Object.entries(TEST_REPORT_TYPES)
+          .filter(([key, definition]) => !definition.hidden || usedTypes.has(key))
+          .forEach(([key, definition]) => typeFilter.add(new Option(definition.label, key)));
+      }
+      const filterIds = ['testReportSearch', 'testReportTypeFilter', 'testReportResultFilter', 'testReportDateFrom', 'testReportDateTo'];
+      document.getElementById('testReportSearchClear').hidden = !filterIds.some((id) => Boolean(document.getElementById(id).value));
+      updateFilterPopoverState('testReportFilterPopover', 'testReportFilterCount', filterIds);
+
+      const query = document.getElementById('testReportSearch').value.trim().toLocaleLowerCase('id-ID');
+      const type = typeFilter.value;
+      const result = document.getElementById('testReportResultFilter').value;
+      const dateFrom = document.getElementById('testReportDateFrom').value;
+      const dateTo = document.getElementById('testReportDateTo').value;
+      const sorted = [...testReports].sort((first, second) => String(second.date || '').localeCompare(String(first.date || '')));
+      const filtered = sorted.filter((report) => {
+        if (type && report.type !== type) return false;
+        if (result && report.result !== result) return false;
+        if (dateFrom && String(report.date || '') < dateFrom) return false;
+        if (dateTo && String(report.date || '') > dateTo) return false;
+        const searchable = [getTestReportLabel(report), report.system, report.area, report.standard, report.testedBy, report.summary, report.notes,
+          ...Object.values(report.witnesses || {})].join(' ').toLocaleLowerCase('id-ID');
+        return !query || searchable.includes(query);
+      });
+
+      const counts = summarizeTestReportCounts(testReports);
+      document.getElementById('testReportSummary').innerHTML = `
+        <div><span>Total Tes</span><strong>${counts.total}</strong></div>
+        <div class="test-result-pass"><span>Lulus</span><strong>${counts.passed}</strong></div>
+        <div class="test-result-fail"><span>Gagal</span><strong>${counts.failed}</strong></div>`;
+
+      list.innerHTML = filtered.map((report) => {
+        const definition = getTestReportType(report.type);
+        const label = escapeHtml(getTestReportLabel(report));
+        const photos = getTestReportPhotoGroups(report).flatMap((group) => group.photos);
+        const photoHtml = photos.length
+          ? `<div class="checklist-photo-gallery">${photos.slice(0, 4).map((source, index) => projectPhotoMarkup(source, `Foto ${index + 1} ${getTestReportLabel(report)}`, 'checklist-photo')).join('')}</div>`
+          : '';
+        const reasons = report.result === 'Gagal' && Array.isArray(report.reasons) && report.reasons.length
+          ? `<div class="checklist-testing test-report-reasons">${report.reasons.map(escapeHtml).join(' · ')}</div>`
+          : '';
+        return `
+          <article class="item-card checklist-card test-report-card" data-test-report-id="${escapeHtml(report.id)}" tabindex="0" role="button" aria-label="Buka detail ${label}">
+            <div class="item-card-top">
+              <span class="badge-category badge-plumbing">${definition.icon} ${escapeHtml(report.area || '-')}</span>
+              <span class="test-result-badge ${getTestReportResultClass(report.result)}">${escapeHtml(report.result || 'Belum dinilai')}</span>
+            </div>
+            <div class="item-card-name">${label}${report.system ? ` – ${escapeHtml(report.system)}` : ''}</div>
+            <div class="item-card-meta">
+              <span>${escapeHtml(formatChecklistDate(report.date))} · SPV: ${escapeHtml(report.testedBy || '-')}</span>
+            </div>
+            ${report.summary ? `<div class="checklist-note">${escapeHtml(report.summary)}</div>` : ''}
+            ${reasons}${photoHtml}
+          </article>`;
+      }).join('') || `<div class="history-placeholder">${testReports.length ? 'Tidak ada pengetesan yang cocok dengan filter.' : 'Belum ada data pengetesan. Tekan "+ Tes Baru" untuk mencatat hasil uji.'}</div>`;
+
+      list.querySelectorAll('.test-report-card').forEach((card) => {
+        card.addEventListener('click', () => openTestReportDetail(card.dataset.testReportId));
+        card.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openTestReportDetail(card.dataset.testReportId);
+          }
+        });
+      });
+    }
+
+    function renderTestReportTypeFields(params = null) {
+      const type = document.getElementById('testReportType').value;
+      const definition = getTestReportType(type);
+      const container = document.getElementById('testReportFields');
+      const current = params || {};
+      document.getElementById('testReportTypeHint').textContent = definition.hint;
+      const stageVisible = hasTestReportStagePhotos(type);
+      document.getElementById('testReportStagePhotos').hidden = !stageVisible;
+      document.getElementById('testReportPhotoLabel').textContent = stageVisible ? 'Foto Bukti Lainnya (gauge / alat ukur)' : 'Foto Bukti Tes (alat ukur / kondisi)';
+      const fieldHtml = (field) => {
+        const id = `testParam_${field.key}`;
+        const raw = field.value ? field.value(current) : (current[field.key] ?? field.defaultValue ?? '');
+        const value = escapeHtml(raw);
+        const label = `${escapeHtml(field.label)}${field.unit ? ` <small>(${escapeHtml(field.unit)})</small>` : ''}`;
+        const onChange = field.rerender ? 'rerenderTestReportFields()' : 'updateTestReportResultPreview()';
+        let input;
+        if (field.type === 'select') {
+          const choices = [...getTestFieldOptions(field, current)];
+          if (String(raw).trim() && !choices.includes(String(raw))) choices.push(String(raw));
+          const options = choices.map((option) => `<option value="${escapeHtml(option)}"${String(raw) === option ? ' selected' : ''}>${escapeHtml(option)}${field.unit ? ` ${escapeHtml(field.unit)}` : ''}</option>`).join('');
+          input = `<select id="${id}" data-test-param="${field.key}" onchange="${onChange}"><option value="">Pilih...</option>${options}</select>`;
+        } else if (field.type === 'number') {
+          input = `<input id="${id}" type="text" inputmode="decimal" data-test-param="${field.key}" value="${value}" placeholder="0" oninput="updateTestReportResultPreview()">`;
+        } else {
+          input = `<input id="${id}" type="text" data-test-param="${field.key}" value="${value}" placeholder="${escapeHtml(field.placeholder || '')}" oninput="updateTestReportResultPreview()">`;
+        }
+        return `<div class="form-row"><label for="${id}"${field.required ? ' class="required-label"' : ''}>${label}</label>${input}</div>`;
+      };
+      const visibleFields = definition.fields.filter((field) => isTestFieldVisible(field, current));
+      const mainFields = visibleFields.filter((field) => !field.reading);
+      const readingFields = visibleFields.filter((field) => field.reading);
+      container.innerHTML = `<div class="test-report-grid">${mainFields.map(fieldHtml).join('')}</div>${readingFields.length
+        ? `<div class="test-report-readings-title">Hasil Ukur per Fasa <small>(isi yang diuji saja)</small></div><div class="test-report-grid test-report-readings">${readingFields.map(fieldHtml).join('')}</div>`
+        : ''}`;
+      document.getElementById('testReportResultLabel').classList.toggle('required-label', Boolean(definition.manual));
+      document.getElementById('testReportResultOverride').options[0].textContent = definition.manual ? 'Pilih hasil akhir...' : 'Otomatis dari data uji';
+      updateTestReportResultPreview();
+    }
+
+    function rerenderTestReportFields() {
+      renderTestReportTypeFields(collectTestReportParams());
+    }
+
+    function collectTestReportParams() {
+      const params = {};
+      document.querySelectorAll('#testReportFields [data-test-param]').forEach((input) => {
+        params[input.dataset.testParam] = input.value.trim();
+      });
+      return params;
+    }
+
+    function updateTestReportResultPreview() {
+      const type = document.getElementById('testReportType').value;
+      const evaluation = evaluateTestReport(type, collectTestReportParams());
+      const override = document.getElementById('testReportResultOverride').value;
+      const finalResult = resolveTestReportResult(evaluation.result, override);
+      const box = document.getElementById('testReportAutoResult');
+      box.className = `test-report-result-box ${getTestReportResultClass(finalResult)}`;
+      if (getTestReportType(type).manual) {
+        box.innerHTML = finalResult
+          ? `Hasil akhir: <strong>${escapeHtml(finalResult)}</strong> (manual)`
+          : 'Tes lainnya dinilai manual — pilih <strong>Lulus</strong> atau <strong>Gagal</strong> di bawah.';
+        return;
+      }
+      if (evaluation.missing.length && !override) {
+        box.innerHTML = `Lengkapi data: ${escapeHtml(evaluation.missing.join(', '))}`;
+        return;
+      }
+      const autoText = evaluation.result ? `Otomatis: <strong>${escapeHtml(evaluation.result)}</strong>` : 'Otomatis: data belum lengkap';
+      const overrideText = override && override !== evaluation.result ? ` · Diubah manual menjadi <strong>${escapeHtml(override)}</strong>` : '';
+      const reasons = evaluation.reasons.length ? `<div class="test-report-reasons">${evaluation.reasons.map(escapeHtml).join('<br>')}</div>` : '';
+      box.innerHTML = `${autoText}${overrideText}${reasons}`;
+    }
+
+    function openTestReportForm(reportId = '') {
+      if (!requireAccess('checklist')) return;
+      const report = reportId ? testReports.find((entry) => entry.id === reportId) : null;
+      editingTestReportId = report ? report.id : '';
+      const typeSelect = document.getElementById('testReportType');
+      typeSelect.innerHTML = '';
+      getSelectableTestReportTypes(report?.type).forEach((key) => {
+        const definition = TEST_REPORT_TYPES[key];
+        typeSelect.add(new Option(`${definition.icon} ${definition.label}`, key));
+      });
+      typeSelect.value = report && TEST_REPORT_TYPES[report.type] ? report.type : 'pressure';
+      document.getElementById('testReportFormTitle').textContent = report ? 'Edit Pengetesan' : 'Form Pengetesan';
+      document.getElementById('testReportDate').value = report?.date || getTodayISO();
+      document.getElementById('testReportArea').value = report?.area || '';
+      document.getElementById('testReportSystem').value = report?.system || '';
+      document.getElementById('testReportStandard').value = report?.standard || '';
+      document.getElementById('testReportTestedBy').value = report?.testedBy || (report ? '' : getSignedInName());
+      document.getElementById('testReportWitnessQc').value = report?.witnesses?.QC || '';
+      document.getElementById('testReportWitnessOwner').value = report?.witnesses?.['Konsultan/Owner'] || '';
+      document.getElementById('testReportNotes').value = report?.notes || '';
+      document.getElementById('testReportResultOverride').value = report?.resultOverridden ? report.result : '';
+      testReportExistingPhotos = Array.isArray(report?.photos) ? [...report.photos] : [];
+      selectedTestReportPhotoFiles = [];
+      testReportStagePhotos = {
+        before: { existing: Array.isArray(report?.photosBefore) ? [...report.photosBefore] : [], files: [] },
+        after: { existing: Array.isArray(report?.photosAfter) ? [...report.photosAfter] : [], files: [] }
+      };
+      ['testReportPhoto', 'testReportPhotoBefore', 'testReportPhotoAfter'].forEach((id) => {
+        document.getElementById(id).value = '';
+        document.getElementById(id).disabled = false;
+      });
+      document.getElementById('saveTestReportButton').disabled = false;
+      setPhotoUploadStatus('testReport', 'idle', '');
+      renderTestReportTypeFields(report ? (report.params || {}) : null);
+      renderTestReportPhotoSelection();
+      renderTestReportStagePhotos();
+      document.getElementById('modalTestReport').style.display = 'flex';
+    }
+
+    function closeTestReportForm() {
+      document.getElementById('modalTestReport').style.display = 'none';
+      editingTestReportId = '';
+      selectedTestReportPhotoFiles = [];
+      testReportExistingPhotos = [];
+      testReportStagePhotos = { before: { existing: [], files: [] }, after: { existing: [], files: [] } };
+      ['testReportPhoto', 'testReportPhotoBefore', 'testReportPhotoAfter'].forEach((id) => { document.getElementById(id).value = ''; });
+      renderTestReportPhotoSelection();
+      renderTestReportStagePhotos();
+    }
+
+    const TEST_REPORT_STAGE_INPUTS = { before: 'testReportPhotoBefore', after: 'testReportPhotoAfter' };
+    const TEST_REPORT_STAGE_LABELS = { before: 'Sebelum (Open)', after: 'Sesudah (Close)' };
+
+    function addTestReportStagePhotos(stage, files) {
+      const state = testReportStagePhotos[stage];
+      if (!state) return;
+      const keys = new Set(state.files.map((file) => `${file.name}|${file.size}|${file.lastModified}`));
+      let skipped = 0;
+      [...files].forEach((file) => {
+        const key = `${file.name}|${file.size}|${file.lastModified}`;
+        if (keys.has(key)) return;
+        if (state.existing.length + state.files.length >= MAX_TEST_REPORT_STAGE_PHOTOS) {
+          skipped += 1;
+          return;
+        }
+        state.files.push(file);
+        keys.add(key);
+      });
+      document.getElementById(TEST_REPORT_STAGE_INPUTS[stage]).value = '';
+      renderTestReportStagePhotos();
+      if (skipped) showAppNotice(`Maksimal ${MAX_TEST_REPORT_STAGE_PHOTOS} foto ${TEST_REPORT_STAGE_LABELS[stage]}. ${skipped} foto tidak ditambahkan.`);
+    }
+
+    function removeTestReportStagePhoto(stage, kind, index) {
+      const state = testReportStagePhotos[stage];
+      if (!state) return;
+      if (kind === 'existing') state.existing.splice(index, 1);
+      else state.files.splice(index, 1);
+      renderTestReportStagePhotos();
+    }
+
+    function renderTestReportStagePhotos() {
+      Object.entries(TEST_REPORT_STAGE_INPUTS).forEach(([stage, inputId]) => {
+        const state = testReportStagePhotos[stage];
+        const selection = document.getElementById(`${inputId}Selection`);
+        const counter = document.getElementById(`${inputId}Count`);
+        if (!selection || !counter) return;
+        const total = state.existing.length + state.files.length;
+        counter.textContent = total ? `${total}/${MAX_TEST_REPORT_STAGE_PHOTOS} foto.` : `Belum ada foto (maks ${MAX_TEST_REPORT_STAGE_PHOTOS}).`;
+        selection.innerHTML = [
+          ...state.existing.map((source, index) => `
+            <div class="checklist-photo-file">
+              <span>Foto tersimpan ${index + 1}</span>
+              <button type="button" onclick="removeTestReportStagePhoto('${stage}', 'existing', ${index})" aria-label="Hapus foto tersimpan ${index + 1}" title="Hapus foto">×</button>
+            </div>`),
+          ...state.files.map((file, index) => `
+            <div class="checklist-photo-file">
+              <span title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
+              <button type="button" onclick="removeTestReportStagePhoto('${stage}', 'new', ${index})" aria-label="Hapus foto ${escapeHtml(file.name)}" title="Hapus foto">×</button>
+            </div>`)
+        ].join('');
+      });
+    }
+
+    function addTestReportPhotos(files) {
+      const keys = new Set(selectedTestReportPhotoFiles.map((file) => `${file.name}|${file.size}|${file.lastModified}`));
+      let skipped = 0;
+      [...files].forEach((file) => {
+        const key = `${file.name}|${file.size}|${file.lastModified}`;
+        if (keys.has(key)) return;
+        if (testReportExistingPhotos.length + selectedTestReportPhotoFiles.length >= MAX_TEST_REPORT_PHOTOS) {
+          skipped += 1;
+          return;
+        }
+        selectedTestReportPhotoFiles.push(file);
+        keys.add(key);
+      });
+      document.getElementById('testReportPhoto').value = '';
+      renderTestReportPhotoSelection();
+      if (skipped) showAppNotice(`Maksimal ${MAX_TEST_REPORT_PHOTOS} foto per pengetesan. ${skipped} foto tidak ditambahkan.`);
+    }
+
+    function removeTestReportPhoto(kind, index) {
+      if (kind === 'existing') testReportExistingPhotos.splice(index, 1);
+      else selectedTestReportPhotoFiles.splice(index, 1);
+      renderTestReportPhotoSelection();
+    }
+
+    function renderTestReportPhotoSelection() {
+      const selection = document.getElementById('testReportPhotoSelection');
+      const counter = document.getElementById('testReportPhotoCount');
+      if (!selection || !counter) return;
+      const total = testReportExistingPhotos.length + selectedTestReportPhotoFiles.length;
+      counter.textContent = total ? `${total}/${MAX_TEST_REPORT_PHOTOS} foto.` : `Belum ada foto (maks ${MAX_TEST_REPORT_PHOTOS}).`;
+      selection.innerHTML = [
+        ...testReportExistingPhotos.map((source, index) => `
+          <div class="checklist-photo-file">
+            <span>Foto tersimpan ${index + 1}</span>
+            <button type="button" onclick="removeTestReportPhoto('existing', ${index})" aria-label="Hapus foto tersimpan ${index + 1}" title="Hapus foto">×</button>
+          </div>`),
+        ...selectedTestReportPhotoFiles.map((file, index) => `
+          <div class="checklist-photo-file">
+            <span title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
+            <button type="button" onclick="removeTestReportPhoto('new', ${index})" aria-label="Hapus foto ${escapeHtml(file.name)}" title="Hapus foto">×</button>
+          </div>`)
+      ].join('');
+    }
+
+    async function saveTestReport() {
+      if (!requireAccess('checklist')) return;
+      const saveButton = document.getElementById('saveTestReportButton');
+      if (saveButton.disabled) return;
+      const type = document.getElementById('testReportType').value;
+      const definition = getTestReportType(type);
+      const params = collectTestReportParams();
+      const date = document.getElementById('testReportDate').value;
+      const area = document.getElementById('testReportArea').value.trim();
+      const testedBy = document.getElementById('testReportTestedBy').value.trim();
+      const override = document.getElementById('testReportResultOverride').value;
+
+      if (!date || !area || !testedBy) {
+        alert('Tanggal tes, area/lokasi, dan nama SPV penguji wajib diisi.');
+        return;
+      }
+      const evaluation = evaluateTestReport(type, params);
+      if (evaluation.missing.length) {
+        alert(`Lengkapi data uji: ${evaluation.missing.join(', ')}.`);
+        return;
+      }
+      const result = resolveTestReportResult(evaluation.result, override);
+      if (!result) {
+        alert('Pilih hasil akhir pengetesan: Lulus atau Gagal.');
+        return;
+      }
+
+      const previous = editingTestReportId ? testReports.find((entry) => entry.id === editingTestReportId) : null;
+      const now = new Date().toISOString();
+      const report = {
+        id: previous?.id || globalThis.crypto?.randomUUID?.() || `test-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        type,
+        typeLabel: definition.manual ? (params.testName || definition.label) : definition.label,
+        date,
+        area,
+        system: document.getElementById('testReportSystem').value.trim(),
+        standard: document.getElementById('testReportStandard').value.trim(),
+        params,
+        autoResult: evaluation.result,
+        result,
+        resultOverridden: Boolean(override) && override !== evaluation.result,
+        reasons: evaluation.reasons,
+        summary: summarizeTestReport(type, params),
+        testedBy,
+        witnesses: {
+          QC: document.getElementById('testReportWitnessQc').value.trim(),
+          'Konsultan/Owner': document.getElementById('testReportWitnessOwner').value.trim()
+        },
+        notes: document.getElementById('testReportNotes').value.trim(),
+        photos: [...testReportExistingPhotos],
+        photosBefore: hasTestReportStagePhotos(type) ? [...testReportStagePhotos.before.existing] : [],
+        photosAfter: hasTestReportStagePhotos(type) ? [...testReportStagePhotos.after.existing] : [],
+        createdAt: previous?.createdAt || now,
+        createdBy: previous?.createdBy || getSignedInName(),
+        updatedAt: now
+      };
+
+      const photoJobs = [
+        ...(hasTestReportStagePhotos(type) ? ['before', 'after'] : []).flatMap((stage) => testReportStagePhotos[stage].files
+          .map((file) => ({ file, target: stage === 'before' ? report.photosBefore : report.photosAfter, stage: TEST_REPORT_STAGE_LABELS[stage] }))),
+        ...selectedTestReportPhotoFiles.map((file) => ({ file, target: report.photos, stage: '' }))
+      ];
+      const photoFiles = photoJobs.map((job) => job.file);
+      const photoInputs = ['testReportPhoto', 'testReportPhotoBefore', 'testReportPhotoAfter'].map((id) => document.getElementById(id));
+      photoInputs.forEach((input) => { input.disabled = true; });
+      saveButton.disabled = true;
+      const backup = testReports.slice();
+      let succeeded = false;
+      try {
+        for (let index = 0; index < photoJobs.length; index++) {
+          const { file, target, stage } = photoJobs[index];
+          setPhotoUploadStatus('testReport', 'loading', `Memproses foto ${index + 1}/${photoJobs.length}: ${file.name}`);
+          target.push(await readChecklistPhoto(file, buildPhotoWatermark(file, [
+            ['Tes', report.typeLabel],
+            ...(stage ? [['Tahap', stage]] : []),
+            ['Area', report.area],
+            ['SPV', report.testedBy]
+          ])));
+        }
+        if (photoFiles.length) setPhotoUploadStatus('testReport', 'loading', 'Menyimpan foto dan data pengetesan…');
+        testReports = previous
+          ? testReports.map((entry) => (entry.id === previous.id ? report : entry))
+          : [report, ...testReports];
+        if (!await persistActiveProjectData()) {
+          testReports = backup;
+          if (photoFiles.length) setPhotoUploadStatus('testReport', 'error', 'Foto atau data pengetesan gagal disimpan.');
+          renderTestReports();
+          return;
+        }
+        succeeded = true;
+        renderTestReports();
+        closeTestReportForm();
+        showAppNotice(`Pengetesan tersimpan: ${report.typeLabel} – ${report.result}.`);
+      } catch (error) {
+        testReports = backup;
+        if (photoFiles.length) setPhotoUploadStatus('testReport', 'error', `Gagal memproses foto: ${error.message}`);
+        else alert(error.message);
+      } finally {
+        if (!succeeded) {
+          photoInputs.forEach((input) => { input.disabled = false; });
+          saveButton.disabled = false;
+        }
+      }
+    }
+
+    function openTestReportDetail(reportId) {
+      const report = testReports.find((entry) => entry.id === reportId);
+      if (!report) return;
+      selectedTestReportId = report.id;
+      const definition = getTestReportType(report.type);
+      document.getElementById('testReportDetailTitle').textContent = `${definition.icon} ${getTestReportLabel(report)}${report.system ? ` – ${report.system}` : ''}`;
+      const reasons = Array.isArray(report.reasons) && report.reasons.length ? `<div class="test-report-reasons">${report.reasons.map(escapeHtml).join('<br>')}</div>` : '';
+      const resultBox = document.getElementById('testReportDetailResult');
+      resultBox.className = `test-report-result-box ${getTestReportResultClass(report.result)}`;
+      resultBox.innerHTML = `Hasil: <strong>${escapeHtml(report.result || '-')}</strong>${report.resultOverridden ? ` <small>(manual, otomatis: ${escapeHtml(report.autoResult || '-')})</small>` : ''}${reasons}`;
+      const stat = (label, value) => `<div class="detail-stat"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || '-')}</strong></div>`;
+      document.getElementById('testReportDetailInfo').innerHTML = [
+        stat('Tanggal', formatChecklistDate(report.date)),
+        stat('Area', report.area),
+        stat('Penguji (SPV)', report.testedBy),
+        report.standard ? stat('Standar', report.standard) : ''
+      ].join('');
+      const rows = getTestReportParamRows(report.type, report.params || {})
+        .map((row) => `<div><span>${escapeHtml(row.label)}</span><strong>${escapeHtml(row.value)}</strong></div>`);
+      document.getElementById('testReportDetailParams').innerHTML = rows.join('') || '<div class="history-placeholder">Tidak ada data uji.</div>';
+      const photoGroups = getTestReportPhotoGroups(report);
+      const showGroupTitles = photoGroups.length > 1 || (photoGroups[0] && photoGroups[0].label !== 'Foto Bukti Tes');
+      document.getElementById('testReportDetailPhotos').innerHTML = photoGroups.length
+        ? photoGroups.map((group) => `${showGroupTitles ? `<div class="test-photo-group-title">${escapeHtml(group.label)}</div>` : ''}<div class="checklist-photo-gallery">${group.photos.map((source, index) => projectPhotoMarkup(source, `${group.label} ${index + 1} ${getTestReportLabel(report)}`, 'checklist-photo')).join('')}</div>`).join('')
+        : '<div class="history-placeholder">Belum ada foto bukti tes</div>';
+      const witnesses = Object.entries(report.witnesses || {}).filter(([, name]) => name);
+      const notes = [
+        witnesses.length ? `<div class="checklist-followup">Saksi: ${witnesses.map(([role, name]) => `${escapeHtml(role)}: <strong>${escapeHtml(name)}</strong>`).join(' · ')}</div>` : '',
+        report.notes ? `<div class="checklist-note"><strong>Catatan:</strong> ${escapeHtml(report.notes)}</div>` : ''
+      ].filter(Boolean).join('');
+      document.getElementById('testReportDetailNotes').innerHTML = notes || '<div class="history-placeholder">Tidak ada saksi atau catatan</div>';
+      applyRoleAccess();
+      document.getElementById('modalTestReportDetail').style.display = 'flex';
+    }
+
+    function closeTestReportDetail() {
+      document.getElementById('modalTestReportDetail').style.display = 'none';
+      selectedTestReportId = '';
+    }
+
+    function editTestReportFromDetail() {
+      const reportId = selectedTestReportId;
+      if (!reportId || !requireAccess('checklist')) return;
+      closeTestReportDetail();
+      openTestReportForm(reportId);
+    }
+
+    async function deleteTestReport() {
+      if (!requireAccess('checklist')) return;
+      const report = testReports.find((entry) => entry.id === selectedTestReportId);
+      if (!report || !window.confirm(`Hapus pengetesan ${getTestReportLabel(report)} (${report.area || '-'})?`)) return;
+      const backup = testReports.slice();
+      testReports = testReports.filter((entry) => entry.id !== report.id);
+      if (!await persistActiveProjectData()) {
+        testReports = backup;
+        renderTestReports();
+        return;
+      }
+      closeTestReportDetail();
+      renderTestReports();
+    }
+
+    function buildPdfTestReport({ from, to, includePhotos }) {
+      const reports = testReports
+        .filter((report) => isPdfDateInRange(report.date, from, to))
+        .sort((first, second) => String(first.date || '').localeCompare(String(second.date || '')));
+      const counts = summarizeTestReportCounts(reports);
+      const resultCell = (result) => `<span class="pdf-status ${result === 'Lulus' ? 'ok' : result === 'Gagal' ? 'bad' : 'warn'}">${escapeHtml(result || '-')}</span>`;
+      const rows = reports.map((report, index) => [
+        index + 1, escapeHtml(formatChecklistDate(report.date)), escapeHtml(getTestReportLabel(report)), escapeHtml(report.area || '-'),
+        escapeHtml(report.system || '-'), escapeHtml(report.summary || '-'), resultCell(report.result), escapeHtml(report.testedBy || '-')
+      ]);
+      const details = reports.map((report, index) => {
+        const paramHtml = getTestReportParamRows(report.type, report.params || {})
+          .map((row) => `<div><span>${escapeHtml(row.label)}:</span> ${escapeHtml(row.value)}</div>`)
+          .join('');
+        const witnesses = Object.entries(report.witnesses || {}).filter(([, name]) => name);
+        const photoGroups = getTestReportPhotoGroups(report);
+        const photoHtml = includePhotos && photoGroups.length
+          ? photoGroups.map((group) => `<div class="pdf-note"><strong>${escapeHtml(group.label)}</strong></div><div class="pdf-photos">${group.photos.map((source, photoIndex) => `<img src="${escapeHtml(getPdfChecklistPhotoUrl(source))}" alt="${escapeHtml(group.label)} ${photoIndex + 1}">`).join('')}</div>`).join('')
+          : '';
+        return `
+          <div class="pdf-block">
+            <div class="pdf-block-head"><span>${index + 1}. ${escapeHtml(getTestReportLabel(report))}${report.system ? ` – ${escapeHtml(report.system)}` : ''}</span>${resultCell(report.result)}</div>
+            <div class="pdf-fields">
+              <div><span>Tanggal:</span> ${escapeHtml(formatChecklistDate(report.date))}</div>
+              <div><span>Area:</span> ${escapeHtml(report.area || '-')}</div>
+              <div><span>Penguji (SPV):</span> ${escapeHtml(report.testedBy || '-')}</div>
+              ${report.standard ? `<div><span>Standar:</span> ${escapeHtml(report.standard)}</div>` : ''}
+              ${paramHtml}
+            </div>
+            ${Array.isArray(report.reasons) && report.reasons.length ? `<div class="pdf-note"><strong>Penyebab gagal:</strong> ${escapeHtml(report.reasons.join('; '))}</div>` : ''}
+            ${report.resultOverridden ? `<div class="pdf-note"><strong>Hasil manual</strong> (otomatis: ${escapeHtml(report.autoResult || '-')})</div>` : ''}
+            ${witnesses.length ? `<div class="pdf-note"><strong>Saksi:</strong> ${escapeHtml(witnesses.map(([role, name]) => `${role}: ${name}`).join(' · '))}</div>` : ''}
+            ${report.notes ? `<div class="pdf-note"><strong>Catatan:</strong> ${escapeHtml(report.notes)}</div>` : ''}
+            ${photoHtml}
+          </div>`;
+      }).join('');
+      return `
+        ${pdfSummary([
+          ['Total Tes', String(counts.total)],
+          ['Lulus', String(counts.passed)],
+          ['Gagal', String(counts.failed)]
+        ])}
+        <h4>Rekap Pengetesan</h4>
+        ${pdfTable(['No', 'Tanggal', 'Jenis Tes', 'Area', 'Sistem', 'Ringkasan', 'Hasil', 'SPV'], rows)}
+        ${reports.length ? `<h4>Detail Pengetesan${includePhotos ? ' & Foto Bukti' : ''}</h4>${details}` : ''}`;
     }
 
     let kurvaImportDraft = null;
