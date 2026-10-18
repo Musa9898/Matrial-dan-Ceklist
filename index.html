@@ -305,6 +305,7 @@
       color: var(--text-dark);
       text-align: center;
       line-height: 1.5;
+      overflow-wrap: anywhere;
     }
 
     .sync-loading-card .loading-spinner {
@@ -356,6 +357,140 @@
       cursor: wait;
       opacity: 0.65;
     }
+
+    .sync-loading-progress {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .sync-loading-progress[hidden] {
+      display: none;
+    }
+
+    .sync-loading-progress-track,
+    .file-upload-progress {
+      flex: 1;
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.3);
+    }
+
+    .sync-loading-progress-track span,
+    .file-upload-progress span {
+      display: block;
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #2563eb, #22c55e);
+      transition: width 0.3s ease;
+    }
+
+    #syncLoadingProgressText {
+      min-width: 38px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .file-upload-status {
+      flex-wrap: wrap;
+    }
+
+    .file-upload-status #projectFileUploadMessage {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .file-upload-progress {
+      flex-basis: 100%;
+    }
+
+    .file-upload-progress[hidden] {
+      display: none;
+    }
+
+    .file-upload-guide {
+      margin-bottom: 12px;
+      border: 1px solid rgba(96, 165, 250, 0.35);
+      border-radius: 10px;
+      background: rgba(37, 99, 235, 0.08);
+      color: var(--text-dark);
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+
+    .file-upload-guide summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-weight: 700;
+      list-style: none;
+    }
+
+    .file-upload-guide summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .file-upload-guide summary::after {
+      content: '▾';
+      margin-left: auto;
+      transition: transform 0.2s ease;
+    }
+
+    .file-upload-guide[open] summary::after {
+      transform: rotate(180deg);
+    }
+
+    .file-upload-guide summary small {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .file-upload-guide-body {
+      display: grid;
+      gap: 10px;
+      padding: 0 12px 12px;
+    }
+
+    .file-upload-guide-body h5 {
+      margin: 0 0 4px;
+      font-size: 0.78rem;
+      color: #3b82f6;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .file-upload-guide-body ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .file-upload-guide-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.76rem;
+    }
+
+    .file-upload-guide-table th,
+    .file-upload-guide-table td {
+      padding: 6px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .file-upload-guide-table th {
+      background: rgba(15, 23, 42, 0.35);
+    }
+
+    .file-upload-guide-table .is-ok { color: #4ade80; font-weight: 700; }
+    .file-upload-guide-table .is-warn { color: #facc15; font-weight: 700; }
+    .file-upload-guide-table .is-bad { color: #f87171; font-weight: 700; }
 
     .google-signin-container {
       display: flex;
@@ -2332,6 +2467,16 @@
       color: var(--badge-electrical-text);
     }
 
+    .file-extension.file-type-excel,
+    body.theme-dark .file-extension.file-type-excel { background: rgba(33, 115, 70, 0.16); color: #1d8a4f; }
+    .file-extension.file-type-cad,
+    body.theme-dark .file-extension.file-type-cad { background: rgba(217, 119, 6, 0.16); color: #c26a05; }
+    .file-extension.file-type-ppt,
+    body.theme-dark .file-extension.file-type-ppt { background: rgba(208, 68, 35, 0.16); color: #d04423; }
+    body.theme-dark .file-extension.file-type-excel { color: #4ade80; }
+    body.theme-dark .file-extension.file-type-cad { color: #fbbf24; }
+    body.theme-dark .file-extension.file-type-ppt { color: #fb923c; }
+
     body.theme-dark .project-file-actions button {
       background: var(--brand-blue-soft);
       color: #e1e9f8;
@@ -3360,7 +3505,11 @@
     <div class="sync-loading-card" role="status" aria-live="polite">
       <span class="loading-spinner" aria-hidden="true"></span>
       <strong id="syncLoadingMessage">Menyelaraskan data proyek...</strong>
-      <small>Mohon tunggu sebentar, data sedang diproses dengan aman.</small>
+      <div class="sync-loading-progress" id="syncLoadingProgress" hidden>
+        <div class="sync-loading-progress-track"><span id="syncLoadingProgressBar"></span></div>
+        <span id="syncLoadingProgressText"></span>
+      </div>
+      <small id="syncLoadingHint">Mohon tunggu sebentar, data sedang diproses dengan aman.</small>
     </div>
   </div>
 
@@ -3428,7 +3577,9 @@
               <select id="fileTypeFilter" onchange="searchProjectFiles()" aria-label="Filter jenis file">
                 <option value="">Semua Jenis File</option>
                 <option value="pdf">PDF</option>
-                <option value="dxf">DXF</option>
+                <option value="excel">Excel / Spreadsheet</option>
+                <option value="cad">CAD (DWG/DXF)</option>
+                <option value="ppt">PowerPoint</option>
               </select>
               <input id="fileDateFrom" type="date" onchange="searchProjectFiles()" aria-label="File mulai tanggal">
               <input id="fileDateTo" type="date" onchange="searchProjectFiles()" aria-label="File sampai tanggal">
@@ -3640,6 +3791,54 @@
         <div class="section-title"><span>📁</span> File Proyek</div>
         <button class="btn-action-primary" id="addProjectFolderButton" onclick="openProjectFolderModal()">+ Folder</button>
       </div>
+      <details class="file-upload-guide" id="fileUploadGuide">
+        <summary>ℹ️ Panduan Unggah File <small>PDF · Excel · CAD · PowerPoint · maks 200 MB</small></summary>
+        <div class="file-upload-guide-body">
+          <div>
+            <h5>Format yang diterima</h5>
+            <table class="file-upload-guide-table">
+              <thead><tr><th>Jenis</th><th>Ekstensi</th><th>Cara membuka</th></tr></thead>
+              <tbody>
+                <tr><td><strong>PDF</strong></td><td>.pdf</td><td class="is-ok">Tombol <strong>Buka</strong> (pratinjau) atau Unduh</td></tr>
+                <tr><td><strong>Excel / Spreadsheet</strong></td><td>.xlsx .xls .xlsm .csv .ods</td><td>Unduh, lalu buka di Excel / Google Sheets</td></tr>
+                <tr><td><strong>CAD</strong></td><td>.dwg .dxf</td><td>Unduh, lalu buka di AutoCAD / viewer CAD</td></tr>
+                <tr><td><strong>PowerPoint</strong></td><td>.pptx .ppt</td><td>Unduh, lalu buka di PowerPoint</td></tr>
+              </tbody>
+            </table>
+            <ul>
+              <li>File Google Sheets/Slides: unduh dulu sebagai .xlsx/.pptx (File → Download), baru unggah ke sini.</li>
+              <li>Foto lapangan unggah lewat tab Ceklist atau Material.</li>
+            </ul>
+          </div>
+          <div>
+            <h5>Ukuran file &amp; cara kirim</h5>
+            <table class="file-upload-guide-table">
+              <thead><tr><th>Ukuran</th><th>Cara kirim (otomatis)</th></tr></thead>
+              <tbody>
+                <tr><td class="is-ok">≤ 4 MB</td><td>Dikirim sekaligus, paling cepat.</td></tr>
+                <tr><td class="is-warn">4 – 200 MB</td><td>Dikirim <strong>bertahap per 4 MB</strong> dengan persen progres. Bila sinyal putus sebentar, unggahan lanjut sendiri dari bagian terakhir.</td></tr>
+                <tr><td class="is-bad">&gt; 200 MB</td><td>Ditolak. Kompres dulu (iLovePDF / "Reduce File Size" di Nitro) atau pecah menjadi beberapa file.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <h5>Selama mengunggah</h5>
+            <ul>
+              <li>Jangan tutup, refresh, atau pindah tab sampai muncul <strong>"berhasil diunggah"</strong>.</li>
+              <li>Di HP: jangan kunci layar atau pindah aplikasi terlalu lama.</li>
+              <li>File di atas 20 MB sebaiknya pakai WiFi. Perkiraan di 4G: ±30 detik per 10 MB.</li>
+              <li>Boleh pilih beberapa file sekaligus, akan diproses satu per satu.</li>
+            </ul>
+          </div>
+          <div>
+            <h5>Jika gagal</h5>
+            <ul>
+              <li>Periksa sinyal lalu unggah ulang file yang gagal saja. File yang sudah berhasil tidak perlu diulang.</li>
+              <li>Pastikan nama file jelas, contoh: <em>Shop Drawing Panel LVMDP Rev01.pdf</em>.</li>
+            </ul>
+          </div>
+        </div>
+      </details>
       <div class="form-hint" id="projectFilesSummary"></div>
       <div id="projectFolderList" class="file-folder-list"></div>
       <section id="projectFolderContents" style="display: none;">
@@ -3651,9 +3850,10 @@
         <div class="file-upload-status" id="projectFileUploadStatus" role="status" aria-live="polite" aria-busy="false" hidden>
           <span class="loading-spinner" id="projectFileUploadSpinner" hidden aria-hidden="true"></span>
           <span id="projectFileUploadMessage"></span>
+          <span class="file-upload-progress" id="projectFileUploadProgress" hidden><span id="projectFileUploadProgressBar"></span></span>
         </div>
         <div class="section-title" id="activeFolderTitle" style="margin-bottom: 10px;"></div>
-        <input type="file" id="projectFileInput" accept=".pdf,.dxf,application/pdf,application/dxf" multiple hidden onchange="handleProjectFileUpload(this.files)">
+        <input type="file" id="projectFileInput" accept=".pdf,.xlsx,.xls,.xlsm,.csv,.ods,.dwg,.dxf,.pptx,.ppt" multiple hidden onchange="handleProjectFileUpload(this.files)">
         <div id="projectFileList" class="project-file-list"></div>
       </section>
     </main>
@@ -5086,7 +5286,9 @@
     function getAppsScriptTimeout(action) {
       const config = window.GOOGLE_CONFIG || {};
       if (action === 'ping') return Number(config.PING_TIMEOUT_MS) || 30000;
-      if (action === 'uploadFile') return Number(config.UPLOAD_TIMEOUT_MS) || 120000;
+      if (action === 'uploadFile') return Number(config.UPLOAD_TIMEOUT_MS) || 300000;
+      if (action === 'uploadChunk') return Number(config.UPLOAD_CHUNK_TIMEOUT_MS) || 120000;
+      if (['startUpload', 'uploadStatus', 'finishUpload', 'cancelUpload'].includes(action)) return 60000;
       if (action === 'saveSnapshot' || action === 'saveStatus') return Number(config.SAVE_TIMEOUT_MS) || 90000;
       return Number(config.REQUEST_TIMEOUT_MS) || 25000;
     }
@@ -5942,6 +6144,7 @@
         syncLoadingCount--;
         if (syncLoadingCount === 0) {
           overlay.hidden = true;
+          setSyncLoadingProgress(null);
           screens.forEach((screen) => {
             screen.inert = false;
             screen.setAttribute('aria-busy', 'false');
@@ -5952,6 +6155,23 @@
           syncLoadingPreviousFocus = null;
         }
       }
+    }
+
+    const SYNC_LOADING_DEFAULT_HINT = 'Mohon tunggu sebentar, data sedang diproses dengan aman.';
+
+    function setSyncLoadingProgress(fraction, message, hint) {
+      const progress = document.getElementById('syncLoadingProgress');
+      const hintElement = document.getElementById('syncLoadingHint');
+      if (message) document.getElementById('syncLoadingMessage').textContent = message;
+      hintElement.textContent = hint || SYNC_LOADING_DEFAULT_HINT;
+      if (fraction === null || fraction === undefined) {
+        progress.hidden = true;
+        return;
+      }
+      const percent = Math.round(Math.min(1, Math.max(0, fraction)) * 100);
+      progress.hidden = false;
+      document.getElementById('syncLoadingProgressBar').style.width = `${percent}%`;
+      document.getElementById('syncLoadingProgressText').textContent = `${percent}%`;
     }
 
     async function appsScriptRequest(action, payload = {}, method = 'POST') {
@@ -5977,8 +6197,8 @@
       const timeoutMs = getAppsScriptTimeout(action);
       const quiet = action === 'ping';
       const onSlow = quiet ? null : () => setAppsScriptStatus('server lambat, masih menunggu…');
-      const repeatable = !['createProject', 'uploadFile'].includes(action);
-      const uploadUsesBridge = action === 'uploadFile';
+      const repeatable = !['createProject', 'uploadFile', 'uploadChunk', 'startUpload'].includes(action);
+      const uploadUsesBridge = action === 'uploadFile' || action === 'uploadChunk';
 
       // Baca lewat cermin Supabase dulu; tulis tetap ke Apps Script.
       if ((action === 'login' || action === 'load') && getSupabaseConfig()) {
@@ -6469,22 +6689,206 @@
       });
     }
 
-    async function storeProjectFile(fileRecord) {
-      if (getAppsScriptUrl() && currentGoogleCredential) {
-        const base64 = await readFileAsDataUrl(fileRecord.blob);
-        const result = await appsScriptRequest('uploadFile', {
-          projectId: fileRecord.projectId,
+    // ==== FILE UPLOAD CORE START ====
+    const FILE_UPLOAD_LIMITS = Object.freeze({
+      maxBytes: 200 * 1024 * 1024,
+      directMaxBytes: 4 * 1024 * 1024,
+      legacyMaxBytes: 25 * 1024 * 1024,
+      chunkBytes: 4 * 1024 * 1024
+    });
+    // Hanya PDF yang bisa dipratinjau; jenis lain cukup diunduh lalu dibuka di aplikasinya.
+    const FILE_TYPE_GROUPS = Object.freeze({
+      pdf: { label: 'PDF', extensions: ['pdf'] },
+      excel: { label: 'Excel / Spreadsheet', extensions: ['xlsx', 'xls', 'xlsm', 'csv', 'ods'] },
+      cad: { label: 'CAD (DWG/DXF)', extensions: ['dwg', 'dxf'] },
+      ppt: { label: 'PowerPoint', extensions: ['pptx', 'ppt'] }
+    });
+    const FILE_UPLOAD_MIME_TYPES = Object.freeze({
+      pdf: 'application/pdf',
+      xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      xls: 'application/vnd.ms-excel',
+      xlsm: 'application/vnd.ms-excel.sheet.macroEnabled.12',
+      csv: 'text/csv',
+      ods: 'application/vnd.oasis.opendocument.spreadsheet',
+      dwg: 'application/acad',
+      dxf: 'application/dxf',
+      pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      ppt: 'application/vnd.ms-powerpoint'
+    });
+    const FILE_UPLOAD_EXTENSIONS = Object.values(FILE_TYPE_GROUPS).flatMap((group) => group.extensions);
+    const FILE_UPLOAD_CHUNK_RETRIES = 5;
+
+    function getFileExtension(name) {
+      const value = String(name || '');
+      return value.includes('.') ? value.split('.').pop().toLowerCase() : '';
+    }
+
+    function getFileTypeGroup(name) {
+      const extension = getFileExtension(name);
+      return Object.keys(FILE_TYPE_GROUPS).find((key) => FILE_TYPE_GROUPS[key].extensions.includes(extension)) || '';
+    }
+
+    function canPreviewProjectFile(name) {
+      return getFileTypeGroup(name) === 'pdf';
+    }
+
+    function getUploadMimeType(name, browserType) {
+      return FILE_UPLOAD_MIME_TYPES[getFileExtension(name)] || browserType || 'application/octet-stream';
+    }
+
+    function formatUploadSize(bytes) {
+      const value = Math.max(0, Number(bytes) || 0);
+      if (value >= 1024 * 1024) {
+        return `${(value / (1024 * 1024)).toLocaleString('id-ID', { maximumFractionDigits: 1 })} MB`;
+      }
+      if (value >= 1024) return `${Math.round(value / 1024)} KB`;
+      return `${value} B`;
+    }
+
+    function getUploadFileProblem(file) {
+      if (!FILE_UPLOAD_EXTENSIONS.includes(getFileExtension(file?.name))) {
+        return 'format tidak didukung (hanya PDF, Excel, CAD, PowerPoint)';
+      }
+      const size = Number(file?.size) || 0;
+      if (size <= 0) return 'file kosong';
+      if (size > FILE_UPLOAD_LIMITS.maxBytes) {
+        return `${formatUploadSize(size)}, melebihi batas ${formatUploadSize(FILE_UPLOAD_LIMITS.maxBytes)}`;
+      }
+      return '';
+    }
+
+    function chooseFileUploadMethod(size) {
+      return Number(size) > FILE_UPLOAD_LIMITS.directMaxBytes ? 'resumable' : 'direct';
+    }
+
+    function getUploadChunkRange(offset, size, chunkBytes = FILE_UPLOAD_LIMITS.chunkBytes) {
+      const start = Math.max(0, Math.min(Number(offset) || 0, size));
+      return { start, end: Math.min(size, start + chunkBytes) };
+    }
+
+    // Code.gs lama belum mengenal aksi upload bertahap dan membalas pesan ini.
+    function isUnsupportedUploadActionError(error) {
+      return /Payload penyimpanan tidak valid/i.test(error?.message || '');
+    }
+    // ==== FILE UPLOAD CORE END ====
+
+    function readBlobAsBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).replace(/^data:[^,]*,/, ''));
+        reader.onerror = () => reject(new Error('Gagal membaca file dari perangkat.'));
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    function waitForOnline(timeoutMs) {
+      if (navigator.onLine !== false) return Promise.resolve();
+      return new Promise((resolve) => {
+        const finish = () => {
+          window.removeEventListener('online', finish);
+          window.clearTimeout(timer);
+          resolve();
+        };
+        const timer = window.setTimeout(finish, timeoutMs);
+        window.addEventListener('online', finish);
+      });
+    }
+
+    async function uploadProjectFileDirect(fileRecord, onProgress) {
+      if (fileRecord.size > FILE_UPLOAD_LIMITS.legacyMaxBytes) {
+        throw new AppsScriptError(`File ${formatUploadSize(fileRecord.size)} terlalu besar untuk server versi lama. Perbarui Code.gs agar bisa unggah bertahap hingga ${formatUploadSize(FILE_UPLOAD_LIMITS.maxBytes)}.`, 'server');
+      }
+      onProgress?.(0);
+      const base64 = await readFileAsDataUrl(fileRecord.blob);
+      const result = await performAppsScriptRequest('uploadFile', {
+        projectId: fileRecord.projectId,
+        file: {
+          name: fileRecord.name,
+          type: fileRecord.type,
+          size: fileRecord.size,
+          folderId: fileRecord.folderId,
+          folderName: fileRecord.folderName,
+          base64
+        }
+      });
+      onProgress?.(1);
+      return result.file;
+    }
+
+    async function uploadProjectFileResumable(fileRecord, onProgress) {
+      const base = { projectId: fileRecord.projectId };
+      let session;
+      try {
+        session = await performAppsScriptRequest('startUpload', {
+          ...base,
           file: {
             name: fileRecord.name,
             type: fileRecord.type,
             size: fileRecord.size,
             folderId: fileRecord.folderId,
-            folderName: fileRecord.folderName,
-            base64
+            folderName: fileRecord.folderName
           }
         });
-        remoteProjectFiles.push(result.file);
-        return result.file;
+      } catch (error) {
+        if (isUnsupportedUploadActionError(error)) return uploadProjectFileDirect(fileRecord, onProgress);
+        throw error;
+      }
+
+      const uploadId = session.uploadId;
+      const size = fileRecord.size;
+      const chunkBytes = Number(session.chunkSize) || FILE_UPLOAD_LIMITS.chunkBytes;
+      let offset = 0;
+      let done = false;
+      let failures = 0;
+      try {
+        while (!done) {
+          const { start, end } = getUploadChunkRange(offset, size, chunkBytes);
+          onProgress?.(start / size);
+          try {
+            const data = await readBlobAsBase64(fileRecord.blob.slice(start, end));
+            const result = await performAppsScriptRequest('uploadChunk', { ...base, uploadId, offset: start, data });
+            offset = Number(result.received) || 0;
+            done = Boolean(result.done);
+            failures = 0;
+          } catch (error) {
+            const retryable = isTransientAppsScriptError(error)
+              || error?.code === 'offline'
+              || !(error instanceof AppsScriptError);
+            if (!retryable || ++failures > FILE_UPLOAD_CHUNK_RETRIES) throw error;
+            onProgress?.(start / size, `Koneksi terganggu, mencoba lagi (${failures}/${FILE_UPLOAD_CHUNK_RETRIES})...`);
+            await waitForOnline(120000);
+            await waitMs(Math.min(15000, failures * 3000));
+            const status = await performAppsScriptRequest('uploadStatus', { ...base, uploadId }).catch(() => null);
+            if (status) {
+              offset = Number(status.received) || 0;
+              done = Boolean(status.done);
+            }
+          }
+        }
+      } catch (error) {
+        performAppsScriptRequest('cancelUpload', { ...base, uploadId }).catch(() => {});
+        throw error;
+      }
+
+      onProgress?.(1, 'Menyimpan ke folder proyek...');
+      for (let attempt = 1; ; attempt++) {
+        try {
+          const finished = await performAppsScriptRequest('finishUpload', { ...base, uploadId });
+          return finished.file;
+        } catch (error) {
+          if (attempt >= 3 || !isTransientAppsScriptError(error)) throw error;
+          await waitMs(attempt * 2000);
+        }
+      }
+    }
+
+    async function storeProjectFile(fileRecord, onProgress) {
+      if (getAppsScriptUrl() && currentGoogleCredential) {
+        const file = chooseFileUploadMethod(fileRecord.size) === 'resumable'
+          ? await uploadProjectFileResumable(fileRecord, onProgress)
+          : await uploadProjectFileDirect(fileRecord, onProgress);
+        remoteProjectFiles.push(file);
+        return file;
       }
       const database = await openProjectFilesDatabase();
       return new Promise((resolve, reject) => {
@@ -6759,11 +7163,10 @@
       const dateFrom = document.getElementById('fileDateFrom').value;
       const dateTo = document.getElementById('fileDateTo').value;
       return files.filter((file) => {
-        const extension = String(file.name || '').split('.').pop().toLocaleLowerCase('id-ID');
         const date = String(file.addedAt || '').slice(0, 10);
         const matchesText = !query || `${file.name} ${file.folderName || ''}`.toLocaleLowerCase('id-ID').includes(query);
         return matchesText
-          && (!type || extension === type)
+          && (!type || getFileTypeGroup(file.name) === type)
           && (!dateFrom || date >= dateFrom)
           && (!dateTo || date <= dateTo);
       });
@@ -6809,19 +7212,21 @@
       const folderFiles = filterProjectFiles(files.filter((file) => file.folderId === folder.id), false)
         .sort((first, second) => second.addedAt.localeCompare(first.addedAt));
       document.getElementById('projectFileList').innerHTML = folderFiles.length ? folderFiles.map((file) => {
-        const extension = file.name.split('.').pop().toUpperCase();
+        const extension = getFileExtension(file.name).toUpperCase() || 'FILE';
+        const typeGroup = getFileTypeGroup(file.name) || 'other';
+        const canPreview = canPreviewProjectFile(file.name);
         const dateLabel = formatChecklistDate(file.addedAt.slice(0, 10));
         return `
           <article class="project-file-row">
             <span class="project-file-main">
-              <span class="file-extension">${escapeHtml(extension)}</span>
+              <span class="file-extension file-type-${escapeHtml(typeGroup)}">${escapeHtml(extension)}</span>
               <span style="min-width: 0;">
                 <span class="project-file-name">${escapeHtml(file.name)}</span>
-                <span class="project-file-meta">${escapeHtml(formatProjectFileSize(file.size))} · ${escapeHtml(dateLabel)}</span>
+                <span class="project-file-meta">${escapeHtml(formatProjectFileSize(file.size))} · ${escapeHtml(dateLabel)}${canPreview ? '' : ' · unduh untuk membuka'}</span>
               </span>
             </span>
             <span class="project-file-actions">
-              ${extension === 'PDF' ? `<button type="button" onclick="openProjectFile('${escapeHtml(file.id)}')">Buka</button>` : ''}
+              ${canPreview ? `<button type="button" onclick="openProjectFile('${escapeHtml(file.id)}')">Buka</button>` : ''}
               <button type="button" onclick="downloadProjectFile('${escapeHtml(file.id)}')">Unduh</button>
               ${canAccess('files') ? `<button class="file-delete-button" type="button" onclick="deleteProjectFile('${escapeHtml(file.id)}')" aria-label="Hapus ${escapeHtml(file.name)}">Hapus</button>` : ''}
             </span>
@@ -6841,11 +7246,27 @@
       const uploadMessage = document.getElementById('projectFileUploadMessage');
       if (!folder || !selectedFiles.length) return;
 
-      const acceptedFiles = selectedFiles.filter((file) => /\.(pdf|dxf)$/i.test(file.name));
-      const rejectedFiles = selectedFiles.length - acceptedFiles.length;
+      const acceptedFiles = [];
+      const rejectedNotes = [];
+      selectedFiles.forEach((file) => {
+        const problem = getUploadFileProblem(file);
+        if (problem) rejectedNotes.push(`• ${file.name}: ${problem}`);
+        else acceptedFiles.push(file);
+      });
       input.value = '';
-      if (rejectedFiles) alert(`${rejectedFiles} file dilewati. Hanya PDF dan DXF yang dapat diunggah.`);
+      if (rejectedNotes.length) {
+        alert(`${rejectedNotes.length} file dilewati:\n${rejectedNotes.join('\n')}\n\nHanya PDF, Excel/Spreadsheet, CAD (DWG/DXF), dan PowerPoint maksimal ${formatUploadSize(FILE_UPLOAD_LIMITS.maxBytes)}. Lihat "Panduan Unggah File" untuk cara mengecilkan file.`);
+      }
       if (!acceptedFiles.length) return;
+
+      const uploadProgress = document.getElementById('projectFileUploadProgress');
+      const uploadProgressBar = document.getElementById('projectFileUploadProgressBar');
+      const isRemoteUpload = Boolean(getAppsScriptUrl() && currentGoogleCredential);
+      const warnBeforeLeave = (event) => {
+        event.preventDefault();
+        event.returnValue = '';
+      };
+      window.addEventListener('beforeunload', warnBeforeLeave);
 
       input.disabled = true;
       uploadButton.disabled = true;
@@ -6854,36 +7275,64 @@
       uploadStatus.classList.remove('is-error', 'is-success');
       uploadStatus.setAttribute('aria-busy', 'true');
       uploadSpinner.hidden = false;
+      uploadProgress.hidden = false;
+      uploadProgressBar.style.width = '0%';
       let uploadedCount = 0;
       let uploadError = null;
+      const runUpload = isRemoteUpload
+        ? (task) => withSyncLoading('Mengunggah file...', task)
+        : (task) => task();
       try {
+        await runUpload(async () => {
         for (let index = 0; index < acceptedFiles.length; index++) {
           const file = acceptedFiles[index];
-          uploadMessage.textContent = `Mengunggah ${index + 1}/${acceptedFiles.length}: ${file.name}`;
+          const label = `Mengunggah ${index + 1}/${acceptedFiles.length}: ${file.name}`;
+          const isChunked = isRemoteUpload && chooseFileUploadMethod(file.size) === 'resumable';
+          const reportProgress = (fraction, note) => {
+            const percent = Math.round(Math.min(1, Math.max(0, fraction)) * 100);
+            const sent = `${formatUploadSize(file.size * Math.min(1, fraction))} / ${formatUploadSize(file.size)}`;
+            const detail = note || (isChunked ? `${sent} · dikirim bertahap` : formatUploadSize(file.size));
+            uploadMessage.textContent = `${label} · ${percent}% (${detail})`;
+            uploadProgressBar.style.width = `${percent}%`;
+            if (isRemoteUpload) {
+              setSyncLoadingProgress(fraction, label, `${detail}. Jangan tutup atau refresh halaman ini.`);
+            }
+          };
+          reportProgress(0);
           await storeProjectFile({
             id: globalThis.crypto?.randomUUID?.() || `file-${Date.now()}-${Math.random().toString(16).slice(2)}`,
             projectId: activeProjectId,
             folderId: folder.id,
             folderName: folder.name,
             name: file.name,
-            type: file.type || (file.name.toLocaleLowerCase('id-ID').endsWith('.pdf') ? 'application/pdf' : 'application/dxf'),
+            type: getUploadMimeType(file.name, file.type),
             size: file.size,
             addedAt: new Date().toISOString(),
             blob: file
-          });
+          }, reportProgress);
           uploadedCount++;
         }
+        });
       } catch (error) {
         uploadError = error;
       } finally {
+        window.removeEventListener('beforeunload', warnBeforeLeave);
         input.disabled = false;
         uploadButton.disabled = false;
         uploadButton.removeAttribute('aria-busy');
         uploadSpinner.hidden = true;
+        uploadProgress.hidden = true;
         uploadStatus.setAttribute('aria-busy', 'false');
         if (uploadError) {
           uploadStatus.classList.add('is-error');
-          uploadMessage.textContent = `Gagal mengunggah setelah ${uploadedCount} file: ${uploadError.message}`;
+          const failedFile = acceptedFiles[uploadedCount];
+          const pendingCount = acceptedFiles.length - uploadedCount - 1;
+          uploadMessage.textContent = `Gagal mengunggah "${failedFile?.name || 'file'}": ${uploadError.message}`
+            + (uploadedCount ? ` ${uploadedCount} file sebelumnya sudah tersimpan.` : '')
+            + (pendingCount > 0 ? ` ${pendingCount} file berikutnya belum diunggah.` : '')
+            + (isTransientAppsScriptError(uploadError) || uploadError?.code === 'offline' || !(uploadError instanceof AppsScriptError)
+              ? ' Periksa sinyal lalu unggah ulang file yang gagal saja.'
+              : '');
         } else {
           uploadStatus.classList.add('is-success');
           uploadMessage.textContent = `${uploadedCount} file berhasil diunggah.`;
@@ -7072,6 +7521,11 @@
     }
 
     async function openProjectFile(fileId) {
+      const knownFile = remoteProjectFiles.find((file) => file.id === fileId);
+      if (knownFile && !canPreviewProjectFile(knownFile.name)) {
+        downloadProjectFile(fileId);
+        return;
+      }
       const previewWindow = window.open('', '_blank');
       try {
         const file = await getProjectFile(fileId);

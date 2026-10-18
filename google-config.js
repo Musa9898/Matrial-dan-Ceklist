@@ -12,7 +12,9 @@ const GOOGLE_CONFIG = Object.freeze({
   // Batas waktu permintaan (milidetik).
   REQUEST_TIMEOUT_MS: 25000,
   SAVE_TIMEOUT_MS: 90000,
-  UPLOAD_TIMEOUT_MS: 120000,
+  // Upload sekali kirim (file kecil / server lama) dan per potongan 4 MB (file besar).
+  UPLOAD_TIMEOUT_MS: 300000,
+  UPLOAD_CHUNK_TIMEOUT_MS: 120000,
   PING_TIMEOUT_MS: 30000
 });
 

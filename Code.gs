@@ -34,7 +34,7 @@ const PROJECT_FILE_HEADERS = [
   'Uploaded By', 'Created At', 'MIME Type', 'Payload JSON'
 ];
 const PROJECT_FOLDER_HEADERS = ['Folder ID', 'Project ID', 'Folder Name', 'Created At', 'Created By'];
-const BACKEND_VERSION = '2026-10-14-incremental-sync';
+const BACKEND_VERSION = '2026-10-18-office-cad-files';
 const FRONTEND_ORIGINS = [
   'https://musa9898.github.io',
   'http://localhost:8000',
@@ -219,6 +219,29 @@ function doPost(e) {
         status: 'success',
         file: saveDriveFile_(project, request.file, identity.email)
       });
+    }
+    if (request.action === 'startUpload') {
+      requireProjectPermission_(project, 'files');
+      return jsonOutput_(Object.assign({ status: 'success' }, startResumableUpload_(project, request.file, identity.email)));
+    }
+    if (request.action === 'uploadChunk') {
+      requireProjectPermission_(project, 'files');
+      return jsonOutput_(Object.assign({ status: 'success' }, uploadResumableChunk_(projectId, request, identity.email)));
+    }
+    if (request.action === 'uploadStatus') {
+      requireProjectPermission_(project, 'files');
+      return jsonOutput_(Object.assign({ status: 'success' }, getResumableUploadStatus_(projectId, request, identity.email)));
+    }
+    if (request.action === 'finishUpload') {
+      requireProjectPermission_(project, 'files');
+      acquireWriteLock_(lock);
+      mutated = true;
+      return jsonOutput_({ status: 'success', file: finishResumableUpload_(project, request, identity.email) });
+    }
+    if (request.action === 'cancelUpload') {
+      requireProjectPermission_(project, 'files');
+      cancelResumableUpload_(projectId, request, identity.email);
+      return jsonOutput_({ status: 'success' });
     }
     if (request.action === 'deleteFile') {
       requireProjectPermission_(project, 'files');
@@ -1271,23 +1294,31 @@ function saveDriveFile_(project, fileData, email) {
   const match = fileData.base64.match(/^data:([^;]+);base64,([\s\S]+)$/);
   if (!match) throw new Error('File harus dikirim sebagai data URL Base64.');
 
-  const mimeType = match[1];
   const extension = String(fileData.name || '').split('.').pop().toLowerCase();
-  if (!['pdf', 'dxf', 'jpg', 'jpeg', 'png', 'webp'].includes(extension)) {
+  if (UPLOAD_ALLOWED_EXTENSIONS.indexOf(extension) < 0) {
     throw new Error('Jenis file tidak diizinkan.');
   }
+  const mimeType = UPLOAD_MIME_TYPES[extension] || match[1];
   const name = 'mep_' + safeFileName_(project.projectId) + '_' + Date.now() + '_' + safeFileName_(fileData.name);
   const blob = Utilities.newBlob(Utilities.base64Decode(match[2]), mimeType, name);
   const driveFile = DriveApp.getFolderById(FOLDER_ID).createFile(blob);
-  driveFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return registerDriveFile_(project, driveFile, {
+    name: String(fileData.name || name),
+    type: mimeType,
+    folderId: fileData.folderId,
+    folderName: fileData.folderName
+  }, email);
+}
 
+function registerDriveFile_(project, driveFile, meta, email) {
+  driveFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   const file = {
     id: driveFile.getId(),
     projectId: project.projectId,
-    folderId: String(fileData.folderId || ''),
-    folderName: String(fileData.folderName || ''),
-    name: String(fileData.name || name),
-    type: mimeType,
+    folderId: String(meta.folderId || ''),
+    folderName: String(meta.folderName || ''),
+    name: String(meta.name || driveFile.getName()),
+    type: meta.type,
     size: driveFile.getSize(),
     addedAt: new Date().toISOString(),
     driveUrl: driveFile.getUrl()
@@ -1308,6 +1339,216 @@ function saveDriveFile_(project, fileData, email) {
   });
   return file;
 }
+
+// ==== RESUMABLE UPLOAD START ====
+// File besar dikirim bertahap: browser -> Apps Script -> sesi resumable Google Drive.
+// Setiap potongan kecil sehingga tidak kena batas waktu, dan bisa dilanjutkan bila koneksi putus.
+const UPLOAD_MAX_BYTES = 200 * 1024 * 1024;
+const UPLOAD_CHUNK_BYTES = 4 * 1024 * 1024;
+const UPLOAD_CHUNK_ALIGN_BYTES = 256 * 1024;
+const UPLOAD_SESSION_TTL_SECONDS = 6 * 60 * 60;
+const UPLOAD_ALLOWED_EXTENSIONS = [
+  'pdf', 'jpg', 'jpeg', 'png', 'webp',
+  'xlsx', 'xls', 'xlsm', 'csv', 'ods',
+  'dwg', 'dxf',
+  'pptx', 'ppt'
+];
+const UPLOAD_MIME_TYPES = {
+  pdf: 'application/pdf',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  xls: 'application/vnd.ms-excel',
+  xlsm: 'application/vnd.ms-excel.sheet.macroEnabled.12',
+  csv: 'text/csv',
+  ods: 'application/vnd.oasis.opendocument.spreadsheet',
+  dwg: 'application/acad',
+  dxf: 'application/dxf',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  ppt: 'application/vnd.ms-powerpoint'
+};
+
+function uploadSessionKey_(uploadId) {
+  return 'upload:' + uploadId;
+}
+
+function writeUploadSession_(uploadId, session) {
+  CacheService.getScriptCache().put(uploadSessionKey_(uploadId), JSON.stringify(session), UPLOAD_SESSION_TTL_SECONDS);
+}
+
+function readUploadSession_(uploadId, projectId, email) {
+  if (!/^[a-zA-Z0-9]{16,64}$/.test(String(uploadId || ''))) throw new Error('ID unggahan tidak valid.');
+  const raw = CacheService.getScriptCache().get(uploadSessionKey_(uploadId));
+  if (!raw) {
+    const error = new Error('Sesi unggahan sudah kedaluwarsa. Unggah ulang file.');
+    error.code = 'upload_expired';
+    throw error;
+  }
+  const session = JSON.parse(raw);
+  if (session.projectId !== projectId || session.email !== email) {
+    throw new Error('Sesi unggahan bukan milik akun ini.');
+  }
+  return session;
+}
+
+function parseDriveUploadRange_(range) {
+  const match = String(range || '').match(/bytes=0-(\d+)/);
+  return match ? Number(match[1]) + 1 : 0;
+}
+
+function getResponseHeader_(response, name) {
+  const headers = response.getAllHeaders() || {};
+  const key = Object.keys(headers).find((header) => header.toLowerCase() === name.toLowerCase());
+  return key ? headers[key] : '';
+}
+
+function startResumableUpload_(project, fileData, email) {
+  const name = String((fileData && fileData.name) || '').trim();
+  const size = Number(fileData && fileData.size);
+  const extension = name.indexOf('.') >= 0 ? name.split('.').pop().toLowerCase() : '';
+  if (!name || UPLOAD_ALLOWED_EXTENSIONS.indexOf(extension) < 0) throw new Error('Jenis file tidak diizinkan.');
+  if (!Number.isInteger(size) || size <= 0) throw new Error('Ukuran file tidak valid.');
+  if (size > UPLOAD_MAX_BYTES) throw new Error('Ukuran file melebihi batas 200 MB.');
+
+  const mimeType = UPLOAD_MIME_TYPES[extension];
+  const storedName = 'mep_' + safeFileName_(project.projectId) + '_' + Date.now() + '_' + safeFileName_(name);
+  const response = UrlFetchApp.fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true&fields=id',
+    {
+      method: 'post',
+      contentType: 'application/json; charset=UTF-8',
+      headers: {
+        Authorization: 'Bearer ' + ScriptApp.getOAuthToken(),
+        'X-Upload-Content-Type': mimeType,
+        'X-Upload-Content-Length': String(size)
+      },
+      payload: JSON.stringify({ name: storedName, parents: [FOLDER_ID], mimeType: mimeType }),
+      muteHttpExceptions: true
+    }
+  );
+  const sessionUrl = getResponseHeader_(response, 'Location');
+  if (response.getResponseCode() !== 200 || !sessionUrl) {
+    throw new Error('Google Drive menolak sesi unggahan (' + response.getResponseCode() + ').');
+  }
+  const uploadId = Utilities.getUuid().replace(/-/g, '');
+  writeUploadSession_(uploadId, {
+    sessionUrl: sessionUrl,
+    projectId: project.projectId,
+    email: email,
+    name: name,
+    size: size,
+    mimeType: mimeType,
+    folderId: String(fileData.folderId || ''),
+    folderName: String(fileData.folderName || ''),
+    received: 0,
+    fileId: ''
+  });
+  return { uploadId: uploadId, chunkSize: UPLOAD_CHUNK_BYTES, maxBytes: UPLOAD_MAX_BYTES };
+}
+
+function applyDriveUploadResponse_(uploadId, session, response) {
+  const code = response.getResponseCode();
+  if (code === 200 || code === 201) {
+    const body = JSON.parse(response.getContentText() || '{}');
+    if (!body.id) throw new Error('Google Drive tidak mengembalikan ID file.');
+    session.fileId = String(body.id);
+    session.received = session.size;
+    writeUploadSession_(uploadId, session);
+    return { done: true, received: session.size };
+  }
+  if (code === 308) {
+    session.received = parseDriveUploadRange_(getResponseHeader_(response, 'Range'));
+    writeUploadSession_(uploadId, session);
+    return { done: false, received: session.received };
+  }
+  if (code === 404 || code === 410) {
+    const expired = new Error('Sesi unggahan Google Drive sudah berakhir. Unggah ulang file.');
+    expired.code = 'upload_expired';
+    throw expired;
+  }
+  const error = new Error('Google Drive gagal menerima potongan file (' + code + ').');
+  error.code = code >= 500 || code === 429 ? 'busy' : 'server';
+  throw error;
+}
+
+function uploadResumableChunk_(projectId, request, email) {
+  const session = readUploadSession_(request.uploadId, projectId, email);
+  if (session.fileId) return { done: true, received: session.size };
+  const offset = Number(request.offset);
+  if (!Number.isInteger(offset) || offset < 0 || offset >= session.size) {
+    throw new Error('Posisi potongan file tidak valid.');
+  }
+  const bytes = Utilities.base64Decode(String(request.data || ''));
+  const end = offset + bytes.length - 1;
+  const isLastChunk = end === session.size - 1;
+  if (!bytes.length || bytes.length > UPLOAD_CHUNK_BYTES || end >= session.size
+    || (!isLastChunk && bytes.length % UPLOAD_CHUNK_ALIGN_BYTES !== 0)) {
+    throw new Error('Ukuran potongan file tidak valid.');
+  }
+  const response = UrlFetchApp.fetch(session.sessionUrl, {
+    method: 'put',
+    contentType: 'application/octet-stream',
+    headers: { 'Content-Range': 'bytes ' + offset + '-' + end + '/' + session.size },
+    payload: bytes,
+    followRedirects: false,
+    muteHttpExceptions: true
+  });
+  return applyDriveUploadResponse_(request.uploadId, session, response);
+}
+
+function getResumableUploadStatus_(projectId, request, email) {
+  const session = readUploadSession_(request.uploadId, projectId, email);
+  if (session.fileId) return { done: true, received: session.size };
+  const response = UrlFetchApp.fetch(session.sessionUrl, {
+    method: 'put',
+    headers: { 'Content-Range': 'bytes */' + session.size },
+    payload: '',
+    followRedirects: false,
+    muteHttpExceptions: true
+  });
+  return applyDriveUploadResponse_(request.uploadId, session, response);
+}
+
+function finishResumableUpload_(project, request, email) {
+  const session = readUploadSession_(request.uploadId, project.projectId, email);
+  if (session.result) return session.result;
+  if (!session.fileId) throw new Error('File belum selesai terunggah.');
+  const driveFile = DriveApp.getFileById(session.fileId);
+  const parents = driveFile.getParents();
+  let inProjectFolder = false;
+  while (parents.hasNext()) {
+    if (parents.next().getId() === FOLDER_ID) inProjectFolder = true;
+  }
+  if (!inProjectFolder) throw new Error('File unggahan tidak berada di folder proyek.');
+  const file = registerDriveFile_(project, driveFile, {
+    name: session.name,
+    type: session.mimeType,
+    folderId: session.folderId,
+    folderName: session.folderName
+  }, email);
+  session.result = file;
+  writeUploadSession_(request.uploadId, session);
+  return file;
+}
+
+function cancelResumableUpload_(projectId, request, email) {
+  let session;
+  try {
+    session = readUploadSession_(request.uploadId, projectId, email);
+  } catch (error) {
+    return;
+  }
+  if (session.result) return;
+  if (session.fileId) {
+    DriveApp.getFileById(session.fileId).setTrashed(true);
+  } else {
+    UrlFetchApp.fetch(session.sessionUrl, { method: 'delete', muteHttpExceptions: true });
+  }
+  CacheService.getScriptCache().remove(uploadSessionKey_(request.uploadId));
+}
+// ==== RESUMABLE UPLOAD END ====
 
 function appendMonitoringRecord_(record) {
   const spreadsheet = getSpreadsheet_();
