@@ -3566,6 +3566,15 @@
       .section-actions .btn-pdf-export { padding: 7px 9px; font-size: 0.72rem; }
       .section-actions .btn-action-primary { white-space: nowrap; }
     }
+    @media (max-width: 540px) {
+      .project-file-row { flex-wrap: wrap; row-gap: 8px; }
+      .project-file-main { flex: 1 1 100%; }
+      .project-file-meta { white-space: normal; }
+      .project-file-actions { flex: 1 1 100%; justify-content: flex-end; padding-left: 46px; }
+      .project-file-actions button { padding: 7px 12px; font-size: 0.72rem; }
+      .file-upload-guide summary { flex-wrap: wrap; row-gap: 2px; }
+      .file-upload-guide summary small { order: 2; flex: 1 1 100%; font-size: 0.7rem; }
+    }
     #pdfPrintRoot { display: none; }
     @media print {
       body.pdf-printing { background: #fff !important; color: #0f172a !important; }
