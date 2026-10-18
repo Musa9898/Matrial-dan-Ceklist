@@ -15,6 +15,8 @@ function sliceBlock(source, startMarker, endMarker) {
   return source.slice(start, end);
 }
 
+const driveNamingSource = sliceBlock(backend, '// Nama file di Drive = nama asli', '\n// =====');
+
 function loadClientCore() {
   const context = vm.createContext({});
   vm.runInContext(`${sliceBlock(html, '// ==== FILE UPLOAD CORE START ====', '// ==== FILE UPLOAD CORE END ====')}
@@ -132,7 +134,8 @@ function createBackend() {
       return file;
     }
   });
-  vm.runInContext(`${sliceBlock(backend, '// ==== RESUMABLE UPLOAD START ====', '// ==== RESUMABLE UPLOAD END ====')}
+  vm.runInContext(`${driveNamingSource}
+    ${sliceBlock(backend, '// ==== RESUMABLE UPLOAD START ====', '// ==== RESUMABLE UPLOAD END ====')}
     globalThis.api = { startResumableUpload_, uploadResumableChunk_, getResumableUploadStatus_, finishResumableUpload_, cancelResumableUpload_, parseDriveUploadRange_, UPLOAD_CHUNK_BYTES };`, context);
   return { api: context.api, drive, registered, cache };
 }
@@ -148,6 +151,7 @@ test('backend uploads a large file chunk by chunk and registers it once', () => 
   assert.equal(session.chunkSize, 4 * MB);
   assert.deepEqual(drive.metadata.parents, ['folder-root']);
   assert.equal(drive.metadata.mimeType, 'application/pdf');
+  assert.equal(drive.metadata.name, 'Shop Drawing.pdf');
 
   let result = api.uploadResumableChunk_('p1', { uploadId: session.uploadId, offset: 0, data: chunk(4 * MB) }, email);
   assert.deepEqual({ ...result }, { done: false, received: 4 * MB });
@@ -198,4 +202,56 @@ test('backend reports resume position and cancels unfinished uploads', () => {
   assert.equal(drive.deleted, true);
   assert.equal(cache.size, 0);
   assert.throws(() => api.uploadResumableChunk_('p1', { uploadId: session.uploadId, offset: 0, data: chunk(4 * MB) }, email), /kedaluwarsa/);
+});
+
+test('backend keeps original file names in Drive and renames legacy files once', () => {
+  const files = new Map([
+    ['a', 'mep_project-eka-hospital_1792320143035_P-EH_Jda-01-22-LYD-0005-17_ELECTRICAL_LAYOUT_1___2'],
+    ['b', 'Already Fine.dwg'],
+    ['c', 'mep_p1_1_x.pdf']
+  ]);
+  const rows = [
+    ['file:a', JSON.stringify({ name: 'P-EH Jda-01-22-LYD-0005-17 ELECTRICAL LAYOUT 1 & 2-R1.dwg' }), ''],
+    ['b', '', 'Already Fine.dwg'],
+    ['missing', '', 'Gone.pdf'],
+    ['c', '', 'Rapat 1/2: final?.pdf']
+  ];
+  const logs = [];
+  const context = vm.createContext({
+    Logger: { log: (message) => logs.push(message) },
+    PROJECT_FILES_SHEET_NAME: 'ProjectFiles',
+    PROJECT_FILE_HEADERS: [],
+    getSpreadsheet_: () => ({}),
+    getSchemaSheet_: () => ({
+      getLastRow: () => rows.length + 1,
+      getLastColumn: () => 3,
+      getRange: () => ({ getValues: () => rows })
+    }),
+    getSheetHeaderIndexes_: () => ['file id', 'payload json', 'file name'],
+    getSheetCell_: (row, headers, name) => row[headers.indexOf(name)],
+    parseJson_: (value) => { try { return JSON.parse(value || 'null'); } catch (error) { return null; } },
+    DriveApp: {
+      getFileById: (id) => {
+        if (!files.has(id)) throw new Error('not found');
+        return { getName: () => files.get(id), setName: (name) => files.set(id, name) };
+      }
+    }
+  });
+  vm.runInContext(`${driveNamingSource}
+    globalThis.api = { driveFileName_, renameLegacyProjectFiles };`, context);
+  const { driveFileName_, renameLegacyProjectFiles } = context.api;
+
+  assert.equal(driveFileName_('Layout 1 & 2 (Rev.3).dwg'), 'Layout 1 & 2 (Rev.3).dwg');
+  assert.equal(driveFileName_('a/b\\c:d.pdf'), 'a_b_c_d.pdf');
+  assert.equal(driveFileName_('   '), 'file');
+  const longName = driveFileName_(`${'x'.repeat(300)}.xlsx`);
+  assert.equal(longName.length, 200);
+  assert.ok(longName.endsWith('.xlsx'));
+
+  const summary = renameLegacyProjectFiles();
+  assert.deepEqual({ ...summary }, { renamed: 2, skipped: 1, failed: 1, remaining: 0 });
+  assert.equal(files.get('a'), 'P-EH Jda-01-22-LYD-0005-17 ELECTRICAL LAYOUT 1 & 2-R1.dwg');
+  assert.equal(files.get('b'), 'Already Fine.dwg');
+  assert.equal(files.get('c'), 'Rapat 1_2_ final_.pdf');
+  assert.deepEqual({ ...renameLegacyProjectFiles() }, { renamed: 0, skipped: 3, failed: 1, remaining: 0 });
 });

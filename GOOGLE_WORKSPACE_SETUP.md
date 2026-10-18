@@ -144,3 +144,8 @@ Data tersimpan di snapshot proyek sebagai `projectSchedule` (ikut tersinkron ke 
 - Laporan disimpan ke tab `BugReports` (dibuat otomatis) dan screenshot ke subfolder Drive `Bug Reports` di dalam `FOLDER_ID`. Teks yang diawali `= + - @` diberi awalan `'` agar tidak dieksekusi sebagai rumus.
 - Hanya email aktif di tab `Access` yang bisa mengirim laporan, maksimal 5 laporan per jam per akun. **Laporan Saya** menampilkan laporan milik sendiri; role Developer melihat semua laporan dan dapat mengubah status (`Baru`, `Diproses`, `Selesai`, `Ditolak`) beserta catatan untuk pelapor.
 - Laporan tidak mengubah data proyek dan tidak memicu sinkronisasi Supabase. Pengujian: `node --test tests\bug-report.test.js`.
+
+## Nama File di Google Drive
+
+- File proyek disimpan di Drive dengan **nama asli** saat diunggah, jadi hasil **Unduh** memakai nama yang sama dengan yang tampil di aplikasi. Karakter `\ / : * ? " < > |` diganti `_` dan nama dibatasi 200 karakter (ekstensi tetap).
+- File lama yang masih bernama `mep_<proyek>_<waktu>_...` bisa dirapikan sekali: buka editor Apps Script, pilih fungsi `renameLegacyProjectFiles`, klik **Run**, lalu lihat hasil di **Execution log** (`renamed`, `skipped`, `failed`, `remaining`). Jika `remaining` > 0, jalankan lagi. Fungsi ini aman dijalankan ulang dan tidak mengubah link/ID file.

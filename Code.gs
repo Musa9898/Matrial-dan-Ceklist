@@ -34,7 +34,7 @@ const PROJECT_FILE_HEADERS = [
   'Uploaded By', 'Created At', 'MIME Type', 'Payload JSON'
 ];
 const PROJECT_FOLDER_HEADERS = ['Folder ID', 'Project ID', 'Folder Name', 'Created At', 'Created By'];
-const BACKEND_VERSION = '2026-10-19-bug-report';
+const BACKEND_VERSION = '2026-10-19-original-file-names';
 const FRONTEND_ORIGINS = [
   'https://musa9898.github.io',
   'http://localhost:8000',
@@ -1532,7 +1532,7 @@ function saveDriveFile_(project, fileData, email) {
     throw new Error('Jenis file tidak diizinkan.');
   }
   const mimeType = UPLOAD_MIME_TYPES[extension] || match[1];
-  const name = 'mep_' + safeFileName_(project.projectId) + '_' + Date.now() + '_' + safeFileName_(fileData.name);
+  const name = driveFileName_(fileData.name);
   const blob = Utilities.newBlob(Utilities.base64Decode(match[2]), mimeType, name);
   const driveFile = DriveApp.getFolderById(FOLDER_ID).createFile(blob);
   return registerDriveFile_(project, driveFile, {
@@ -1646,7 +1646,7 @@ function startResumableUpload_(project, fileData, email) {
   if (size > UPLOAD_MAX_BYTES) throw new Error('Ukuran file melebihi batas 200 MB.');
 
   const mimeType = UPLOAD_MIME_TYPES[extension];
-  const storedName = 'mep_' + safeFileName_(project.projectId) + '_' + Date.now() + '_' + safeFileName_(name);
+  const storedName = driveFileName_(name);
   const response = UrlFetchApp.fetch(
     'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true&fields=id',
     {
@@ -1830,6 +1830,58 @@ function parseJson_(value) {
 
 function safeFileName_(value) {
   return String(value || 'project').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50);
+}
+
+// Nama file di Drive = nama asli dari pengguna, agar hasil unduhan tidak berubah.
+function driveFileName_(value) {
+  const name = String(value || '').replace(/[\u0000-\u001f\u007f\\/:*?"<>|]+/g, '_').trim();
+  if (!name) return 'file';
+  if (name.length <= 200) return name;
+  const dot = name.lastIndexOf('.');
+  const extension = dot > 0 && name.length - dot <= 10 ? name.slice(dot) : '';
+  return name.slice(0, 200 - extension.length) + extension;
+}
+
+// Jalankan sekali dari editor Apps Script (pilih fungsi ini lalu Run) untuk
+// mengganti nama file lama "mep_<proyek>_<waktu>_..." di Drive kembali ke nama asli.
+// Aman dijalankan ulang: file yang sudah benar dilewati. Link file tidak berubah.
+function renameLegacyProjectFiles() {
+  const startedAt = Date.now();
+  const sheet = getSchemaSheet_(getSpreadsheet_(), PROJECT_FILES_SHEET_NAME, PROJECT_FILE_HEADERS);
+  const summary = { renamed: 0, skipped: 0, failed: 0, remaining: 0 };
+  if (sheet.getLastRow() < 2) {
+    Logger.log(JSON.stringify(summary));
+    return summary;
+  }
+  const headers = getSheetHeaderIndexes_(sheet);
+  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
+  for (let index = 0; index < rows.length; index += 1) {
+    if (Date.now() - startedAt > 270000) {
+      summary.remaining = rows.length - index;
+      break;
+    }
+    const row = rows[index];
+    const fileId = String(getSheetCell_(row, headers, 'file id') || '').replace(/^file:/, '');
+    if (!fileId) continue;
+    const payload = parseJson_(getSheetCell_(row, headers, 'payload json')) || {};
+    const originalName = driveFileName_(payload.name || getSheetCell_(row, headers, 'file name'));
+    try {
+      const driveFile = DriveApp.getFileById(fileId);
+      const currentName = driveFile.getName();
+      if (currentName.indexOf('mep_') !== 0 || currentName === originalName || originalName === 'file') {
+        summary.skipped += 1;
+        continue;
+      }
+      driveFile.setName(originalName);
+      summary.renamed += 1;
+    } catch (error) {
+      summary.failed += 1;
+      Logger.log('Gagal ganti nama ' + fileId + ': ' + error.message);
+    }
+  }
+  Logger.log(JSON.stringify(summary)
+    + (summary.remaining ? ' — batas waktu tercapai, jalankan sekali lagi untuk sisa file.' : ''));
+  return summary;
 }
 
 // =====================================================================
