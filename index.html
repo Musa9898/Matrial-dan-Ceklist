@@ -2003,6 +2003,18 @@
       color: var(--text-dark);
     }
 
+    .test-doc-signers { display: grid; gap: 8px; margin-bottom: 6px; }
+    .test-doc-signer-row { display: grid; grid-template-columns: 70px repeat(3, minmax(0, 1fr)); gap: 6px; align-items: center; margin: 0; }
+    .test-doc-signer-row strong { font-size: 0.75rem; color: var(--text-dark); }
+    .test-doc-signer-row input { width: 100%; min-width: 0; }
+    .test-doc-logo-preview { display: flex; align-items: center; gap: 8px; margin-top: 6px; min-height: 28px; }
+    .test-doc-logo-preview img { max-width: 120px; max-height: 48px; object-fit: contain; background: #fff; border: 1px solid var(--border-color, #e2e8f0); border-radius: 6px; padding: 2px; }
+    .test-doc-logo-remove { border: 1px solid #fca5a5; background: #fff1f2; color: #b91c1c; border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; }
+    .test-doc-logo-empty { font-size: 0.75rem; color: var(--text-muted, #94a3b8); }
+    @media (max-width: 600px) {
+      .test-doc-signer-row { grid-template-columns: 1fr; }
+    }
+
     .test-report-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3752,6 +3764,9 @@
       .section-actions { flex-wrap: nowrap; gap: 6px; }
       .section-actions .btn-pdf-export { padding: 7px 9px; font-size: 0.72rem; }
       .section-actions .btn-action-primary { white-space: nowrap; }
+      .test-section-header { flex-wrap: wrap; row-gap: 10px; }
+      .test-section-header .section-title { flex: 1 1 100%; }
+      .test-section-header .section-actions { flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-start; }
     }
     @media (max-width: 540px) {
       .project-file-row { flex-wrap: wrap; row-gap: 8px; }
@@ -3807,6 +3822,48 @@
     #pdfPrintRoot .pdf-test-photo-group img { display: block; width: 100%; height: 64mm; object-fit: contain; background: #f1f5f9; border-radius: 4px; border: 1px solid #cbd5e1; margin-bottom: 6px; break-inside: avoid; }
     #pdfPrintRoot .pdf-test-photo-group.is-wide { grid-column: 1 / -1; }
     #pdfPrintRoot .pdf-test-photo-group.is-wide .pdf-test-photo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 10px; }
+    #pdfPrintRoot .ba-page { break-after: page; font-size: 10.5pt; }
+    #pdfPrintRoot .ba-page:last-child { break-after: auto; }
+    #pdfPrintRoot .ba-page table, #pdfPrintRoot .ba-page td, #pdfPrintRoot .ba-page th { background: none !important; color: #0f172a; font-size: 10.5pt; }
+    #pdfPrintRoot .ba-kop { border: 1.5px solid #0f172a; margin-bottom: 0; table-layout: fixed; }
+    #pdfPrintRoot .ba-kop td { border: 1.5px solid #0f172a; vertical-align: middle; text-align: center; padding: 6px 8px; }
+    #pdfPrintRoot .ba-kop .ba-project-title { font-size: 14pt; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; padding: 5px 8px; }
+    #pdfPrintRoot .ba-kop-owner, #pdfPrintRoot .ba-kop-contractor { width: 30%; }
+    #pdfPrintRoot .ba-kop-title div:first-child { font-size: 15pt; font-weight: 800; letter-spacing: 1px; }
+    #pdfPrintRoot .ba-kop-title div:last-child { font-size: 11pt; font-weight: 700; margin-top: 2px; }
+    #pdfPrintRoot .ba-owner-name { font-size: 13pt; font-weight: 800; line-height: 1.2; text-transform: uppercase; }
+    #pdfPrintRoot .ba-owner-small, #pdfPrintRoot .ba-contractor-name { font-size: 9pt; font-weight: 700; margin-top: 3px; }
+    #pdfPrintRoot .ba-contractor-name.is-main { font-size: 13pt; font-weight: 800; text-transform: uppercase; line-height: 1.2; margin-top: 0; }
+    #pdfPrintRoot .ba-contractor-info { font-size: 7.5pt; color: #334155; margin-top: 2px; line-height: 1.25; }
+    #pdfPrintRoot .ba-logo { display: block; max-width: 100%; max-height: 18mm; margin: 0 auto; object-fit: contain; }
+    #pdfPrintRoot .ba-victory { display: inline-flex; align-items: center; gap: 6px; }
+    #pdfPrintRoot .ba-victory svg { width: 15mm; height: auto; }
+    #pdfPrintRoot .ba-victory div { text-align: left; line-height: 1.05; }
+    #pdfPrintRoot .ba-victory strong { display: block; font-size: 13pt; color: #29377d; letter-spacing: 1px; }
+    #pdfPrintRoot .ba-victory span { display: block; font-size: 7.5pt; color: #29377d; letter-spacing: 1.6px; font-weight: 700; }
+    #pdfPrintRoot .ba-info { border: 1.5px solid #0f172a; border-top: 0; margin-bottom: 10px; table-layout: fixed; }
+    #pdfPrintRoot .ba-info > tbody > tr > td, #pdfPrintRoot .ba-info > tr > td { border: 1.5px solid #0f172a; border-top: 0; padding: 4px 6px; }
+    #pdfPrintRoot .ba-info-left { width: 60%; }
+    #pdfPrintRoot .ba-info table { margin: 0; }
+    #pdfPrintRoot .ba-info table th, #pdfPrintRoot .ba-info table td { border: 0; padding: 1px 3px; font-weight: 700; }
+    #pdfPrintRoot .ba-info table th { width: 26%; text-align: left; white-space: nowrap; }
+    #pdfPrintRoot .ba-info table td:nth-child(2) { width: 10px; }
+    #pdfPrintRoot .ba-text { margin: 8px 0; text-align: justify; line-height: 1.5; }
+    #pdfPrintRoot .ba-points { margin: 4px 0 8px; }
+    #pdfPrintRoot .ba-points td { border: 0; padding: 2px 4px; }
+    #pdfPrintRoot .ba-points .ba-no { width: 26px; text-align: right; }
+    #pdfPrintRoot .ba-points .ba-label { width: 34%; }
+    #pdfPrintRoot .ba-points .ba-colon { width: 10px; }
+    #pdfPrintRoot .ba-result { font-size: 11.5pt; font-weight: 700; }
+    #pdfPrintRoot .ba-opt.is-on { border: 1.5px solid #0f172a; border-radius: 12px; padding: 0 6px; }
+    #pdfPrintRoot .ba-opt.is-off { text-decoration: line-through; color: #64748b; font-weight: 500; }
+    #pdfPrintRoot .ba-sign { margin-top: 14px; table-layout: fixed; break-inside: avoid; }
+    #pdfPrintRoot .ba-sign td { border: 0; text-align: center; padding: 2px 6px; }
+    #pdfPrintRoot .ba-sign-space td { height: 22mm; }
+    #pdfPrintRoot .ba-sign-name { font-weight: 700; text-decoration: underline; white-space: pre; }
+    #pdfPrintRoot .ba-sign-company { font-size: 9.5pt; font-weight: 600; }
+    #pdfPrintRoot .ba-attach-title { margin-top: 10px; text-align: center; font-size: 12.5pt; font-weight: 800; letter-spacing: 0.5px; }
+    #pdfPrintRoot .ba-attach-sub { text-align: center; font-size: 10pt; color: #334155; margin: 2px 0 6px; }
     #pdfPrintRoot .pdf-status { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 8.5pt; font-weight: 700; background: #e2e8f0; }
     #pdfPrintRoot .pdf-status.ok { background: #dcfce7; color: #14532d; }
     #pdfPrintRoot .pdf-status.bad { background: #fee2e2; color: #991b1b; }
@@ -4091,12 +4148,13 @@
       </div>
 
       <div id="testReportView" hidden>
-        <div class="section-header">
+        <div class="section-header test-section-header">
           <div class="section-title">
             <span>🧪</span> Pengetesan &amp; Commissioning
           </div>
           <div class="section-actions">
             <button class="btn-pdf-export" type="button" data-pdf-tab="pengetesan" onclick="openPdfExportDialog('pengetesan')">📄 PDF</button>
+            <button class="btn-pdf-export" type="button" onclick="openTestDocSettings()" title="Atur kop & tanda tangan Berita Acara">🧾 Kop &amp; TTD</button>
             <button class="btn-action-primary" type="button" onclick="openTestReportForm()">+ Tes Baru</button>
           </div>
         </div>
@@ -5000,12 +5058,12 @@
             <input type="text" id="testReportSystem" placeholder="Contoh: Riser Air Bersih Ø2&quot;">
           </div>
           <div class="form-row">
-            <label for="testReportStandard">Standar / Acuan</label>
-            <input type="text" id="testReportStandard" placeholder="Contoh: SNI 03-6481, spesifikasi teknis">
-          </div>
-        </div>
+            <label for="testReportDocNumber">Nomor Berita Acara</label>
+            <input type="text" id="testReportDocNumber" maxlength="80" placeholder="Contoh: 039/BAL/VUK-DGTR/MEP/X/2026 (opsional)">
+                      </div>
+                    </div>
 
-        <fieldset class="test-report-params">
+                    <fieldset class="test-report-params">
           <legend>Data Hasil Uji</legend>
           <div class="test-report-fields" id="testReportFields"></div>
         </fieldset>
@@ -5095,8 +5153,82 @@
         </div>
         <div class="btn-group">
           <button class="btn-cancel" type="button" onclick="closeTestReportDetail()">Tutup</button>
+          <button class="btn-pdf-export" type="button" data-pdf-tab="pengetesan" onclick="exportSelectedTestReportBa()">📄 BA</button>
           <button class="btn-delete-test" type="button" id="deleteTestReportButton" onclick="deleteTestReport()">Hapus</button>
           <button class="btn-save" type="button" id="editTestReportButton" onclick="editTestReportFromDetail()">Edit</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalTestDocSettings">
+      <div class="modal-sheet">
+        <h3>🧾 Kop &amp; Tanda Tangan Berita Acara</h3>
+        <p class="form-hint">Berlaku untuk proyek ini saja dan dipakai pada PDF format Berita Acara Pengetesan.</p>
+
+        <fieldset class="test-report-params">
+          <legend>Kop (Header)</legend>
+          <div class="form-row">
+            <label for="testDocProjectTitle">Judul Proyek (baris atas kop)</label>
+            <input type="text" id="testDocProjectTitle" maxlength="120" placeholder="Contoh: DIRGAMITRA OFFICE">
+          </div>
+          <div class="grid-2">
+            <div class="form-row">
+              <label for="testDocOwnerName">Nama Owner / Pemberi Kerja (kiri)</label>
+              <input type="text" id="testDocOwnerName" maxlength="120" placeholder="Contoh: PT. DIRGAMITRA PASIFIC">
+            </div>
+            <div class="form-row">
+              <label for="testDocOwnerLogoInput">Logo Owner (opsional)</label>
+              <input type="file" id="testDocOwnerLogoInput" accept="image/png,image/jpeg,image/webp" onchange="setTestDocLogo('owner', this.files)">
+              <div class="test-doc-logo-preview" id="testDocOwnerLogoPreview"></div>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-row">
+              <label for="testDocTitle">Judul Dokumen</label>
+              <input type="text" id="testDocTitle" maxlength="60" placeholder="BERITA ACARA">
+            </div>
+            <div class="form-row">
+              <label for="testDocSubtitle">Sub Judul</label>
+              <input type="text" id="testDocSubtitle" maxlength="80" placeholder="PENGETESAN">
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-row">
+              <label for="testDocContractorName">Nama Kontraktor (kanan)</label>
+              <input type="text" id="testDocContractorName" maxlength="120" placeholder="Victory Construction">
+            </div>
+            <div class="form-row">
+              <label for="testDocContractorLogoInput">Logo Kontraktor (opsional)</label>
+              <input type="file" id="testDocContractorLogoInput" accept="image/png,image/jpeg,image/webp" onchange="setTestDocLogo('contractor', this.files)">
+              <div class="test-doc-logo-preview" id="testDocContractorLogoPreview"></div>
+            </div>
+          </div>
+          <div class="form-row">
+            <label for="testDocContractorInfo">Alamat / Kontak Kontraktor (opsional)</label>
+            <textarea id="testDocContractorInfo" rows="2" maxlength="300" placeholder="Alamat, telepon, email"></textarea>
+          </div>
+          <div class="grid-2">
+            <div class="form-row">
+              <label for="testDocPackage">Paket</label>
+              <input type="text" id="testDocPackage" maxlength="60" placeholder="MEP">
+            </div>
+            <div class="form-row">
+              <label for="testDocAttachment">Keterangan Lampiran</label>
+              <input type="text" id="testDocAttachment" maxlength="80" placeholder="Gambar &amp; Dokumentasi">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="test-report-params">
+          <legend>Tanda Tangan (Footer)</legend>
+          <div class="test-doc-signers" id="testDocSigners"></div>
+          <p class="form-hint">Maksimal 4 kolom. Kosongkan semua isian satu kolom untuk menyembunyikannya. Nama kosong pada kolom "Dibuat oleh" otomatis diisi SPV penguji.</p>
+        </fieldset>
+
+        <div class="btn-group">
+          <button class="btn-cancel" type="button" onclick="resetTestDocSettingsForm()">Reset Default</button>
+          <button class="btn-cancel" type="button" onclick="closeTestDocSettings()">Batal</button>
+          <button class="btn-save" type="button" id="saveTestDocSettingsButton" onclick="saveTestDocSettings()">Simpan</button>
         </div>
       </div>
     </div>
@@ -5151,6 +5283,17 @@
       <h3 id="pdfExportTitle">📄 Export PDF</h3>
       <p class="form-hint" id="pdfExportSubtitle">Laporan akan dibuka di jendela cetak. Pilih "Simpan sebagai PDF".</p>
       <fieldset id="pdfExportFields">
+        <div id="pdfExportFormatWrap" hidden>
+          <div class="pdf-section-label">Format</div>
+          <div class="form-row">
+            <label for="pdfExportFormat">Format PDF</label>
+            <select id="pdfExportFormat" onchange="updatePdfExportFormat()">
+              <option value="ba">Berita Acara per tes (kop proyek)</option>
+              <option value="recap">Rekap &amp; detail semua tes</option>
+            </select>
+          </div>
+          <p class="form-hint" id="pdfExportBaHint">Kop &amp; tanda tangan mengikuti pengaturan "🧾 Kop &amp; TTD". Setiap tes dicetak 1 halaman BA + lampiran foto.</p>
+        </div>
         <div id="pdfExportDateWrap">
           <div class="pdf-section-label">Periode Laporan</div>
           <div class="pdf-date-grid">
@@ -5159,10 +5302,12 @@
           </div>
           <p class="form-hint">Kosongkan untuk semua tanggal.</p>
         </div>
-        <div class="pdf-section-label">Tanda Tangan</div>
-        <div class="form-row"><label for="pdfSignMaker">Dibuat oleh</label><input type="text" id="pdfSignMaker" maxlength="60" autocomplete="off"></div>
-        <div class="form-row"><label for="pdfSignChecker">Diperiksa oleh</label><input type="text" id="pdfSignChecker" maxlength="60" autocomplete="off" placeholder="Opsional"></div>
-        <div class="form-row"><label for="pdfSignApprover">Disetujui oleh</label><input type="text" id="pdfSignApprover" maxlength="60" autocomplete="off" placeholder="Opsional"></div>
+        <div id="pdfExportSignWrap">
+          <div class="pdf-section-label">Tanda Tangan</div>
+          <div class="form-row"><label for="pdfSignMaker">Dibuat oleh</label><input type="text" id="pdfSignMaker" maxlength="60" autocomplete="off"></div>
+          <div class="form-row"><label for="pdfSignChecker">Diperiksa oleh</label><input type="text" id="pdfSignChecker" maxlength="60" autocomplete="off" placeholder="Opsional"></div>
+          <div class="form-row"><label for="pdfSignApprover">Disetujui oleh</label><input type="text" id="pdfSignApprover" maxlength="60" autocomplete="off" placeholder="Opsional"></div>
+        </div>
         <div class="btn-group">
           <button class="btn-cancel" type="button" id="pdfExportCancel" onclick="closePdfExportDialog()">Batal</button>
           <button class="btn-save" type="submit" id="pdfExportSubmit">Buat PDF</button>
@@ -5873,6 +6018,7 @@
     let dailyWorkDraftTasks = [];
     let projectSchedule = null;
     let testReports = [];
+    let testDocSettings = null;
 
     function persistDailyWorkPlans() {
       return persistActiveProjectData();
@@ -5896,7 +6042,7 @@
     }
 
     function getEmptyProjectData() {
-      return { materialItems: [], assetItems: [], deliveryHistory: {}, usageHistory: {}, checklistItems: [], dailyWorkPlans: [], projectFolders: [], projectSchedule: null, testReports: [] };
+      return { materialItems: [], assetItems: [], deliveryHistory: {}, usageHistory: {}, checklistItems: [], dailyWorkPlans: [], projectFolders: [], projectSchedule: null, testReports: [], testDocSettings: null };
     }
 
     function replaceProjectMap(target, source) {
@@ -5915,6 +6061,9 @@
       projectFolders = Array.isArray(safeData.projectFolders) ? safeData.projectFolders : [];
       projectSchedule = normalizeProjectSchedule(safeData.projectSchedule);
       testReports = Array.isArray(safeData.testReports) ? safeData.testReports.filter((report) => report && typeof report === 'object') : [];
+      testDocSettings = safeData.testDocSettings && typeof safeData.testDocSettings === 'object' && !Array.isArray(safeData.testDocSettings)
+        ? safeData.testDocSettings
+        : null;
       mergeDuplicateMaterials();
     }
 
@@ -5928,7 +6077,8 @@
         dailyWorkPlans,
         projectFolders,
         projectSchedule,
-        testReports
+        testReports,
+        testDocSettings
       };
     }
 
@@ -6071,10 +6221,17 @@
     };
     const PDF_SIGNERS_STORAGE_KEY = 'pdfExportSigners';
     let pdfExportTab = '';
+    let pdfExportReportIds = [];
     let pdfExportBusy = false;
     let pdfPrintCleanup = null;
 
-    function openPdfExportDialog(tab) {
+    function updatePdfExportFormat() {
+      const isBa = pdfExportTab === 'pengetesan' && document.getElementById('pdfExportFormat').value === 'ba';
+      document.getElementById('pdfExportSignWrap').hidden = isBa;
+      document.getElementById('pdfExportBaHint').hidden = !isBa;
+    }
+
+    function openPdfExportDialog(tab, preset = {}) {
       if (pdfExportBusy) return;
       if (!canExportPdf(tab)) {
         showAppNotice('Peran akun Anda tidak memiliki izin export PDF untuk menu ini.');
@@ -6086,10 +6243,16 @@
       }
       if (pdfPrintCleanup) pdfPrintCleanup();
       pdfExportTab = tab;
+      pdfExportReportIds = tab === 'pengetesan' && Array.isArray(preset.reportIds) ? preset.reportIds.filter(Boolean) : [];
       const dialog = document.getElementById('pdfExportDialog');
-      const usesDates = !['assets', 'calculator'].includes(tab);
-      document.getElementById('pdfExportTitle').textContent = `📄 Export PDF · ${PDF_TAB_TITLES[tab].replace(/^Laporan /, '')}`;
+      const usesDates = !['assets', 'calculator'].includes(tab) && !pdfExportReportIds.length;
+      document.getElementById('pdfExportTitle').textContent = pdfExportReportIds.length
+        ? '📄 Export PDF · Berita Acara Pengetesan'
+        : `📄 Export PDF · ${PDF_TAB_TITLES[tab].replace(/^Laporan /, '')}`;
       document.getElementById('pdfExportDateWrap').hidden = !usesDates;
+      document.getElementById('pdfExportFormatWrap').hidden = tab !== 'pengetesan';
+      if (tab === 'pengetesan') document.getElementById('pdfExportFormat').value = preset.format === 'recap' ? 'recap' : 'ba';
+      updatePdfExportFormat();
       const filterIds = { ceklist: ['checklistDateFrom', 'checklistDateTo'], pengetesan: ['testReportDateFrom', 'testReportDateTo'], suratjalan: ['dailyWorkDateFrom', 'dailyWorkDateTo'] }[tab];
       const fromInput = document.getElementById('pdfExportDateFrom');
       const toInput = document.getElementById('pdfExportDateTo');
@@ -6402,6 +6565,12 @@
     }
 
     function buildPdfDocument(tab, options) {
+      if (tab === 'pengetesan' && options.format === 'ba') {
+        return {
+          title: 'Berita Acara Pengetesan',
+          html: `<style>@page { size: A4; margin: 10mm 12mm; }</style>${buildPdfTestBeritaAcara(options)}`
+        };
+      }
       let body = '';
       let title = PDF_TAB_TITLES[tab];
       if (tab === 'material') body = buildPdfMaterialReport(options);
@@ -6479,7 +6648,7 @@
       const tab = pdfExportTab;
       const fromInput = document.getElementById('pdfExportDateFrom');
       const toInput = document.getElementById('pdfExportDateTo');
-      const usesDates = !['assets', 'calculator'].includes(tab);
+      const usesDates = !['assets', 'calculator'].includes(tab) && !pdfExportReportIds.length;
       const from = usesDates ? fromInput.value : '';
       const to = usesDates ? toInput.value : '';
       toInput.setCustomValidity(from && to && from > to ? 'Tanggal akhir harus sama atau setelah tanggal awal.' : '');
@@ -6488,6 +6657,8 @@
         from,
         to,
         includePhotos: true,
+        format: tab === 'pengetesan' ? document.getElementById('pdfExportFormat').value : '',
+        reportIds: pdfExportReportIds.slice(),
         maker: document.getElementById('pdfSignMaker').value.trim(),
         checker: document.getElementById('pdfSignChecker').value.trim(),
         approver: document.getElementById('pdfSignApprover').value.trim()
@@ -10534,6 +10705,88 @@
           value: `${field.type === 'number' ? formatTestNumber(raw) : String(raw)}${field.unit ? ` ${field.unit}` : ''}`
         }));
     }
+
+    const TEST_DOC_MAX_SIGNERS = 4;
+    const TEST_DOC_DEFAULT_SIGNERS = [
+      { label: 'Disetujui,', name: '', company: 'Owner' },
+      { label: 'Disetujui,', name: '', company: 'MK / Konsultan' },
+      { label: 'Diperiksa,', name: '', company: 'MK / Konsultan' },
+      { label: 'Dibuat oleh,', name: '', company: 'Victory Construction (SPV)' }
+    ];
+    const TEST_DOC_IMAGE_PATTERN = /^data:image\/(png|jpe?g|webp);base64,[a-z0-9+/=]+$/i;
+
+    function normalizeTestDocSettings(raw, projectName = '') {
+      const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+      const text = (key, fallback, max) => (String(source[key] ?? '').trim() || fallback).slice(0, max);
+      const image = (key) => (TEST_DOC_IMAGE_PATTERN.test(String(source[key] ?? '')) ? String(source[key]) : '');
+      const signers = (Array.isArray(source.signers) ? source.signers : TEST_DOC_DEFAULT_SIGNERS)
+        .slice(0, TEST_DOC_MAX_SIGNERS)
+        .map((signer) => ({
+          label: String(signer?.label ?? '').trim().slice(0, 40),
+          name: String(signer?.name ?? '').trim().slice(0, 60),
+          company: String(signer?.company ?? '').trim().slice(0, 80)
+        }))
+        .filter((signer) => signer.label || signer.name || signer.company);
+      return {
+        projectTitle: text('projectTitle', String(projectName || '').trim(), 120),
+        ownerName: text('ownerName', '', 120),
+        ownerLogo: image('ownerLogo'),
+        docTitle: text('docTitle', 'BERITA ACARA', 60),
+        docSubtitle: text('docSubtitle', 'PENGETESAN', 80),
+        contractorName: text('contractorName', 'Victory Construction', 120),
+        contractorInfo: text('contractorInfo', '', 300),
+        contractorLogo: image('contractorLogo'),
+        packageName: text('packageName', 'MEP', 60),
+        attachmentText: text('attachmentText', 'Gambar & Dokumentasi', 80),
+        signers
+      };
+    }
+
+    // Nama kosong pada kolom "Dibuat oleh" diisi otomatis dengan SPV penguji.
+    function resolveTestDocSigners(settings, report) {
+      return (settings?.signers || []).map((signer) => ({
+        ...signer,
+        name: signer.name || (/dibuat/i.test(signer.label) ? String(report?.testedBy || '').trim() : '')
+      }));
+    }
+
+    function getTestReportWorkCategory(report) {
+      const params = report?.params || {};
+      if (report?.type === 'pressure' || report?.type === 'flushing') {
+        if (params.pipeSystem === 'Hydrant') return 'Pemadam Kebakaran (Hydrant)';
+        if (params.pipeSystem === 'Sprinkler') return 'Pemadam Kebakaran (Sprinkler)';
+        return params.pipeSystem && params.pipeSystem !== 'Lainnya' ? `Plumbing (${params.pipeSystem})` : 'Plumbing';
+      }
+      if (report?.type === 'megger') return 'Elektrikal (Tahanan Isolasi)';
+      if (report?.type === 'grounding') return 'Elektrikal (Grounding)';
+      if (report?.type === 'hvac') return params.hvacItem ? `Tata Udara (${params.hvacItem})` : 'Tata Udara (HVAC)';
+      if (report?.type === 'commissioning') return params.equipment ? `Commissioning (${params.equipment})` : 'Commissioning';
+      return getTestReportLabel(report);
+    }
+
+    function getTestReportMethodLabel(report) {
+      const params = report?.params || {};
+      if (report?.type === 'pressure') return getPipeTestMethod(params) || 'Tes Pipa';
+      if (report?.type === 'hvac') return getHvacTestMethod(params) || 'Tes Tata Udara';
+      if (report?.type === 'megger') return `Megger${params.testVoltage ? ` ${params.testVoltage} V DC` : ''}`;
+      if (report?.type === 'grounding') return params.method ? `Ukur Tahanan Pentanahan – ${params.method}` : 'Ukur Tahanan Pentanahan';
+      if (report?.type === 'flushing') return 'Flushing';
+      if (report?.type === 'commissioning') return 'Uji Fungsi / Commissioning';
+      return getTestReportLabel(report);
+    }
+
+    const INDONESIAN_DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const INDONESIAN_MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+    function getIndonesianDateParts(isoDate) {
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(isoDate || ''));
+      if (!match) return null;
+      const [year, month, day] = match.slice(1).map(Number);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      if (date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+      const monthName = INDONESIAN_MONTHS[month - 1];
+      return { dayName: INDONESIAN_DAYS[date.getUTCDay()], day, monthName, year, long: `${day} ${monthName} ${year}` };
+    }
     // ==== TEST REPORT CORE END ====
 
     const MAX_TEST_REPORT_PHOTOS = 8;
@@ -10729,7 +10982,7 @@
       document.getElementById('testReportDate').value = report?.date || getTodayISO();
       document.getElementById('testReportArea').value = report?.area || '';
       document.getElementById('testReportSystem').value = report?.system || '';
-      document.getElementById('testReportStandard').value = report?.standard || '';
+      document.getElementById('testReportDocNumber').value = report?.docNumber || '';
       document.getElementById('testReportTestedBy').value = report?.testedBy || (report ? '' : getSignedInName());
       document.getElementById('testReportWitnessQc').value = report?.witnesses?.QC || '';
       document.getElementById('testReportWitnessOwner').value = report?.witnesses?.['Konsultan/Owner'] || '';
@@ -10898,7 +11151,7 @@
         date,
         area,
         system: document.getElementById('testReportSystem').value.trim(),
-        standard: document.getElementById('testReportStandard').value.trim(),
+        docNumber: document.getElementById('testReportDocNumber').value.trim(),
         params,
         autoResult: evaluation.result,
         result,
@@ -10982,7 +11235,7 @@
         stat('Tanggal', formatChecklistDate(report.date)),
         stat('Area', report.area),
         stat('Penguji (SPV)', report.testedBy),
-        report.standard ? stat('Standar', report.standard) : ''
+        report.docNumber ? stat('Nomor BA', report.docNumber) : ''
       ].join('');
       const rows = getTestReportParamRows(report.type, report.params || {})
         .map((row) => `<div><span>${escapeHtml(row.label)}</span><strong>${escapeHtml(row.value)}</strong></div>`);
@@ -11045,12 +11298,8 @@
           .join('');
         const witnesses = Object.entries(report.witnesses || {}).filter(([, name]) => name);
         const photoGroups = getTestReportPhotoGroups(report);
-        const photoGroupHtml = (group) => {
-          const wide = !['Sebelum (Open)', 'Sesudah (Close)'].includes(group.label);
-          return `<div class="pdf-test-photo-group${wide ? ' is-wide' : ''}"><div class="pdf-test-photo-group-title">${escapeHtml(group.label)}</div><div class="pdf-test-photo-grid">${group.photos.map((source, photoIndex) => `<img src="${escapeHtml(getPdfChecklistPhotoUrl(source))}" alt="${escapeHtml(group.label)} ${photoIndex + 1}">`).join('')}</div></div>`;
-        };
         const photoHtml = includePhotos && photoGroups.length
-          ? `<div class="pdf-test-photos">${photoGroups.map(photoGroupHtml).join('')}</div>`
+          ? `<div class="pdf-test-photos">${photoGroups.map(pdfTestPhotoGroupHtml).join('')}</div>`
           : '';
         return `
           <div class="pdf-block pdf-test-block">
@@ -11059,7 +11308,6 @@
               <div><span>Tanggal:</span> ${escapeHtml(formatChecklistDate(report.date))}</div>
               <div><span>Area:</span> ${escapeHtml(report.area || '-')}</div>
               <div><span>Penguji (SPV):</span> ${escapeHtml(report.testedBy || '-')}</div>
-              ${report.standard ? `<div><span>Standar:</span> ${escapeHtml(report.standard)}</div>` : ''}
               ${paramHtml}
             </div>
             ${Array.isArray(report.reasons) && report.reasons.length ? `<div class="pdf-note"><strong>Penyebab gagal:</strong> ${escapeHtml(report.reasons.join('; '))}</div>` : ''}
@@ -11078,6 +11326,275 @@
         <h4>Rekap Pengetesan</h4>
         ${pdfTable(['No', 'Tanggal', 'Jenis Tes', 'Area', 'Sistem', 'Ringkasan', 'Hasil', 'SPV'], rows)}
         ${reports.length ? `<h4>Detail Pengetesan${includePhotos ? ' & Foto Bukti' : ''}</h4>${details}` : ''}`;
+    }
+
+    function pdfTestPhotoGroupHtml(group) {
+      const wide = !['Sebelum (Open)', 'Sesudah (Close)'].includes(group.label);
+      return `<div class="pdf-test-photo-group${wide ? ' is-wide' : ''}"><div class="pdf-test-photo-group-title">${escapeHtml(group.label)}</div><div class="pdf-test-photo-grid">${group.photos.map((source, photoIndex) => `<img src="${escapeHtml(getPdfChecklistPhotoUrl(source))}" alt="${escapeHtml(group.label)} ${photoIndex + 1}">`).join('')}</div></div>`;
+    }
+
+    const BA_VICTORY_LOGO = '<svg viewBox="0 0 420 330" aria-hidden="true"><path d="M52 28h76l116 238-38 64L52 28Z" fill="#29377D"/><path d="M242 28h78L244 222l-39 65-44-91L242 28Z" fill="#F0B51B"/><path d="m161 196 44 91 39-65-29-60-54 34Z" fill="#FFD85D"/></svg>';
+
+    function buildBaKopHtml(settings) {
+      const ownerCell = settings.ownerLogo
+        ? `<img class="ba-logo" src="${escapeHtml(settings.ownerLogo)}" alt="Logo owner">${settings.ownerName ? `<div class="ba-owner-small">${escapeHtml(settings.ownerName)}</div>` : ''}`
+        : `<div class="ba-owner-name">${escapeHtml(settings.ownerName || 'OWNER')}</div>`;
+      const isDefaultContractor = settings.contractorName.toLowerCase() === 'victory construction';
+      const contractorMark = settings.contractorLogo
+        ? `<img class="ba-logo" src="${escapeHtml(settings.contractorLogo)}" alt="Logo kontraktor">`
+        : isDefaultContractor
+          ? `<div class="ba-victory">${BA_VICTORY_LOGO}<div><strong>VICTORY</strong><span>CONSTRUCTION</span></div></div>`
+          : '';
+      const contractorText = (!isDefaultContractor || settings.contractorLogo) ? `<div class="ba-contractor-name${contractorMark ? '' : ' is-main'}">${escapeHtml(settings.contractorName)}</div>` : '';
+      const info = settings.contractorInfo ? `<div class="ba-contractor-info">${escapeHtml(settings.contractorInfo).replace(/\n/g, '<br>')}</div>` : '';
+      return `
+        <table class="ba-kop">
+          <tr><td colspan="3" class="ba-project-title">${escapeHtml(settings.projectTitle || '-')}</td></tr>
+          <tr>
+            <td class="ba-kop-owner">${ownerCell}</td>
+            <td class="ba-kop-title"><div>${escapeHtml(settings.docTitle)}</div><div>${escapeHtml(settings.docSubtitle)}</div></td>
+            <td class="ba-kop-contractor">${contractorMark}${contractorText}${info}</td>
+          </tr>
+        </table>`;
+    }
+
+    function buildBaInfoHtml(settings, report, dateParts) {
+      const row = (label, value) => `<tr><th>${escapeHtml(label)}</th><td>:</td><td>${escapeHtml(value || '-')}</td></tr>`;
+      return `
+        <table class="ba-info">
+          <tr>
+            <td class="ba-info-left"><table>
+              ${row('PROYEK', settings.projectTitle)}
+              ${row('PEKERJAAN', getTestReportWorkCategory(report))}
+              ${row('PAKET', settings.packageName)}
+              ${row('LOKASI', report.area)}
+              ${report.system ? row('ITEM', report.system) : ''}
+            </table></td>
+            <td class="ba-info-right"><table>
+              ${row('NOMOR', report.docNumber)}
+              ${row('TANGGAL', dateParts ? dateParts.long : formatChecklistDate(report.date))}
+              ${row('LAMPIRAN', settings.attachmentText)}
+            </table></td>
+          </tr>
+        </table>`;
+    }
+
+    function buildBaSignHtml(settings, report) {
+      const signers = resolveTestDocSigners(settings, report);
+      if (!signers.length) return '';
+      const width = `${(100 / signers.length).toFixed(2)}%`;
+      return `
+        <table class="ba-sign">
+          <tr>${signers.map((signer) => `<td style="width:${width}">${escapeHtml(signer.label || '')}</td>`).join('')}</tr>
+          <tr class="ba-sign-space">${signers.map(() => '<td></td>').join('')}</tr>
+          <tr>${signers.map((signer) => `<td><span class="ba-sign-name">${signer.name ? escapeHtml(signer.name) : '&nbsp;'.repeat(40)}</span></td>`).join('')}</tr>
+          <tr>${signers.map((signer) => `<td class="ba-sign-company">${escapeHtml(signer.company || '')}</td>`).join('')}</tr>
+        </table>`;
+    }
+
+    function buildPdfTestBeritaAcara({ from, to, includePhotos, reportIds }) {
+      const ids = Array.isArray(reportIds) && reportIds.length ? new Set(reportIds) : null;
+      const reports = testReports
+        .filter((report) => (ids ? ids.has(report.id) : isPdfDateInRange(report.date, from, to)))
+        .sort((first, second) => String(first.date || '').localeCompare(String(second.date || '')));
+      if (!reports.length) return '<div class="pdf-empty">Tidak ada data pengetesan pada periode ini.</div>';
+      const settings = normalizeTestDocSettings(testDocSettings, getActiveProjectName());
+      const kop = buildBaKopHtml(settings);
+      return reports.map((report) => {
+        const dateParts = getIndonesianDateParts(report.date);
+        const subject = report.system || getTestReportWorkCategory(report);
+        const opening = dateParts
+          ? `Pada hari ini <strong>${escapeHtml(dateParts.dayName)}</strong>, tanggal <strong>${dateParts.day}</strong> bulan <strong>${escapeHtml(dateParts.monthName)}</strong> tahun <strong>${dateParts.year}</strong>`
+          : `Pada tanggal <strong>${escapeHtml(formatChecklistDate(report.date))}</strong>`;
+        const witnesses = Object.entries(report.witnesses || {}).filter(([, name]) => name);
+        const points = [
+          ...getTestReportParamRows(report.type, report.params || {}),
+          { label: 'Diuji oleh (SPV)', value: report.testedBy || '-' },
+          witnesses.length ? { label: 'Disaksikan oleh', value: witnesses.map(([role, name]) => `${name} (${role})`).join(', ') } : null
+        ].filter(Boolean);
+        const pointRows = points.map((point, index) => `<tr><td class="ba-no">${index + 1}.</td><td class="ba-label">${escapeHtml(point.label)}</td><td class="ba-colon">:</td><td>${escapeHtml(point.value)}</td></tr>`).join('');
+        const passed = report.result === 'Lulus';
+        const failed = report.result === 'Gagal';
+        const resultText = `<span class="ba-opt${passed ? ' is-on' : failed ? ' is-off' : ''}">BERHASIL</span> / <span class="ba-opt${failed ? ' is-on' : passed ? ' is-off' : ''}">GAGAL</span>`;
+        const reasons = Array.isArray(report.reasons) && report.reasons.length ? `<p class="ba-text"><strong>Penyebab gagal:</strong> ${escapeHtml(report.reasons.join('; '))}</p>` : '';
+        const notes = report.notes ? `<p class="ba-text"><strong>Catatan:</strong> ${escapeHtml(report.notes)}</p>` : '';
+        const photoGroups = includePhotos ? getTestReportPhotoGroups(report) : [];
+        const attachment = photoGroups.length ? `
+          <section class="ba-page">
+            ${kop}
+            <div class="ba-attach-title">LAMPIRAN DOKUMENTASI${report.docNumber ? ` · ${escapeHtml(report.docNumber)}` : ''}</div>
+            <div class="ba-attach-sub">${escapeHtml(getTestReportLabel(report))} · ${escapeHtml(subject)} · ${escapeHtml(report.area || '-')} · ${escapeHtml(dateParts ? dateParts.long : formatChecklistDate(report.date))}</div>
+            <div class="pdf-test-photos">${photoGroups.map(pdfTestPhotoGroupHtml).join('')}</div>
+          </section>` : '';
+        return `
+          <section class="ba-page">
+            ${kop}
+            ${buildBaInfoHtml(settings, report, dateParts)}
+            <p class="ba-text">${opening}, telah diadakan pengetesan bersama atas instalasi <strong>${escapeHtml(subject)}</strong>${report.area ? ` di <strong>${escapeHtml(report.area)}</strong>` : ''} dengan metode <strong>${escapeHtml(getTestReportMethodLabel(report))}</strong>, dengan ketentuan teknis sebagai berikut:</p>
+            <table class="ba-points">${pointRows}</table>
+            <p class="ba-text ba-result">Hasil pengetesan dinyatakan: ${resultText}</p>
+            ${reasons}
+            ${notes}
+            <p class="ba-text">Demikian Berita Acara ini dibuat dengan sebenarnya untuk dapat digunakan sebagaimana mestinya.</p>
+            ${buildBaSignHtml(settings, report)}
+          </section>
+          ${attachment}`;
+      }).join('');
+    }
+
+    function exportSelectedTestReportBa() {
+      const reportId = selectedTestReportId;
+      if (!reportId) return;
+      closeTestReportDetail();
+      openPdfExportDialog('pengetesan', { reportIds: [reportId], format: 'ba' });
+    }
+
+    let testDocLogoDraft = { owner: '', contractor: '' };
+
+    function renderTestDocLogoPreview(kind) {
+      const box = document.getElementById(kind === 'owner' ? 'testDocOwnerLogoPreview' : 'testDocContractorLogoPreview');
+      const source = testDocLogoDraft[kind];
+      box.innerHTML = source
+        ? `<img src="${escapeHtml(source)}" alt="Logo"><button type="button" class="test-doc-logo-remove" onclick="removeTestDocLogo('${kind}')">Hapus</button>`
+        : '<small class="test-doc-logo-empty">Belum ada logo</small>';
+    }
+
+    function renderTestDocSignerRows(signers) {
+      const rows = [];
+      for (let index = 0; index < TEST_DOC_MAX_SIGNERS; index += 1) {
+        const signer = signers[index] || { label: '', name: '', company: '' };
+        rows.push(`
+          <div class="form-row test-doc-signer-row">
+            <strong>Kolom ${index + 1}</strong>
+            <input type="text" class="test-doc-signer-label" maxlength="40" placeholder="Disetujui," value="${escapeHtml(signer.label)}" aria-label="Jabatan TTD ${index + 1}">
+            <input type="text" class="test-doc-signer-name" maxlength="60" placeholder="Nama (kosong = isi manual)" value="${escapeHtml(signer.name)}" aria-label="Nama TTD ${index + 1}">
+            <input type="text" class="test-doc-signer-company" maxlength="80" placeholder="Perusahaan / jabatan" value="${escapeHtml(signer.company)}" aria-label="Perusahaan TTD ${index + 1}">
+          </div>`);
+      }
+      document.getElementById('testDocSigners').innerHTML = rows.join('');
+    }
+
+    function fillTestDocSettingsForm(settings) {
+      document.getElementById('testDocProjectTitle').value = settings.projectTitle;
+      document.getElementById('testDocOwnerName').value = settings.ownerName;
+      document.getElementById('testDocTitle').value = settings.docTitle;
+      document.getElementById('testDocSubtitle').value = settings.docSubtitle;
+      document.getElementById('testDocContractorName').value = settings.contractorName;
+      document.getElementById('testDocContractorInfo').value = settings.contractorInfo;
+      document.getElementById('testDocPackage').value = settings.packageName;
+      document.getElementById('testDocAttachment').value = settings.attachmentText;
+      testDocLogoDraft = { owner: settings.ownerLogo, contractor: settings.contractorLogo };
+      renderTestDocLogoPreview('owner');
+      renderTestDocLogoPreview('contractor');
+      renderTestDocSignerRows(settings.signers);
+    }
+
+    function openTestDocSettings() {
+      if (!requireAccess('checklist')) return;
+      fillTestDocSettingsForm(normalizeTestDocSettings(testDocSettings, getActiveProjectName()));
+      document.getElementById('modalTestDocSettings').style.display = 'flex';
+    }
+
+    function closeTestDocSettings() {
+      document.getElementById('modalTestDocSettings').style.display = 'none';
+      document.getElementById('testDocOwnerLogoInput').value = '';
+      document.getElementById('testDocContractorLogoInput').value = '';
+    }
+
+    function resetTestDocSettingsForm() {
+      fillTestDocSettingsForm(normalizeTestDocSettings(null, getActiveProjectName()));
+    }
+
+    function removeTestDocLogo(kind) {
+      testDocLogoDraft[kind] = '';
+      document.getElementById(kind === 'owner' ? 'testDocOwnerLogoInput' : 'testDocContractorLogoInput').value = '';
+      renderTestDocLogoPreview(kind);
+    }
+
+    function resizeTestDocLogo(file) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+        image.onload = () => {
+          URL.revokeObjectURL(url);
+          const keepPng = file.type === 'image/png';
+          let maxWidth = 400;
+          let maxHeight = 200;
+          let result = '';
+          for (let attempt = 0; attempt < 4; attempt += 1) {
+            const scale = Math.min(1, maxWidth / image.naturalWidth, maxHeight / image.naturalHeight);
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+            canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+            const context = canvas.getContext('2d');
+            if (!keepPng) {
+              context.fillStyle = '#ffffff';
+              context.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+            result = keepPng ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.85);
+            if (result.length <= 200000) break;
+            maxWidth = Math.round(maxWidth * 0.7);
+            maxHeight = Math.round(maxHeight * 0.7);
+          }
+          resolve(result);
+        };
+        image.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('Gambar tidak bisa dibaca.'));
+        };
+        image.src = url;
+      });
+    }
+
+    async function setTestDocLogo(kind, files) {
+      const file = files && files[0];
+      if (!file) return;
+      if (!/^image\/(png|jpe?g|webp)$/i.test(file.type)) {
+        showAppNotice('Logo harus berupa gambar PNG, JPG, atau WEBP.');
+        return;
+      }
+      try {
+        testDocLogoDraft[kind] = await resizeTestDocLogo(file);
+        renderTestDocLogoPreview(kind);
+      } catch (error) {
+        showAppNotice(error.message || 'Logo gagal diproses.');
+      }
+    }
+
+    async function saveTestDocSettings() {
+      if (!requireAccess('checklist')) return;
+      const value = (id) => document.getElementById(id).value.trim();
+      const signers = [...document.querySelectorAll('#testDocSigners .test-doc-signer-row')].map((row) => ({
+        label: row.querySelector('.test-doc-signer-label').value.trim(),
+        name: row.querySelector('.test-doc-signer-name').value.trim(),
+        company: row.querySelector('.test-doc-signer-company').value.trim()
+      }));
+      const next = normalizeTestDocSettings({
+        projectTitle: value('testDocProjectTitle'),
+        ownerName: value('testDocOwnerName'),
+        ownerLogo: testDocLogoDraft.owner,
+        docTitle: value('testDocTitle'),
+        docSubtitle: value('testDocSubtitle'),
+        contractorName: value('testDocContractorName'),
+        contractorInfo: document.getElementById('testDocContractorInfo').value.trim(),
+        contractorLogo: testDocLogoDraft.contractor,
+        packageName: value('testDocPackage'),
+        attachmentText: value('testDocAttachment'),
+        signers
+      }, getActiveProjectName());
+      const button = document.getElementById('saveTestDocSettingsButton');
+      const previous = testDocSettings;
+      button.disabled = true;
+      testDocSettings = next;
+      const saved = await persistActiveProjectData();
+      button.disabled = false;
+      if (!saved) {
+        testDocSettings = previous;
+        return;
+      }
+      closeTestDocSettings();
+      showAppNotice('Kop & tanda tangan Berita Acara tersimpan.');
     }
 
     let kurvaImportDraft = null;

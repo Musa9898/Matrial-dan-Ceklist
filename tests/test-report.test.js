@@ -11,7 +11,7 @@ const backend = fs.readFileSync(path.join(root, 'Code.gs'), 'utf8');
 const core = html.match(/\/\/ ==== TEST REPORT CORE START ====([\s\S]*?)\/\/ ==== TEST REPORT CORE END ====/)[1];
 const pdfCore = html.match(/\/\/ ==== PDF EXPORT CORE START ====([\s\S]*?)\/\/ ==== PDF EXPORT CORE END ====/)[1];
 const context = vm.createContext({});
-vm.runInContext(`${core}\n${pdfCore}\nglobalThis.api = { TEST_REPORT_TYPES, evaluateTestReport, resolveTestReportResult, summarizeTestReport, summarizeTestReportCounts, parseTestNumber, getTestReportLabel, getPipeTestMethod, getPipeTestMethodOptions, getHvacTestMethod, getHvacTestMethodOptions, getSelectableTestReportTypes, hasTestReportStagePhotos, getTestReportPhotoGroups, getTestReportParamRows, canRoleExportPdf };`, context);
+vm.runInContext(`${core}\n${pdfCore}\nglobalThis.api = { TEST_REPORT_TYPES, evaluateTestReport, resolveTestReportResult, summarizeTestReport, summarizeTestReportCounts, parseTestNumber, getTestReportLabel, getPipeTestMethod, getPipeTestMethodOptions, getHvacTestMethod, getHvacTestMethodOptions, getSelectableTestReportTypes, hasTestReportStagePhotos, getTestReportPhotoGroups, getTestReportParamRows, canRoleExportPdf, normalizeTestDocSettings, resolveTestDocSigners, getTestReportWorkCategory, getTestReportMethodLabel, getIndonesianDateParts };`, context);
 const api = context.api;
 
 function backendFunction(name) {
@@ -249,4 +249,65 @@ test('rekonsiliasi backend tidak menyaring testReports', () => {
   const reconcile = backendFunction('reconcileSnapshotWithRecords_');
   assert.doesNotMatch(reconcile, /testReports/);
   assert.match(backend, /\{ type: 'test', name: TESTS_SHEET_NAME, headers: TEST_HEADERS/);
+});
+
+test('pengaturan kop BA memakai default proyek bila kosong', () => {
+  const settings = api.normalizeTestDocSettings(null, 'Dirgamitra Office');
+  assert.equal(settings.projectTitle, 'Dirgamitra Office');
+  assert.equal(settings.docTitle, 'BERITA ACARA');
+  assert.equal(settings.docSubtitle, 'PENGETESAN');
+  assert.equal(settings.contractorName, 'Victory Construction');
+  assert.equal(settings.signers.length, 4);
+  assert.deepEqual([...settings.signers.map((signer) => signer.label)], ['Disetujui,', 'Disetujui,', 'Diperiksa,', 'Dibuat oleh,']);
+});
+
+test('pengaturan kop BA membatasi TTD, membuang kolom kosong, dan menolak logo tidak valid', () => {
+  const settings = api.normalizeTestDocSettings({
+    projectTitle: '  GEDUNG A  ',
+    ownerLogo: 'javascript:alert(1)',
+    contractorLogo: 'data:image/png;base64,iVBORw0KGgo=',
+    signers: [
+      { label: 'Disetujui,', name: 'Darma', company: 'PT. KOSMO (MK)' },
+      { label: '', name: '', company: '' },
+      { label: 'Diperiksa,', name: 'Cipto', company: 'PT. KOSMO' },
+      { label: 'Dibuat,', name: 'Hadi', company: 'SPV' },
+      { label: 'Lain,', name: 'X', company: 'Y' },
+      { label: 'Kelima,', name: 'Z', company: 'W' }
+    ]
+  }, 'Proyek');
+  assert.equal(settings.projectTitle, 'GEDUNG A');
+  assert.equal(settings.ownerLogo, '');
+  assert.equal(settings.contractorLogo, 'data:image/png;base64,iVBORw0KGgo=');
+  assert.deepEqual([...settings.signers.map((signer) => signer.name)], ['Darma', 'Cipto', 'Hadi']);
+  assert.equal(api.normalizeTestDocSettings({ signers: [] }).signers.length, 0);
+});
+
+test('TTD "Dibuat oleh" kosong diisi SPV penguji', () => {
+  const settings = api.normalizeTestDocSettings(null, 'P');
+  const signers = api.resolveTestDocSigners(settings, { testedBy: 'Hadi Waluyo' });
+  assert.equal(signers[3].name, 'Hadi Waluyo');
+  assert.equal(signers[0].name, '');
+  const custom = api.resolveTestDocSigners(api.normalizeTestDocSettings({ signers: [{ label: 'Dibuat oleh,', name: 'Budi', company: 'SPV' }] }), { testedBy: 'Hadi' });
+  assert.equal(custom[0].name, 'Budi');
+});
+
+test('kategori pekerjaan & metode BA sesuai jenis tes', () => {
+  assert.equal(api.getTestReportWorkCategory({ type: 'pressure', params: { pipeSystem: 'Hydrant' } }), 'Pemadam Kebakaran (Hydrant)');
+  assert.equal(api.getTestReportWorkCategory({ type: 'pressure', params: { pipeSystem: 'Air Kotor' } }), 'Plumbing (Air Kotor)');
+  assert.equal(api.getTestReportWorkCategory({ type: 'megger', params: {} }), 'Elektrikal (Tahanan Isolasi)');
+  assert.equal(api.getTestReportWorkCategory({ type: 'hvac', params: { hvacItem: 'Ducting' } }), 'Tata Udara (Ducting)');
+  assert.equal(api.getTestReportMethodLabel({ type: 'megger', params: { testVoltage: '500' } }), 'Megger 500 V DC');
+  assert.equal(api.getTestReportMethodLabel({ type: 'pressure', params: { pipeSystem: 'Hydrant' } }), api.getPipeTestMethod({ pipeSystem: 'Hydrant' }));
+});
+
+test('tanggal BA dalam format Indonesia', () => {
+  const parts = api.getIndonesianDateParts('2026-10-13');
+  assert.equal(parts.dayName, 'Selasa');
+  assert.equal(parts.day, 13);
+  assert.equal(parts.monthName, 'Oktober');
+  assert.equal(parts.year, 2026);
+  assert.equal(parts.long, '13 Oktober 2026');
+  assert.equal(api.getIndonesianDateParts('2024-02-29').dayName, 'Kamis');
+  assert.equal(api.getIndonesianDateParts('2025-02-30'), null);
+  assert.equal(api.getIndonesianDateParts(''), null);
 });
