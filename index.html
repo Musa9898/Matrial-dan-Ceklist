@@ -3182,6 +3182,111 @@
       .mep-calc-header { padding: 8px 12px; }
       .mep-calc-panel { padding: 16px; }
     }
+
+    /* Export PDF */
+    .section-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .btn-pdf-export {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 20px;
+      background: var(--card-bg, #fff);
+      color: var(--text-dark);
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .btn-pdf-export:hover { border-color: #f0b51b; }
+    .kurva-actions .btn-pdf-export { padding: 8px 12px; font-size: 0.8rem; }
+    .mep-calc-header .btn-pdf-export { border-color: #ffe28a80; background: #ffffff14; color: #fff; padding: 7px 12px; }
+    .pdf-export-dialog {
+      width: min(440px, calc(100% - 24px));
+      max-height: calc(100dvh - 24px);
+      margin: auto;
+      padding: 20px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      background: var(--card-bg, #fff);
+      color: var(--text-dark);
+      overflow: auto;
+      box-shadow: 0 24px 80px #00000066;
+    }
+    .pdf-export-dialog::backdrop { background: #0f172acc; }
+    .pdf-export-dialog h3 { font-size: 1rem; margin-bottom: 4px; }
+    .pdf-export-dialog .pdf-date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .pdf-export-dialog fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+    .pdf-export-dialog fieldset:disabled { opacity: 0.6; }
+    .pdf-export-dialog .pdf-section-label { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin: 12px 0 6px; }
+    .pdf-export-status { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #eef2ff; color: #3730a3; font-size: 0.8rem; font-weight: 600; }
+    .pdf-export-status[hidden] { display: none; }
+    @media (max-width: 540px) {
+      .section-actions { flex-wrap: nowrap; gap: 6px; }
+      .section-actions .btn-pdf-export { padding: 7px 9px; font-size: 0.72rem; }
+      .section-actions .btn-action-primary { white-space: nowrap; }
+    }
+    #pdfPrintRoot { display: none; }
+    @media print {
+      body.pdf-printing { background: #fff !important; color: #0f172a !important; }
+      body.pdf-printing > *:not(#pdfPrintRoot) { display: none !important; }
+      body.pdf-printing #pdfPrintRoot { display: block !important; }
+    }
+    #pdfPrintRoot { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; font-size: 10.5pt; line-height: 1.4; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    #pdfPrintRoot * { animation: none !important; transition: none !important; }
+    #pdfPrintRoot .pdf-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; padding-bottom: 8px; border-bottom: 3px solid #f0b51b; margin-bottom: 12px; }
+    #pdfPrintRoot .pdf-brand { font-size: 9pt; font-weight: 700; letter-spacing: 1.5px; color: #29377d; text-transform: uppercase; }
+    #pdfPrintRoot .pdf-title { font-size: 16pt; font-weight: 800; color: #0f172a; margin-top: 2px; }
+    #pdfPrintRoot .pdf-project { font-size: 11pt; font-weight: 600; color: #29377d; }
+    #pdfPrintRoot .pdf-meta { text-align: right; font-size: 8.5pt; color: #475569; }
+    #pdfPrintRoot h4 { font-size: 11.5pt; color: #29377d; margin: 14px 0 6px; break-after: avoid; }
+    #pdfPrintRoot .pdf-summary { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+    #pdfPrintRoot .pdf-summary div { flex: 1 1 120px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; }
+    #pdfPrintRoot .pdf-summary span { display: block; font-size: 8pt; color: #64748b; }
+    #pdfPrintRoot .pdf-summary strong { font-size: 12pt; }
+    #pdfPrintRoot table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-bottom: 8px; }
+    #pdfPrintRoot thead { display: table-header-group; }
+    #pdfPrintRoot th { background: #29377d; color: #fff; text-align: left; font-weight: 600; }
+    #pdfPrintRoot th, #pdfPrintRoot td { border: 1px solid #cbd5e1; padding: 4px 6px; vertical-align: top; }
+    #pdfPrintRoot tr { break-inside: avoid; }
+    #pdfPrintRoot tbody tr:nth-child(even) td { background: #f8fafc; }
+    #pdfPrintRoot td.num, #pdfPrintRoot th.num { text-align: right; white-space: nowrap; }
+    #pdfPrintRoot .is-ahead { color: #047857; font-weight: 600; }
+    #pdfPrintRoot .is-behind { color: #b91c1c; font-weight: 600; }
+    #pdfPrintRoot .pdf-empty { padding: 14px; border: 1px dashed #cbd5e1; border-radius: 6px; color: #64748b; text-align: center; }
+    #pdfPrintRoot .pdf-block { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; break-inside: avoid; }
+    #pdfPrintRoot .pdf-block-head { display: flex; justify-content: space-between; gap: 10px; font-weight: 700; margin-bottom: 4px; }
+    #pdfPrintRoot .pdf-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px 12px; font-size: 9pt; }
+    #pdfPrintRoot .pdf-fields span { color: #64748b; }
+    #pdfPrintRoot .pdf-note { font-size: 9pt; margin-top: 4px; }
+    #pdfPrintRoot .pdf-photos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
+    #pdfPrintRoot .pdf-photos img { width: 100%; height: 48mm; object-fit: cover; border-radius: 4px; border: 1px solid #e2e8f0; }
+    #pdfPrintRoot .pdf-status { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 8.5pt; font-weight: 700; background: #e2e8f0; }
+    #pdfPrintRoot .pdf-status.ok { background: #dcfce7; color: #14532d; }
+    #pdfPrintRoot .pdf-status.bad { background: #fee2e2; color: #991b1b; }
+    #pdfPrintRoot .pdf-status.warn { background: #fef3c7; color: #78350f; }
+    #pdfPrintRoot .pdf-chart svg { width: 100%; height: auto; display: block; }
+    #pdfPrintRoot .pdf-chart .kurva-grid { stroke: #e2e8f0; stroke-width: 1; }
+    #pdfPrintRoot .pdf-chart .kurva-axis { fill: #475569; font-size: 12px; }
+    #pdfPrintRoot .pdf-chart .kurva-axis-week { font-size: 10px; }
+    #pdfPrintRoot .pdf-chart .kurva-holiday { fill: rgba(240, 181, 27, 0.25); }
+    #pdfPrintRoot .pdf-chart .kurva-bar { fill: rgba(41, 55, 125, 0.18); }
+    #pdfPrintRoot .pdf-chart .kurva-plan { fill: none; stroke: #29377d; stroke-width: 2.5; }
+    #pdfPrintRoot .pdf-chart .kurva-baseline { fill: none; stroke: #94a3b8; stroke-width: 2; stroke-dasharray: 6 5; }
+    #pdfPrintRoot .pdf-chart .kurva-actual { fill: none; stroke: #10b981; stroke-width: 3; }
+    #pdfPrintRoot .pdf-chart .kurva-actual-dot { fill: #fff; stroke: #10b981; stroke-width: 2; }
+    #pdfPrintRoot .pdf-chart .kurva-today { stroke: #ef4444; stroke-width: 1.5; stroke-dasharray: 4 4; }
+    #pdfPrintRoot .pdf-chart .kurva-today-label { fill: #ef4444; font-size: 12px; font-weight: 700; }
+    #pdfPrintRoot .pdf-chart .kurva-hit, #pdfPrintRoot .pdf-chart .kurva-select, #pdfPrintRoot .pdf-chart .kurva-tip { display: none; }
+    #pdfPrintRoot .pdf-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 8.5pt; color: #475569; margin: 4px 0 8px; }
+    #pdfPrintRoot .pdf-legend i { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 5px; }
+    #pdfPrintRoot .pdf-sign { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 22px; break-inside: avoid; text-align: center; font-size: 9.5pt; }
+    #pdfPrintRoot .pdf-sign-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; }
+    #pdfPrintRoot .pdf-sign-space { height: 20mm; }
+    #pdfPrintRoot .pdf-sign-name { border-top: 1px solid #0f172a; padding-top: 4px; font-weight: 700; min-height: 1.4em; }
+    #pdfPrintRoot .pdf-footer { margin-top: 10px; font-size: 8pt; color: #94a3b8; text-align: center; }
   </style>
 </head>
 <body>
@@ -3376,9 +3481,12 @@
         <div class="section-title">
           <span>📦</span> Stok & Kedatangan
         </div>
-        <button class="btn-action-primary" onclick="openInputModal()">
-          <span>🚚</span> + Catat Masuk
-        </button>
+        <div class="section-actions">
+          <button class="btn-pdf-export" type="button" data-pdf-tab="material" onclick="openPdfExportDialog('material')">📄 PDF</button>
+          <button class="btn-action-primary" onclick="openInputModal()">
+            <span>🚚</span> + Catat Masuk
+          </button>
+        </div>
       </div>
 
       <div id="materialCardList"></div>
@@ -3388,7 +3496,10 @@
     <main class="scroll-content" id="tabViewAssets" style="display: none;">
       <div class="section-header">
         <div class="section-title"><span>🧰</span> Aset Alat Kerja</div>
-        <button class="btn-action-primary" type="button" onclick="openAssetForm()">+ Tambah Aset</button>
+        <div class="section-actions">
+          <button class="btn-pdf-export" type="button" data-pdf-tab="assets" onclick="openPdfExportDialog('assets')">📄 PDF</button>
+          <button class="btn-action-primary" type="button" onclick="openAssetForm()">+ Tambah Aset</button>
+        </div>
       </div>
       <div class="global-file-search">
         <svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M8.5 3a5.5 5.5 0 103.477 9.763l3.63 3.63a.75.75 0 101.06-1.061l-3.63-3.63A5.5 5.5 0 008.5 3zM4.5 8.5a4 4 0 118 0 4 4 0 01-8 0z" clip-rule="evenodd"/></svg>
@@ -3424,9 +3535,12 @@
         <div class="section-title">
           <span>📋</span> Ceklist Lapangan (MEP &amp; Sipil)
         </div>
-        <button class="btn-action-primary" onclick="openChecklistModal()">
-          + Inspeksi Baru
-        </button>
+        <div class="section-actions">
+          <button class="btn-pdf-export" type="button" data-pdf-tab="ceklist" onclick="openPdfExportDialog('ceklist')">📄 PDF</button>
+          <button class="btn-action-primary" onclick="openChecklistModal()">
+            + Inspeksi Baru
+          </button>
+        </div>
       </div>
 
       <div class="global-file-search">
@@ -3484,7 +3598,10 @@
         <div class="section-title">
           <span>📋</span> Laporan Harian MEP
         </div>
-        <button class="btn-action-primary" onclick="openDailyWorkReportForm()">+ Laporan Harian</button>
+        <div class="section-actions">
+          <button class="btn-pdf-export" type="button" data-pdf-tab="suratjalan" onclick="openPdfExportDialog('suratjalan')">📄 PDF</button>
+          <button class="btn-action-primary" onclick="openDailyWorkReportForm()">+ Laporan Harian</button>
+        </div>
       </div>
       <div class="global-file-search">
         <svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M8.5 3a5.5 5.5 0 103.477 9.763l3.63 3.63a.75.75 0 101.06-1.061l-3.63-3.63A5.5 5.5 0 008.5 3zM4.5 8.5a4 4 0 118 0 4 4 0 01-8 0z" clip-rule="evenodd"/></svg>
@@ -3545,6 +3662,7 @@
       <div class="section-header">
         <div class="section-title"><span>📈</span> Kurva S</div>
         <div class="kurva-actions">
+          <button class="btn-pdf-export" type="button" data-pdf-tab="kurvas" onclick="openPdfExportDialog('kurvas')">📄 PDF</button>
           <button class="btn-cancel" type="button" id="kurvaImportButton" onclick="openKurvaImportModal()">Import Excel</button>
           <button class="btn-cancel" type="button" id="kurvaRescheduleButton" onclick="openKurvaImportModal('reschedule')">Reschedule</button>
           <button class="btn-action-primary" type="button" id="kurvaProgressButton" onclick="openKurvaProgressModal()">+ Input Progres</button>
@@ -4168,12 +4286,44 @@
 
   <dialog class="mep-calc-dialog" id="mep-calc-dialog" aria-label="Kalkulator Master MEP" aria-describedby="mep-calc-disclaimer">
     <header class="mep-calc-header">
+      <button class="btn-pdf-export" type="button" data-pdf-tab="calculator" onclick="openPdfExportDialog('calculator')">📄 PDF</button>
       <button class="mep-calc-close" id="mep-calc-close" type="button" aria-label="Tutup kalkulator" autofocus>&times;</button>
     </header>
     <div class="mep-calc-tabs" id="mep-calc-tabs" role="tablist" aria-label="Jenis kalkulator MEP"></div>
     <div id="mep-calc-panels"></div>
     <details class="mep-calc-note mep-calc-info mep-calc-footer"><summary>Keterangan penggunaan</summary><p id="mep-calc-disclaimer">Alat estimasi awal, bukan pengesahan desain atau pengganti perhitungan engineer. Badge hanya membandingkan ambang/asumsi yang dicantumkan, bukan sertifikasi kepatuhan PUIL/SNI. Verifikasi standar edisi berlaku, kondisi lapangan, dan datasheet sebelum pelaksanaan. Input hanya berada di memori halaman; tidak dikirim atau disimpan.</p></details>
   </dialog>
+
+  <dialog class="pdf-export-dialog" id="pdfExportDialog" aria-labelledby="pdfExportTitle">
+    <form id="pdfExportForm" method="dialog">
+      <h3 id="pdfExportTitle">📄 Export PDF</h3>
+      <p class="form-hint" id="pdfExportSubtitle">Laporan akan dibuka di jendela cetak. Pilih "Simpan sebagai PDF".</p>
+      <fieldset id="pdfExportFields">
+        <div id="pdfExportDateWrap">
+          <div class="pdf-section-label">Periode Laporan</div>
+          <div class="pdf-date-grid">
+            <div class="form-row"><label for="pdfExportDateFrom">Dari Tanggal</label><input type="date" id="pdfExportDateFrom"></div>
+            <div class="form-row"><label for="pdfExportDateTo">Sampai Tanggal</label><input type="date" id="pdfExportDateTo"></div>
+          </div>
+          <p class="form-hint">Kosongkan untuk semua tanggal.</p>
+        </div>
+        <div class="pdf-section-label">Tanda Tangan</div>
+        <div class="form-row"><label for="pdfSignMaker">Dibuat oleh</label><input type="text" id="pdfSignMaker" maxlength="60" autocomplete="off"></div>
+        <div class="form-row"><label for="pdfSignChecker">Diperiksa oleh</label><input type="text" id="pdfSignChecker" maxlength="60" autocomplete="off" placeholder="Opsional"></div>
+        <div class="form-row"><label for="pdfSignApprover">Disetujui oleh</label><input type="text" id="pdfSignApprover" maxlength="60" autocomplete="off" placeholder="Opsional"></div>
+        <div class="btn-group">
+          <button class="btn-cancel" type="button" id="pdfExportCancel" onclick="closePdfExportDialog()">Batal</button>
+          <button class="btn-save" type="submit" id="pdfExportSubmit">Buat PDF</button>
+        </div>
+      </fieldset>
+      <div class="pdf-export-status" id="pdfExportStatus" role="status" aria-live="polite" hidden>
+        <span class="loading-spinner" aria-hidden="true"></span>
+        <span id="pdfExportStatusText">Menyiapkan laporan...</span>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="pdfPrintRoot" aria-hidden="true"></div>
 
   <script src="google-config.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -4988,7 +5138,548 @@
       toggle('#addProjectFolderButton', 'files');
       toggle('#projectFolderContents button[onclick^="renameProjectFolder"]', 'files');
       toggle('#projectFileUploadButton', 'files');
+      document.querySelectorAll('[data-pdf-tab]').forEach((element) => {
+        element.style.display = canExportPdf(element.dataset.pdfTab) ? '' : 'none';
+      });
     }
+
+    // ==== PDF EXPORT CORE START ====
+    const PDF_EXPORT_ROLE_ALIASES = {
+      developer: 'developer', dev: 'developer', magician: 'developer', 'magician developer': 'developer',
+      engineering: 'engineering', enginering: 'engineering', engineer: 'engineering',
+      qs: 'quantity_surveyor', 'quantity surveyor': 'quantity_surveyor', 'quantity surveyour': 'quantity_surveyor',
+      'project manager': 'project_manager', pm: 'project_manager',
+      spv: 'supervisor', supervisor: 'supervisor', pelaksana: 'supervisor', 'spv lapangan': 'supervisor',
+      'pelaksana spv lapangan': 'supervisor', 'pelaksana spv': 'supervisor'
+    };
+    const PDF_EXPORT_TAB_PERMISSIONS = {
+      material: 'material',
+      assets: 'asset',
+      ceklist: 'checklist',
+      suratjalan: 'daily_report',
+      kurvas: 'kurva_s',
+      calculator: null
+    };
+
+    function normalizePdfRoleText(role) {
+      return String(role || '').toLowerCase().replace(/\([^)]*\)/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+    }
+
+    function getPdfExportRoleKey(role) {
+      const key = PDF_EXPORT_ROLE_ALIASES[normalizePdfRoleText(role)];
+      if (key) return key;
+      const inner = (String(role || '').toLowerCase().match(/\(([^)]*)\)/) || [])[1];
+      return inner ? (PDF_EXPORT_ROLE_ALIASES[normalizePdfRoleText(inner)] || '') : '';
+    }
+
+    function canRoleExportPdf(role, permissions, tab) {
+      if (!Object.prototype.hasOwnProperty.call(PDF_EXPORT_TAB_PERMISSIONS, tab)) return false;
+      if (!getPdfExportRoleKey(role)) return false;
+      const permission = PDF_EXPORT_TAB_PERMISSIONS[tab];
+      return permission === null || (Array.isArray(permissions) && permissions.includes(permission));
+    }
+
+    function isPdfDateInRange(isoDate, from, to) {
+      if (!from && !to) return true;
+      if (!isoDate) return false;
+      return (!from || isoDate >= from) && (!to || isoDate <= to);
+    }
+
+    // A week [weekStart, nextWeekStart) overlaps the inclusive range [from, to].
+    function isPdfWeekInRange(weekStart, nextWeekStart, from, to) {
+      if (!weekStart) return false;
+      return (!from || nextWeekStart > from) && (!to || weekStart <= to);
+    }
+    // ==== PDF EXPORT CORE END ====
+
+    function canExportPdf(tab) {
+      if (!Object.prototype.hasOwnProperty.call(PDF_EXPORT_TAB_PERMISSIONS, tab)) return false;
+      if (!isRoleRestrictionActive()) return true;
+      const project = authorizedProjects.find((entry) => entry.projectId === activeProjectId);
+      return Boolean(project) && canRoleExportPdf(project.role, project.permissions, tab);
+    }
+
+    const PDF_TAB_TITLES = {
+      material: 'Laporan Material (Stok, Masuk & Keluar)',
+      assets: 'Laporan Aset Alat Kerja',
+      ceklist: 'Laporan Ceklist Lapangan',
+      suratjalan: 'Laporan Harian MEP',
+      kurvas: 'Laporan Kurva S Progres Proyek',
+      calculator: 'Laporan Kalkulator MEP'
+    };
+    const PDF_SIGNERS_STORAGE_KEY = 'pdfExportSigners';
+    let pdfExportTab = '';
+    let pdfExportBusy = false;
+    let pdfPrintCleanup = null;
+
+    function openPdfExportDialog(tab) {
+      if (pdfExportBusy) return;
+      if (!canExportPdf(tab)) {
+        showAppNotice('Peran akun Anda tidak memiliki izin export PDF untuk menu ini.');
+        return;
+      }
+      if (tab !== 'calculator' && isRoleRestrictionActive() && !projectDataReady) {
+        showAppNotice('Data proyek belum selesai dimuat. Tunggu sinkronisasi selesai lalu coba lagi.');
+        return;
+      }
+      if (pdfPrintCleanup) pdfPrintCleanup();
+      pdfExportTab = tab;
+      const dialog = document.getElementById('pdfExportDialog');
+      const usesDates = !['assets', 'calculator'].includes(tab);
+      document.getElementById('pdfExportTitle').textContent = `📄 Export PDF · ${PDF_TAB_TITLES[tab].replace(/^Laporan /, '')}`;
+      document.getElementById('pdfExportDateWrap').hidden = !usesDates;
+      const filterIds = { ceklist: ['checklistDateFrom', 'checklistDateTo'], suratjalan: ['dailyWorkDateFrom', 'dailyWorkDateTo'] }[tab];
+      const fromInput = document.getElementById('pdfExportDateFrom');
+      const toInput = document.getElementById('pdfExportDateTo');
+      fromInput.value = filterIds ? (document.getElementById(filterIds[0])?.value || '') : '';
+      toInput.value = filterIds ? (document.getElementById(filterIds[1])?.value || '') : '';
+      toInput.setCustomValidity('');
+      let savedSigners = {};
+      try { savedSigners = JSON.parse(readLocalStorage(PDF_SIGNERS_STORAGE_KEY) || '{}') || {}; } catch (error) { savedSigners = {}; }
+      document.getElementById('pdfSignMaker').value = getSignedInName() || savedSigners.maker || '';
+      document.getElementById('pdfSignChecker').value = savedSigners.checker || '';
+      document.getElementById('pdfSignApprover').value = savedSigners.approver || '';
+      setPdfExportBusy(false);
+      if (!dialog.open) dialog.showModal();
+    }
+
+    function closePdfExportDialog() {
+      if (pdfExportBusy) return;
+      const dialog = document.getElementById('pdfExportDialog');
+      if (dialog.open) dialog.close();
+    }
+
+    function setPdfExportBusy(busy, message = 'Menyiapkan laporan...') {
+      pdfExportBusy = busy;
+      document.getElementById('pdfExportFields').disabled = busy;
+      document.getElementById('pdfExportStatus').hidden = !busy;
+      document.getElementById('pdfExportStatusText').textContent = message;
+    }
+
+    function formatPdfPeriod(from, to) {
+      if (!from && !to) return 'Semua tanggal';
+      if (from && to) return `${formatChecklistDate(from)} s.d. ${formatChecklistDate(to)}`;
+      return from ? `Mulai ${formatChecklistDate(from)}` : `Sampai ${formatChecklistDate(to)}`;
+    }
+
+    function formatPdfNumber(value) {
+      const number = Number(value);
+      return Number.isFinite(number) ? number.toLocaleString('id-ID', { maximumFractionDigits: 2 }) : '-';
+    }
+
+    function formatPdfTimestamp(value) {
+      if (!value) return '-';
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? escapeHtml(value) : escapeHtml(date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }));
+    }
+
+    function pdfTable(headers, rows, emptyText = 'Tidak ada data pada periode ini.') {
+      if (!rows.length) return `<div class="pdf-empty">${escapeHtml(emptyText)}</div>`;
+      const head = headers.map((header) => {
+        const [label, numeric] = Array.isArray(header) ? header : [header, false];
+        return `<th${numeric ? ' class="num"' : ''}>${escapeHtml(label)}</th>`;
+      }).join('');
+      return `<table><thead><tr>${head}</tr></thead><tbody>${rows.map((cells) => `<tr>${cells.map((cell, index) => {
+        const numeric = Array.isArray(headers[index]) && headers[index][1];
+        return `<td${numeric ? ' class="num"' : ''}>${cell}</td>`;
+      }).join('')}</tr>`).join('')}</tbody></table>`;
+    }
+
+    function pdfSummary(items) {
+      return `<div class="pdf-summary">${items.map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('')}</div>`;
+    }
+
+    function buildPdfMaterialReport({ from, to }) {
+      const hasPeriod = Boolean(from || to);
+      const incoming = [];
+      const outgoing = [];
+      Object.entries(deliveryHistory).forEach(([name, records]) => (records || []).forEach((record) => {
+        const iso = getDeliveryDateKey(record.date);
+        if (isPdfDateInRange(iso, from, to)) incoming.push({ name, iso, record });
+      }));
+      Object.entries(usageHistory).forEach(([name, records]) => (records || []).forEach((record) => {
+        const iso = getDeliveryDateKey(record.date);
+        if (isPdfDateInRange(iso, from, to)) outgoing.push({ name, iso, record });
+      }));
+      const byDate = (first, second) => first.iso.localeCompare(second.iso) || first.name.localeCompare(second.name, 'id-ID');
+      incoming.sort(byDate);
+      outgoing.sort(byDate);
+      const sumFor = (list, item) => list
+        .filter((entry) => normalizeMaterialName(entry.name) === normalizeMaterialName(item.name))
+        .reduce((total, entry) => total + (Number(entry.record.qty) || 0), 0);
+      const items = [...materialItems].sort((first, second) => String(first.category).localeCompare(String(second.category), 'id-ID') || first.name.localeCompare(second.name, 'id-ID'));
+      const summaryHeaders = ['No', 'Kategori', 'Material', 'Sat.', ['Target', true]];
+      if (hasPeriod) summaryHeaders.push(['Masuk Periode', true], ['Keluar Periode', true]);
+      summaryHeaders.push(['Total Masuk', true], ['Total Keluar', true], ['Stok', true]);
+      const summaryRows = items.map((item, index) => {
+        const row = [index + 1, escapeHtml(item.category), escapeHtml(item.name), escapeHtml(item.unit), formatPdfNumber(item.target)];
+        if (hasPeriod) row.push(formatPdfNumber(sumFor(incoming, item)), formatPdfNumber(sumFor(outgoing, item)));
+        row.push(formatPdfNumber(item.received), formatPdfNumber(item.issued), `<strong>${formatPdfNumber(getMaterialStock(item))}</strong>`);
+        return row;
+      });
+      return `
+        ${pdfSummary([
+          ['Jenis Material', String(materialItems.length)],
+          ['Transaksi Masuk', String(incoming.length)],
+          ['Transaksi Keluar', String(outgoing.length)]
+        ])}
+        <h4>Rekap Stok per Material</h4>
+        ${pdfTable(summaryHeaders, summaryRows, 'Belum ada data material.')}
+        <h4>Riwayat Material Masuk</h4>
+        ${pdfTable(['No', 'Tanggal', 'Material', ['Qty', true], 'Sat.', 'No. Surat Jalan'], incoming.map((entry, index) => [
+          index + 1, escapeHtml(formatChecklistDate(entry.iso)), escapeHtml(entry.name), formatPdfNumber(entry.record.qty),
+          escapeHtml(getDeliveryUnit(entry.name)), escapeHtml(entry.record.sj || '-')
+        ]))}
+        <h4>Riwayat Material Keluar</h4>
+        ${pdfTable(['No', 'Tanggal', 'Material', ['Qty', true], 'Sat.', 'Area', 'Pekerjaan', 'Penerima', 'Petugas'], outgoing.map((entry, index) => [
+          index + 1, escapeHtml(formatChecklistDate(entry.iso)), escapeHtml(entry.name), formatPdfNumber(entry.record.qty),
+          escapeHtml(getDeliveryUnit(entry.name)), escapeHtml(entry.record.area || '-'), escapeHtml(entry.record.pekerjaan || '-'),
+          escapeHtml(entry.record.penerima || '-'), escapeHtml(entry.record.petugasLogistik || '-')
+        ]))}`;
+    }
+
+    function buildPdfAssetReport() {
+      const assets = [...assetItems].sort((first, second) => String(first.category || '').localeCompare(String(second.category || ''), 'id-ID') || String(first.name || '').localeCompare(String(second.name || ''), 'id-ID'));
+      const units = assets.reduce((total, asset) => total + (Number(asset.quantity) || 0), 0);
+      const countStatus = (status) => String(assets.filter((asset) => asset.status === status).length);
+      const statusCell = (status) => {
+        const tone = status === 'Tersedia' ? 'ok' : status === 'Rusak' ? 'bad' : 'warn';
+        return `<span class="pdf-status ${tone}">${escapeHtml(status || '-')}</span>`;
+      };
+      return `
+        ${pdfSummary([
+          ['Jenis Aset', String(assets.length)],
+          ['Total Unit', formatPdfNumber(units)],
+          ['Tersedia', countStatus('Tersedia')],
+          ['Rusak', countStatus('Rusak')]
+        ])}
+        <h4>Daftar Aset</h4>
+        ${pdfTable(['No', 'Kode', 'Nama Aset', 'Kategori', ['Jumlah', true], 'Lokasi', 'Kondisi', 'Update'], assets.map((asset, index) => [
+          index + 1, escapeHtml(asset.code || '-'), escapeHtml(asset.name || '-'), escapeHtml(asset.category || '-'),
+          formatPdfNumber(asset.quantity), escapeHtml(asset.location || '-'), statusCell(asset.status), formatPdfTimestamp(asset.updatedAt)
+        ]), 'Belum ada data aset.')}`;
+    }
+
+    function getPdfChecklistPhotoUrl(source) {
+      return getPreviewImageUrl(source).replace('sz=w1600', 'sz=w800');
+    }
+
+    function buildPdfChecklistReport({ from, to, includePhotos }) {
+      const items = checklistItems
+        .filter((item) => isPdfDateInRange(item.date, from, to))
+        .sort((first, second) => String(first.date || '').localeCompare(String(second.date || '')) || String(first.work || '').localeCompare(String(second.work || ''), 'id-ID'));
+      const count = (status) => String(items.filter((item) => item.status === status).length);
+      const statusCell = (status) => {
+        const tone = status === 'Selesai' ? 'ok' : status === 'Defect' ? 'bad' : 'warn';
+        return `<span class="pdf-status ${tone}">${escapeHtml(getChecklistStatusLabel(status))}</span>`;
+      };
+      const rows = items.map((item, index) => [
+        index + 1, escapeHtml(formatChecklistDate(item.date)), escapeHtml(getChecklistArea(item)), escapeHtml(item.work),
+        escapeHtml(getChecklistWorkCategory(item)), statusCell(item.status), `${Number(item.progress) || 0}%`, escapeHtml(item.supervisor || '-')
+      ]);
+      const details = items.map((item, index) => {
+        const photos = Array.isArray(item.photos) ? item.photos : (item.photo ? [item.photo] : []);
+        const photoHtml = includePhotos && photos.length
+          ? `<div class="pdf-photos">${photos.map((source, photoIndex) => `<img src="${escapeHtml(getPdfChecklistPhotoUrl(source))}" alt="Foto ${photoIndex + 1}">`).join('')}</div>`
+          : '';
+        return `
+          <div class="pdf-block">
+            <div class="pdf-block-head"><span>${index + 1}. ${escapeHtml(item.work)}</span>${statusCell(item.status)}</div>
+            <div class="pdf-fields">
+              <div><span>Area:</span> ${escapeHtml(getChecklistArea(item))}</div>
+              <div><span>Tanggal:</span> ${escapeHtml(formatChecklistDate(item.date))}</div>
+              <div><span>SPV:</span> ${escapeHtml(item.supervisor || '-')}</div>
+              <div><span>Kategori:</span> ${escapeHtml(getChecklistWorkCategory(item))}</div>
+              <div><span>Progres:</span> ${Number(item.progress) || 0}%</div>
+              <div><span>PIC:</span> ${escapeHtml(item.assignee || '-')}</div>
+              ${item.dueDate ? `<div><span>Target:</span> ${escapeHtml(formatChecklistDate(item.dueDate))}</div>` : ''}
+              ${item.resolvedDate ? `<div><span>Selesai:</span> ${escapeHtml(formatChecklistDate(item.resolvedDate))}</div>` : ''}
+            </div>
+            ${item.note ? `<div class="pdf-note"><strong>Catatan:</strong> ${escapeHtml(item.note)}</div>` : ''}
+            ${item.testingNote ? `<div class="pdf-note"><strong>Pengetesan:</strong> ${escapeHtml(item.testingNote)}</div>` : ''}
+            ${photoHtml}
+          </div>`;
+      }).join('');
+      return `
+        ${pdfSummary([
+          ['Total Inspeksi', String(items.length)],
+          ['Selesai', count('Selesai')],
+          ['Dalam Proses', count('Proses')],
+          ['Belum Mulai', count('Belum')],
+          ['Defect', count('Defect')]
+        ])}
+        <h4>Rekap Inspeksi</h4>
+        ${pdfTable(['No', 'Tanggal', 'Area', 'Pekerjaan', 'Kategori', 'Status', ['Progres', true], 'SPV'], rows)}
+        ${items.length ? `<h4>Detail Inspeksi${includePhotos ? ' & Foto Dokumentasi' : ''}</h4>${details}` : ''}`;
+    }
+
+    function buildPdfDailyReport({ from, to }) {
+      const plans = dailyWorkPlans
+        .filter((plan) => isPdfDateInRange(plan.date, from, to))
+        .sort((first, second) => String(first.date || '').localeCompare(String(second.date || '')));
+      const totalWorkers = plans.reduce((total, plan) => total + getDailyWorkStats(plan).workers, 0);
+      const totalTasks = plans.reduce((total, plan) => total + getDailyWorkStats(plan).tasks, 0);
+      const blocks = plans.map((plan) => {
+        const stats = getDailyWorkStats(plan);
+        return `
+          <div class="pdf-block">
+            <div class="pdf-block-head"><span>${escapeHtml(formatChecklistDate(plan.date))} · ${escapeHtml(plan.title || 'Laporan Harian')}</span><span>SPV: ${escapeHtml(plan.supervisor || '-')}</span></div>
+            <div class="pdf-note">${stats.tasks} pekerjaan · ${stats.workers} pekerja · ${stats.disciplines} disiplin</div>
+            ${pdfTable(['No', 'Disiplin', 'Pekerjaan', 'Area', ['Pekerja', true]], plan.tasks.map((task, index) => [
+              index + 1, escapeHtml(task.discipline || '-'), escapeHtml(task.title || '-'), escapeHtml(task.area || '-'), formatPdfNumber(task.workers)
+            ]), 'Tidak ada pekerjaan.')}
+          </div>`;
+      }).join('');
+      return `
+        ${pdfSummary([
+          ['Jumlah Laporan', String(plans.length)],
+          ['Total Pekerjaan', String(totalTasks)],
+          ['Total Pekerja', formatPdfNumber(totalWorkers)]
+        ])}
+        ${plans.length ? blocks : '<div class="pdf-empty">Tidak ada data pada periode ini.</div>'}`;
+    }
+
+    function buildPdfKurvaReport({ from, to }) {
+      if (!projectSchedule) return '<div class="pdf-empty">Belum ada jadwal Kurva S untuk proyek ini.</div>';
+      const curve = kurvaSCore.computeCurve(projectSchedule);
+      const currentWeek = getKurvaCurrentWeek();
+      const planWeek = Math.max(1, currentWeek);
+      const reported = curve.lastReportedWeek;
+      const actual = reported ? curve.actualCumulative[reported - 1] : 0;
+      const deviation = reported ? curve.deviation[reported - 1] : null;
+      const planNow = curve.planCumulative[Math.min(planWeek, curve.planCumulative.length) - 1] || 0;
+      const progressAtReport = kurvaSCore.getItemProgressAt(projectSchedule, reported);
+      const deviationClass = (value) => value === null || !Number.isFinite(value) ? '' : value >= -0.005 ? 'is-ahead' : 'is-behind';
+      const groupRows = getKurvaGroups(projectSchedule.items).map(([group, items], index) => {
+        const weight = items.reduce((sum, item) => sum + item.weight, 0);
+        const plan = items.reduce((sum, item) => sum + getKurvaItemPlanAt(item, planWeek), 0);
+        const done = items.reduce((sum, item) => sum + item.weight * progressAtReport[item.id] / 100, 0);
+        return [index + 1, escapeHtml(group), String(items.length), formatKurvaPercent(weight), formatKurvaPercent(plan), formatKurvaPercent(done),
+          `<span class="${deviationClass(done - plan)}">${formatKurvaPercent(done - plan)}</span>`];
+      });
+      const hasBaseline = Boolean(curve.baselineCumulative);
+      const weekHeaders = ['Minggu', 'Periode', ['Rencana Mgg', true], ['Rencana Kum.', true]];
+      if (hasBaseline) weekHeaders.push(['Baseline Kum.', true]);
+      weekHeaders.push(['Realisasi Mgg', true], ['Realisasi Kum.', true], ['Deviasi', true]);
+      const weekRows = [];
+      for (let week = 1; week <= projectSchedule.weekCount; week += 1) {
+        const start = kurvaSCore.getWeekStartDate(projectSchedule.startDate, week);
+        const next = kurvaSCore.getWeekStartDate(projectSchedule.startDate, week + 1);
+        if (!isPdfWeekInRange(start, next, from, to)) continue;
+        const index = week - 1;
+        const dev = curve.deviation[index];
+        const fmt = (value) => value === null || value === undefined || !Number.isFinite(value) ? '–' : value.toFixed(3);
+        const row = [`${week}${projectSchedule.holidays.includes(week) ? ' (libur)' : ''}${week === currentWeek ? ' ◀' : ''}`,
+          escapeHtml(getKurvaWeekRange(week)), fmt(curve.planWeekly[index]), fmt(curve.planCumulative[index])];
+        if (hasBaseline) row.push(fmt(curve.baselineCumulative[index]));
+        row.push(fmt(curve.actualWeekly[index]), fmt(curve.actualCumulative[index]), `<span class="${deviationClass(dev)}">${fmt(dev)}</span>`);
+        weekRows.push(row);
+      }
+      return `
+        <style>@page { size: A4 landscape; margin: 10mm; }</style>
+        ${pdfSummary([
+          ['Mulai Proyek', formatKurvaDate(projectSchedule.startDate, true)],
+          ['Minggu Berjalan', currentWeek >= 1 ? `${currentWeek} / ${projectSchedule.weekCount}` : `– / ${projectSchedule.weekCount}`],
+          ['Rencana s.d. Minggu Ini', formatKurvaPercent(planNow)],
+          ['Realisasi Terakhir', reported ? `${formatKurvaPercent(actual)} (mgg ${reported})` : 'Belum ada laporan'],
+          ['Deviasi', deviation === null ? '–' : formatKurvaPercent(deviation)]
+        ])}
+        <h4>Grafik Kurva S</h4>
+        <div class="pdf-legend">
+          <span><i style="background:#29377d"></i>Rencana</span>
+          ${hasBaseline ? '<span><i style="background:#94a3b8"></i>Baseline</span>' : ''}
+          <span><i style="background:#10b981"></i>Realisasi</span>
+          <span><i style="background:#ef4444"></i>Minggu ini</span>
+        </div>
+        <div class="pdf-chart">${buildKurvaChart(curve, currentWeek, 1000).replace(' (klik minggu untuk detail)', '')}</div>
+        <h4>Rekap per Kelompok Pekerjaan (rencana s.d. minggu ${planWeek}, realisasi s.d. minggu ${reported || 0})</h4>
+        ${pdfTable(['No', 'Kelompok', ['Item', true], ['Bobot', true], ['Rencana', true], ['Realisasi', true], ['Deviasi', true]], groupRows, 'Belum ada item pekerjaan.')}
+        <h4>Tabel Progres Mingguan (%)</h4>
+        ${pdfTable(weekHeaders, weekRows)}`;
+    }
+
+    function buildPdfCalculatorReport() {
+      const panel = document.querySelector('#mep-calc-panels section.mep-calc-panel:not([hidden])');
+      if (!panel) return { title: '', html: '<div class="pdf-empty">Kalkulator belum siap.</div>' };
+      const title = (document.querySelector('#mep-calc-tabs [aria-selected="true"]')?.textContent.trim() || 'Kalkulator').replace(/^[^\p{L}\p{N}]+/u, '');
+      const inputRows = [...panel.querySelectorAll('.mep-calc-field')].map((field) => {
+        const control = field.querySelector('input, select');
+        const label = field.querySelector('label')?.textContent.trim();
+        if (control && label) {
+          const value = control.tagName === 'SELECT' ? (control.selectedOptions[0]?.textContent || control.value) : control.value;
+          return [escapeHtml(label), escapeHtml(value || '-')];
+        }
+        const caption = field.querySelector('.mep-calc-cable-caption')?.textContent.trim();
+        const chip = field.querySelector('.mep-calc-cable-chip');
+        return caption && chip ? [escapeHtml(caption), escapeHtml([...chip.children].map((child) => child.textContent.trim()).filter(Boolean).join(' · ') || '-')] : null;
+      }).filter(Boolean);
+      const resultRows = [...panel.querySelectorAll('.mep-calc-result')].map((card) => {
+        const badge = card.querySelector('.mep-calc-badge');
+        const tone = badge?.classList.contains('mep-calc-safe') ? 'ok' : badge?.classList.contains('mep-calc-danger') ? 'bad' : 'warn';
+        return [
+          escapeHtml(card.querySelector('dt')?.textContent || ''),
+          `<strong>${escapeHtml(card.querySelector('dd')?.textContent || '')}</strong>`,
+          badge ? `<span class="pdf-status ${tone}">${escapeHtml(badge.textContent)}</span>` : '-',
+          escapeHtml(card.querySelector('small')?.textContent || '')
+        ];
+      });
+      const errorText = panel.querySelector('.mep-calc-error:not([hidden])')?.textContent.trim();
+      const note = panel.querySelector('.mep-calc-note p')?.textContent.trim();
+      const disclaimer = document.getElementById('mep-calc-disclaimer')?.textContent.trim();
+      return {
+        title,
+        html: `
+          <h4>Jenis Perhitungan: ${escapeHtml(title)}</h4>
+          <h4>Data Input</h4>
+          ${pdfTable(['Parameter', 'Nilai'], inputRows, 'Tidak ada input.')}
+          <h4>Hasil Perhitungan</h4>
+          ${errorText ? `<div class="pdf-empty">${escapeHtml(errorText)}</div>` : pdfTable(['Hasil', 'Nilai', 'Status', 'Keterangan'], resultRows, 'Belum ada hasil.')}
+          ${note ? `<div class="pdf-note"><strong>Asumsi:</strong> ${escapeHtml(note)}</div>` : ''}
+          ${disclaimer ? `<div class="pdf-note"><strong>Catatan:</strong> ${escapeHtml(disclaimer)}</div>` : ''}`
+      };
+    }
+
+    function buildPdfDocument(tab, options) {
+      let body = '';
+      let title = PDF_TAB_TITLES[tab];
+      if (tab === 'material') body = buildPdfMaterialReport(options);
+      else if (tab === 'assets') body = buildPdfAssetReport();
+      else if (tab === 'ceklist') body = buildPdfChecklistReport(options);
+      else if (tab === 'suratjalan') body = buildPdfDailyReport(options);
+      else if (tab === 'kurvas') body = buildPdfKurvaReport(options);
+      else if (tab === 'calculator') {
+        const report = buildPdfCalculatorReport();
+        body = report.html;
+        if (report.title) title = `${title} – ${report.title}`;
+      }
+      const usesDates = !['assets', 'calculator'].includes(tab);
+      const printedAt = new Date().toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const printedBy = getSignedInName() || options.maker || '-';
+      const signBox = (label, name) => `<div class="pdf-sign-box"><div>${label}</div><div class="pdf-sign-space"></div><div class="pdf-sign-name">${escapeHtml(name || '')}</div></div>`;
+      return {
+        title,
+        html: `
+          ${tab === 'kurvas' ? '' : '<style>@page { size: A4; margin: 12mm; }</style>'}
+          <div class="pdf-head">
+            <div>
+              <div class="pdf-brand">Victory Construction · Project Monitor MEP</div>
+              <div class="pdf-title">${escapeHtml(title)}</div>
+              <div class="pdf-project">Proyek: ${escapeHtml(getActiveProjectName())}</div>
+            </div>
+            <div class="pdf-meta">
+              ${usesDates ? `<div>Periode: <strong>${escapeHtml(formatPdfPeriod(options.from, options.to))}</strong></div>` : ''}
+              <div>Dicetak: ${escapeHtml(printedAt)}</div>
+              <div>Oleh: ${escapeHtml(printedBy)}</div>
+            </div>
+          </div>
+          ${body}
+          <div class="pdf-sign">
+            ${signBox('Dibuat oleh,', options.maker)}
+            ${signBox('Diperiksa oleh,', options.checker)}
+            ${signBox('Disetujui oleh,', options.approver)}
+          </div>
+          <div class="pdf-footer">Dokumen dibuat otomatis dari Project Monitor MEP · ${escapeHtml(printedAt)}</div>`
+      };
+    }
+
+    function waitForPdfImages(root, timeoutMs = 20000) {
+      const images = [...root.querySelectorAll('img')].filter((image) => !image.complete);
+      if (!images.length) return Promise.resolve();
+      let loaded = 0;
+      const total = images.length;
+      return new Promise((resolve) => {
+        const timer = setTimeout(resolve, timeoutMs);
+        const done = () => {
+          loaded += 1;
+          setPdfExportBusy(true, `Memuat foto ${loaded}/${total}...`);
+          if (loaded >= total) {
+            clearTimeout(timer);
+            resolve();
+          }
+        };
+        setPdfExportBusy(true, `Memuat foto 0/${total}...`);
+        images.forEach((image) => {
+          image.addEventListener('load', done, { once: true });
+          image.addEventListener('error', () => { image.remove(); done(); }, { once: true });
+        });
+      });
+    }
+
+    function getPdfFileName(title) {
+      const clean = (text) => String(text || '').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim();
+      return clean(`${title} - ${getActiveProjectName()} - ${getTodayISO()}`);
+    }
+
+    async function submitPdfExport(event) {
+      event.preventDefault();
+      if (pdfExportBusy || !pdfExportTab) return;
+      const tab = pdfExportTab;
+      const fromInput = document.getElementById('pdfExportDateFrom');
+      const toInput = document.getElementById('pdfExportDateTo');
+      const usesDates = !['assets', 'calculator'].includes(tab);
+      const from = usesDates ? fromInput.value : '';
+      const to = usesDates ? toInput.value : '';
+      toInput.setCustomValidity(from && to && from > to ? 'Tanggal akhir harus sama atau setelah tanggal awal.' : '');
+      if (!toInput.reportValidity()) return;
+      const options = {
+        from,
+        to,
+        includePhotos: true,
+        maker: document.getElementById('pdfSignMaker').value.trim(),
+        checker: document.getElementById('pdfSignChecker').value.trim(),
+        approver: document.getElementById('pdfSignApprover').value.trim()
+      };
+      writeLocalStorage(PDF_SIGNERS_STORAGE_KEY, JSON.stringify({ maker: options.maker, checker: options.checker, approver: options.approver }));
+      const root = document.getElementById('pdfPrintRoot');
+      setPdfExportBusy(true, 'Menyusun laporan...');
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        const documentData = buildPdfDocument(tab, options);
+        root.innerHTML = documentData.html;
+        await waitForPdfImages(root);
+        setPdfExportBusy(true, 'Membuka jendela cetak...');
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        setPdfExportBusy(false);
+        document.getElementById('pdfExportDialog').close();
+        startPdfPrint(getPdfFileName(documentData.title));
+      } catch (error) {
+        console.error('Export PDF gagal', error);
+        root.innerHTML = '';
+        setPdfExportBusy(true, `Gagal membuat PDF: ${error.message}`);
+        setTimeout(() => setPdfExportBusy(false), 2500);
+      }
+    }
+
+    function startPdfPrint(fileName) {
+      const previousTitle = document.title;
+      const cleanup = () => {
+        if (pdfPrintCleanup !== cleanup) return;
+        pdfPrintCleanup = null;
+        window.removeEventListener('afterprint', handleAfterPrint);
+        document.body.classList.remove('pdf-printing');
+        document.getElementById('pdfPrintRoot').innerHTML = '';
+        document.title = previousTitle;
+      };
+      // Mobile browsers may return from print() before the preview is rendered, so wait for the next tap there.
+      const handleAfterPrint = () => {
+        if (window.matchMedia('(pointer: coarse)').matches) {
+          window.removeEventListener('afterprint', handleAfterPrint);
+          setTimeout(() => document.addEventListener('pointerdown', cleanup, { once: true }), 1000);
+        } else {
+          cleanup();
+        }
+      };
+      pdfPrintCleanup = cleanup;
+      window.addEventListener('afterprint', handleAfterPrint);
+      document.body.classList.add('pdf-printing');
+      document.title = fileName;
+      window.print();
+    }
+
+    document.getElementById('pdfExportForm')?.addEventListener('submit', submitPdfExport);
+    document.getElementById('pdfExportDialog')?.addEventListener('cancel', (event) => {
+      if (pdfExportBusy) event.preventDefault();
+    });
 
     function handleAppsScriptBridgeMessage(event) {
       if (!appsScriptBridgeFrame) return;
