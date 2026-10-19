@@ -144,6 +144,12 @@ Warning kapasitas Import/Reschedule muncul bila salah satu ambang terlewati: uku
 
 ## Petunjuk Penggunaan dalam Aplikasi
 
+### Peninjauan / Attention Kurva S
+
+Badge Attention pada header menghitung induk pekerjaan yang tertinggal pada minggu laporan terakhir, termasuk ketika deviasi total proyek positif. Urutan berdasarkan kekurangan kontribusi proyek: rencana kumulatif item (maksimal bobot induk) dikurangi bobot induk × persen aktual / 100, dalam poin persentase. Minggu tanpa laporan tidak dianggap progres nol. Ini bukan analisis critical path atau prediksi tanggal selesai; penyebab tidak disimpulkan dari angka.
+
+Klik badge, buka pekerjaan dan isi penyebab terverifikasi, tindakan/recovery plan, PIC dan tanggal target. Simpan per pekerjaan; izin edit mengikuti `kurva_s`, akun lain hanya membaca. Catatan disimpan dalam `projectSchedule.attentionReviews` berdasarkan revisi, tanggal awal dan minggu laporan, lalu ID induk. Snapshot yang sama menyimpan data ini tanpa perubahan Apps Script. Catatan tidak menonaktifkan Attention; progres yang sudah mengejar rencana menghilangkan item dari daftar aktif. Catatan minggu/revisi lama tetap tersimpan, namun daftar aktif hanya menampilkan peninjauan minggu/revisi saat ini.
+
 ### Rincian Item & Volume Kurva S
 
 Setelah import master schedule, pilih **Import Rincian Bobot** untuk membaca workbook `.xlsx` bobot/BOQ multi-sheet. Sheet rincian memerlukan UNIT/Satuan, QTY/Quantity/Volume dan BOBOT; uraian berada tepat sebelum UNIT. Header kosong BOBOT dapat dikenali dari TOTAL tepat setelah QTY pada baris berikutnya dan selalu ditandai catatan. Item yang diikutkan harus memiliki satuan, QTY dan bobot positif; subtotal, sheet non-rincian dan baris invalid tidak menjadi input, dengan daftar pengecualian pada pratinjau.

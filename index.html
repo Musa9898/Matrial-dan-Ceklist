@@ -2644,6 +2644,12 @@
     .kurva-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .kurva-actions .btn-cancel { padding: 8px 12px; font-size: 0.8rem; white-space: nowrap; }
     .kurva-actions [hidden] { display: none !important; }
+    .attention-chip { display: block; margin-top: 8px; padding: 7px 10px; border: 1px solid #fbbf24; border-radius: 12px; background: #fef3c7; color: #78350f; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+    .attention-chip[hidden] { display: none; }
+    #kurvaAttentionList details { margin: 12px 0; padding: 12px; border: 1px solid var(--border-subtle); border-radius: 10px; overflow-wrap: anywhere; }
+    #kurvaAttentionList summary { cursor: pointer; font-weight: 700; }
+    #kurvaAttentionList label { display: block; margin-top: 10px; }
+    #kurvaAttentionList input, #kurvaAttentionList textarea { width: 100%; min-width: 0; }
     .section-header:has(> .kurva-actions) .section-title { white-space: nowrap; flex-shrink: 0; }
     .kurva-empty { text-align: center; padding: 36px 20px; border: 1px dashed #cbd5e1; border-radius: 16px; background: var(--card-bg); color: var(--text-muted); }
     .kurva-empty strong { display: block; color: var(--text-dark); margin-bottom: 6px; }
@@ -4063,6 +4069,7 @@
           <span class="net-chip-dot" aria-hidden="true"></span>
           <span id="netChipText">Cek sinyal…</span>
         </button>
+        <button class="attention-chip" id="kurvaAttentionBadge" type="button" hidden onclick="openKurvaAttention()" aria-haspopup="dialog" aria-controls="modalKurvaAttention"></button>
       </div>
       <button class="mep-calc-trigger" id="mep-calc-open" type="button" aria-haspopup="dialog" aria-controls="mep-calc-dialog" aria-label="Kalkulator MEP" title="Kalkulator MEP">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M8 6h8v4H8zM8 14h2m4 0h2m-8 4h2m4 0h2"/></svg>
@@ -4474,6 +4481,17 @@
           <button class="btn-cancel" type="button" onclick="closeKurvaDetailsImport()">Batal</button>
           <button class="btn-save" type="button" id="kurvaDetailsSave" onclick="saveKurvaDetailsImport()" disabled>Simpan Pemetaan</button>
         </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalKurvaAttention" role="dialog" aria-modal="true" aria-labelledby="kurvaAttentionTitle">
+      <div class="detail-modal-sheet">
+        <button class="modal-close-button" type="button" aria-label="Tutup Attention" onclick="closeKurvaAttention()">&times;</button>
+        <h3 id="kurvaAttentionTitle">Peninjauan / Attention Kurva S</h3>
+        <p class="form-hint">Berdasarkan minggu terakhir yang dilaporkan, bukan minggu tanpa laporan. Urutan berdasarkan kekurangan progres berbobot terbesar; bukan analisis critical path atau prediksi tanggal selesai. Penyebab harus diverifikasi di lapangan.</p>
+        <p id="kurvaAttentionSummary" role="status"></p>
+        <div id="kurvaAttentionList"></div>
+        <button class="btn-cancel" type="button" onclick="closeKurvaAttention()">Tutup</button>
       </div>
     </div>
 
@@ -12020,7 +12038,89 @@
       return `<svg class="kurva-chart" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Grafik kurva S rencana dan realisasi">${parts.join('')}</svg><div class="kurva-tip" hidden></div>`;
     }
 
+    let kurvaAttentionDraft = null;
+
+    function closeKurvaAttention() {
+      document.getElementById('modalKurvaAttention').style.display = 'none';
+      kurvaAttentionDraft = null;
+    }
+
+    function renderKurvaAttentionBadge() {
+      if (kurvaAttentionDraft && (kurvaAttentionDraft.schedule !== projectSchedule || kurvaAttentionDraft.projectId !== activeProjectId)) closeKurvaAttention();
+      const badge = document.getElementById('kurvaAttentionBadge');
+      const analysis = projectSchedule ? kurvaSCore.getAttention(projectSchedule) : null;
+      badge.hidden = !analysis?.items.length;
+      badge.textContent = analysis?.items.length
+        ? `Attention: ${analysis.items.length} pekerjaan tertinggal · minggu ${analysis.week}` : '';
+    }
+
+    function openKurvaAttention() {
+      if (!projectSchedule) return;
+      const analysis = kurvaSCore.getAttention(projectSchedule);
+      const key = `${projectSchedule.importedAt || ''}|${projectSchedule.revision || 0}|${projectSchedule.startDate}|${analysis.week}`;
+      kurvaAttentionDraft = { schedule: projectSchedule, projectId: activeProjectId, key, analysis };
+      const reviews = projectSchedule.attentionReviews?.[key] || {};
+      document.getElementById('kurvaAttentionSummary').textContent = analysis.week
+        ? `Minggu ${analysis.week} · ${analysis.items.length} pekerjaan tertinggal · deviasi proyek ${formatPdfNumber(analysis.deviation)} poin persentase. Catatan berlaku untuk minggu dan revisi ini.`
+        : 'Belum ada laporan progres untuk dianalisis.';
+      document.getElementById('kurvaAttentionList').innerHTML = analysis.items.map((item, index) => {
+        const review = reviews[item.id];
+        const field = (name, label, type = 'text') => `<label for="attention${index}${name}">${label}</label><input id="attention${index}${name}" type="${type}" maxlength="1000" value="${escapeHtml(review?.[name] || '')}"${canAccess('kurva_s') ? '' : ' disabled'}>`;
+        return `<details><summary>${index + 1}. ${escapeHtml(item.name)} · ${review ? 'Sudah ditinjau' : 'Belum ditinjau'}</summary>
+          <p>${escapeHtml([item.group, item.subgroup].filter(Boolean).join(' · '))}</p>
+          <p>Rencana item ${formatKurvaPercent(item.planPercent)} · aktual ${formatKurvaPercent(item.actualPercent)} · selisih ${formatKurvaPercent(item.actualPercent - item.planPercent)}.</p>
+          <p>Kekurangan kontribusi proyek: ${formatPdfNumber(item.shortfall)} poin persentase (bobot induk ${formatKurvaPercent(item.weight)}). ${item.actualPercent === 0 ? 'Belum ada progres tercatat.' : 'Progres di bawah rencana.'}</p>
+          ${field('cause', 'Penyebab terverifikasi (wajib)')}
+          ${field('action', 'Tindak lanjut / recovery plan (wajib)')}
+          ${field('pic', 'PIC penanggung jawab (wajib)')}
+          ${field('target', 'Target tindak lanjut (wajib)', 'date')}
+          ${review ? `<p class="form-hint">Ditinjau oleh ${escapeHtml(review.updatedBy)} · ${escapeHtml(review.updatedAt)}. Catatan bukan bukti bahwa keterlambatan telah selesai.</p>` : ''}
+          ${canAccess('kurva_s') ? `<button type="button" class="btn-save" onclick="saveKurvaAttention(${index}, this)">Simpan Peninjauan</button>` : '<p class="form-hint">Akun ini hanya dapat membaca peninjauan.</p>'}
+        </details>`;
+      }).join('') || '<p>Tidak ada pekerjaan tertinggal pada minggu laporan ini.</p>';
+      document.getElementById('modalKurvaAttention').style.display = 'flex';
+    }
+
+    async function saveKurvaAttention(index, button) {
+      if (!requireAccess('kurva_s')) return;
+      const draft = kurvaAttentionDraft;
+      if (!draft || draft.schedule !== projectSchedule || draft.projectId !== activeProjectId) {
+        showAppNotice('Proyek atau jadwal berubah. Tutup dan buka ulang Attention.');
+        return;
+      }
+      const item = draft.analysis.items[index];
+      if (!item) { showAppNotice('Pekerjaan peninjauan tidak ditemukan. Buka ulang Attention.'); return; }
+      const review = {};
+      for (const name of ['cause', 'action', 'pic', 'target']) {
+        const input = document.getElementById(`attention${index}${name}`);
+        if (!input.value.trim() || !input.checkValidity()) {
+          input.focus();
+          showAppNotice('Lengkapi penyebab, tindak lanjut, PIC dan tanggal target yang valid.');
+          return;
+        }
+        review[name] = input.value.trim();
+      }
+      review.updatedBy = getSignedInName();
+      review.updatedAt = new Date().toISOString();
+      const previous = projectSchedule.attentionReviews;
+      projectSchedule.attentionReviews = { ...previous, [draft.key]: { ...previous?.[draft.key], [item.id]: review } };
+      button.disabled = true;
+      const saved = await persistActiveProjectData();
+      button.disabled = false;
+      if (!saved) {
+        draft.schedule.attentionReviews = previous;
+        return;
+      }
+      renderKurvaAttentionBadge();
+      if (projectSchedule === draft.schedule && activeProjectId === draft.projectId && kurvaAttentionDraft === draft) {
+        const summary = button.closest('details').querySelector('summary');
+        summary.textContent = `${index + 1}. ${item.name} · Sudah ditinjau`;
+      }
+      showAppNotice('Peninjauan tersimpan. Attention tetap muncul sampai progres pekerjaan tidak tertinggal.');
+    }
+
     function renderKurvaS(options = {}) {
+      renderKurvaAttentionBadge();
       const animate = options.animate !== false;
       const container = document.getElementById('kurvaContent');
       if (!container) return;
@@ -12388,6 +12488,7 @@
       const progress = kurvaSCore.remapProgress(projectSchedule?.progress, projectSchedule?.startDate, startDate, kurvaImportDraft.weekCount, itemIds);
       const previous = projectSchedule;
       const next = {
+        ...(previous?.attentionReviews ? { attentionReviews: previous.attentionReviews } : {}),
         ...(previous?.detailItems?.length ? { detailItems: previous.detailItems, detailStartWeek: previous.detailStartWeek, detailSource: previous.detailSource } : {}),
         title: document.getElementById('kurvaImportName').value.trim() || kurvaImportDraft.title,
         fileName: kurvaImportDraft.fileName,
@@ -13081,6 +13182,8 @@
             'Batas unggah 200 MB pada tab File bukan batas Import Kurva S. Belum ada angka maksimum kapasitas aman yang diverifikasi melalui uji khusus.'
           ]],
           ['Reschedule & PDF', [
+            'Badge Attention di header menunjukkan semua induk pekerjaan tertinggal pada minggu laporan terakhir, walaupun total proyek masih positif. Buka untuk melihat rencana, aktual dan kekurangan kontribusi berbobot terbesar. Minggu belum dilaporkan tidak dianggap progres nol.',
+            'PM meninjau dampak dan recovery plan, QS memeriksa volume/bobot, SPV memverifikasi kendala lapangan. Pengguna dengan izin Kurva S dapat mengisi penyebab, tindakan, PIC dan tanggal target per pekerjaan per minggu/revisi. Catatan tidak menghapus Attention; perbarui progres untuk menilai pemulihan. Angka tidak membuktikan penyebab atau critical path.',
             'Reschedule dipakai untuk revisi rencana, bukan menghapus realisasi. Periksa tanggal mulai minggu ke-1 serta pratinjau revisi sebelum menyimpan.',
             'Periksa riwayat revisi untuk menelusuri perubahan. PDF mencetak laporan Kurva S; rentang tanggal dipilih pada dialog ekspor.',
             'Progres item tidak boleh turun dari minggu sebelumnya. Periksa item dan minggu bila nilai ditolak.'
@@ -13791,6 +13894,22 @@
         return later ? clampPercent(schedule.progress[later].values[itemId]) : 100;
       }
 
+      function getAttention(schedule) {
+        const curve = computeCurve(schedule);
+        const week = curve.lastReportedWeek;
+        if (!week) return { week: 0, deviation: null, items: [] };
+        const actual = getItemProgressAt(schedule, week);
+        const items = schedule.items.map((item) => {
+          const planned = Math.min(item.weight, item.plan.slice(0, week).reduce((sum, value) => sum + (Number(value) || 0), 0));
+          const actualPercent = actual[item.id];
+          return { id: item.id, name: item.name, group: item.group, subgroup: item.subgroup,
+            weight: item.weight, planPercent: planned / item.weight * 100, actualPercent,
+            shortfall: round(planned - item.weight * actualPercent / 100, 6) };
+        }).filter((item) => item.shortfall > 0)
+          .sort((a, b) => b.shortfall - a.shortfall || a.name.localeCompare(b.name));
+        return { week, deviation: curve.deviation[week - 1], items };
+      }
+
       function computeCurve(schedule) {
         const weekCount = schedule.weekCount;
         const planWeekly = Array(weekCount).fill(0);
@@ -13891,6 +14010,7 @@
         getWeekOffset,
         remapProgress,
         getItemProgressAt,
+        getAttention,
         getItemProgressLimit,
         getWeekForDate,
         getWeekStartDate,

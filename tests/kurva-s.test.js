@@ -132,6 +132,29 @@ test('maps dates to schedule weeks', () => {
   assert.equal(kurva.excelSerialToISO(46314), '2026-10-19');
 });
 
+test('Attention uses latest reported week, ranks weighted gaps and retains delays in an ahead project', () => {
+  const schedule = { weekCount: 3, items: [
+    { id: 'a', name: 'Pipa', weight: 20, plan: [5, 5, 10] },
+    { id: 'b', name: 'Pompa', weight: 30, plan: [10, 10, 10] },
+    { id: 'c', name: 'Lainnya', weight: 50, plan: [0, 0, 50] }
+  ], progress: {} };
+  assert.equal(kurva.getAttention(schedule).week, 0);
+  assert.equal(kurva.getAttention(schedule).items.length, 0);
+  schedule.progress = { 1: { values: { a: 0, b: 0, c: 100 } } };
+  let attention = kurva.getAttention(schedule);
+  assert.equal(attention.week, 1);
+  assert.equal(attention.deviation, 35);
+  assert.deepEqual(Array.from(attention.items, (item) => item.id), ['b', 'a']);
+  assert.equal(attention.items[0].shortfall, 10);
+  near(attention.items[0].planPercent, 100 / 3);
+  schedule.progress[2] = { values: { b: 100, a: 50 } };
+  attention = kurva.getAttention(schedule);
+  assert.equal(attention.week, 2);
+  assert.equal(attention.items.length, 0);
+  schedule.progress[2].values.a = 49;
+  assert.equal(kurva.getAttention(schedule).items[0].shortfall, 0.2);
+});
+
 function crc32(buffer) {
   let crc = ~0;
   for (const byte of buffer) {

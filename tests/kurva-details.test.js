@@ -10,6 +10,51 @@ vm.runInContext(html.match(/<script id="kurva-s-core">([\s\S]*?)<\/script>/)[1] 
 const api = context.api;
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
+test('Attention notes require permission and complete fields, persist per week and roll back failed saves', async () => {
+  const schedule = { attentionReviews: { old: { a: { cause: 'Existing' } } } };
+  const original = schedule.attentionReviews;
+  const elements = Object.fromEntries(['cause', 'action', 'pic', 'target'].map((name) =>
+    [`attention0${name}`, { value: name === 'target' ? '2026-10-26' : name,
+      checkValidity: () => true, focus() {} }]));
+  let allowed = true;
+  let succeeds = false;
+  let calls = 0;
+  const sandbox = vm.createContext({
+    document: { getElementById: (id) => elements[id] },
+    projectSchedule: schedule, activeProjectId: 'p',
+    kurvaAttentionDraft: { schedule, projectId: 'p', key: '0|2026-10-19|1', analysis: { items: [{ id: 'a', name: 'Pipa' }] } },
+    requireAccess: () => allowed, showAppNotice() {}, renderKurvaAttentionBadge() {},
+    getSignedInName: () => 'Reviewer',
+    persistActiveProjectData: async () => { calls += 1; return succeeds; }
+  });
+  const start = html.indexOf('    async function saveKurvaAttention(');
+  const end = html.indexOf('    function renderKurvaS(', start);
+  vm.runInContext(html.slice(start, end), sandbox);
+  const summary = {};
+  const button = { closest: () => ({ querySelector: () => summary }) };
+  allowed = false;
+  await sandbox.saveKurvaAttention(0, button);
+  assert.equal(calls, 0);
+  allowed = true;
+  elements.attention0cause.value = '';
+  await sandbox.saveKurvaAttention(0, button);
+  assert.equal(calls, 0);
+  elements.attention0cause.value = 'Material belum tiba';
+  await sandbox.saveKurvaAttention(0, button);
+  assert.equal(calls, 1);
+  assert.equal(schedule.attentionReviews, original);
+  assert.equal(button.disabled, false);
+  succeeds = true;
+  await sandbox.saveKurvaAttention(0, button);
+  assert.equal(schedule.attentionReviews['0|2026-10-19|1'].a.cause, 'Material belum tiba');
+  assert.equal(schedule.attentionReviews.old.a.cause, 'Existing');
+  assert.equal(schedule.attentionReviews['0|2026-10-19|1'].a.updatedBy, 'Reviewer');
+  assert.match(summary.textContent, /Sudah ditinjau/);
+  sandbox.activeProjectId = 'other';
+  await sandbox.saveKurvaAttention(0, button);
+  assert.equal(calls, 2);
+});
+
 test('saving includes every item only in checked groups and rejects incomplete selections', async () => {
   const schedule = { items: [{ id: 'parent' }], weekCount: 10 };
   const elements = {
@@ -219,6 +264,7 @@ test('snapshot roundtrip preserves detail identities, activation and volume hist
   const schedule = {
     weekCount: 2, items: [{ id: 'parent', weight: 20, plan: [10, 10] }],
     detailItems: details, detailStartWeek: 2, detailSource: { fileName: 'boq.xlsx' },
+    attentionReviews: { 'import|0|2026-10-19|1': { parent: { cause: 'Material terlambat', action: 'Koordinasi pengiriman', pic: 'SPV', target: '2026-10-26' } } },
     progress: { 1: { values: { parent: 20 }, updatedBy: 'Original' },
       2: { values: { parent: 25 }, detailVolumes: { a: 100, b: 0 } } },
     revisions: [{ revision: 0 }]
@@ -228,4 +274,5 @@ test('snapshot roundtrip preserves detail identities, activation and volume hist
   assert.equal(restored.detailStartWeek, 2);
   assert.deepEqual(plain(restored.detailSource), { fileName: 'boq.xlsx' });
   assert.deepEqual(plain(restored.progress), schedule.progress);
+  assert.deepEqual(plain(restored.attentionReviews), schedule.attentionReviews);
 });
