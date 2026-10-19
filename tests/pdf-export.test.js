@@ -57,3 +57,68 @@ test('kurva week overlaps the date range', () => {
   assert.equal(isPdfWeekInRange('2026-05-04', '2026-05-11', '', '2026-05-03'), false);
   assert.equal(isPdfWeekInRange('', '2026-05-11', '', ''), false);
 });
+
+function getFunction(name) {
+  const start = html.indexOf(`    function ${name}(`);
+  assert.ok(start >= 0, name);
+  const rest = html.slice(start);
+  const next = rest.slice(1).search(/\n    (?:async )?function /);
+  return next < 0 ? rest : rest.slice(0, next + 1);
+}
+
+function dailyPdfContext() {
+  const sandbox = vm.createContext({
+    dailyWorkPlans: [
+      { id: 'first', date: '2026-10-18', title: 'Laporan pertama', supervisor: 'SPV A',
+        tasks: [{ discipline: 'Plumbing', title: 'Pasang pipa', area: 'Lantai 1', workers: 3 }] },
+      { id: 'same-day', date: '2026-10-18', title: 'Laporan lain tanggal sama', supervisor: 'SPV B',
+        tasks: [{ discipline: 'Elektrikal', title: 'Pasang kabel', area: 'Lantai 2', workers: 5 }] },
+      { id: 'next-day', date: '2026-10-19', title: 'Laporan hari berikutnya', supervisor: 'SPV C', tasks: [] }
+    ],
+    escapeHtml: (value) => String(value),
+    formatChecklistDate: (value) => value,
+    formatPdfNumber: (value) => String(value),
+    pdfSummary: (rows) => JSON.stringify(rows),
+    pdfTable: (headers, rows) => JSON.stringify(rows),
+    getSignedInName: () => 'Tester',
+    getActiveProjectName: () => 'Proyek Uji',
+    PDF_TAB_TITLES: { suratjalan: 'Laporan Harian MEP' }
+  });
+  vm.runInContext([
+    core, getFunction('getDailyWorkStats'), getFunction('buildPdfDailyReport'),
+    getFunction('formatPdfPeriod'), getFunction('buildPdfDocument'),
+    'globalThis.buildReport = buildPdfDailyReport; globalThis.buildDocument = buildPdfDocument;'
+  ].join('\n'), sandbox);
+  return sandbox;
+}
+
+test('daily PDF exports only the selected report, not other reports on the same date', () => {
+  const sandbox = dailyPdfContext();
+  const result = sandbox.buildDocument('suratjalan', {
+    reportIds: ['first'], from: '2099-01-01', to: '2099-01-02', maker: 'Tester'
+  });
+  assert.match(result.html, /Laporan pertama/);
+  assert.match(result.html, /Pasang pipa/);
+  assert.match(result.html, /SPV A/);
+  assert.match(result.html, /"Jumlah Laporan","1"/);
+  assert.match(result.html, /"Total Pekerja","3"/);
+  assert.match(result.html, /Periode: <strong>2026-10-18 s.d. 2026-10-18/);
+  assert.doesNotMatch(result.html, /Laporan lain|Laporan hari berikutnya|Pasang kabel|2099/);
+});
+
+test('daily cumulative PDF keeps its inclusive date filter and resets with no selection', () => {
+  const sandbox = dailyPdfContext();
+  const result = sandbox.buildReport({ from: '2026-10-18', to: '2026-10-18', reportIds: [] });
+  assert.match(result, /Laporan pertama/);
+  assert.match(result, /Laporan lain tanggal sama/);
+  assert.match(result, /"Jumlah Laporan","2"/);
+  assert.match(result, /"Total Pekerja","8"/);
+  assert.doesNotMatch(result, /Laporan hari berikutnya/);
+  assert.match(sandbox.buildReport({}), /"Jumlah Laporan","3"/);
+});
+
+test('missing selected daily report surfaces an error instead of exporting all reports', () => {
+  const sandbox = dailyPdfContext();
+  assert.throws(() => sandbox.buildDocument('suratjalan', { reportIds: ['missing'] }), /Laporan harian tidak ditemukan/);
+  assert.throws(() => sandbox.buildDocument('suratjalan', { reportIds: ['first', 'missing'] }), /Laporan harian tidak ditemukan/);
+});

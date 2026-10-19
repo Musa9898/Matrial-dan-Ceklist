@@ -132,11 +132,35 @@ Semua pengguna yang punya baris Access aktif juga dapat melihat proyek lain di s
 
 Tab **Kurva S** di menu bawah menampilkan kurva rencana vs realisasi per proyek.
 
+**Ketentuan import:** file `.xlsx`, header ITEM/Pekerjaan/Uraian dan Bobot, serta minggu mulai/selesai berupa angka. Nomor minggu berupa angka berurutan mulai 1, minimal 3 minggu, pada baris header atau maksimal 5 baris setelahnya. Item harus bernama dan berbobot angka > 0. Jika seluruh rencana mingguan item kosong/nol, bobot dibagi merata dari minggu mulai sampai selesai. Letakkan ringkasan Rencana/Realisasi/Deviasi setelah semua item; pembacaan berhenti pada ringkasan. Hanya sheet pertama yang berhasil dikenali yang digunakan. Belum ada batas maksimum baris/kolom/minggu/ukuran khusus import atau kapasitas aman teruji; file besar tetap dapat membebani perangkat. Batas 200 MB tab File bukan batas import jadwal. Rincian tersedia pada panduan buka/tutup di tab Kurva S dan ringkasannya di form Import/Reschedule.
+
 1. **Import Excel** (Admin/Engineering, izin Upload File): pilih file master schedule `.xlsx`. Aplikasi membaca kolom `ITEM`, `Bobot`, `MINGGU KE` (mulai–selesai), dan baris nomor minggu 1, 2, 3, … beserta rencana bobot per minggu. Grup (I, II, III …) dan sub-grup (a., b. …) dibaca otomatis; minggu tanpa rencana ditandai libur. Cek tanggal mulai minggu ke-1, lalu **Simpan Jadwal**. Import ulang mengganti jadwal, progres item dengan nama yang sama tetap dipertahankan.
 2. **+ Input Progres** (Admin/Engineering/SPV, izin Laporan Harian): pilih minggu, isi progres kumulatif tiap pekerjaan (0–100% dari item itu). Nilai tidak boleh turun dari minggu sebelumnya.
 3. Realisasi mingguan, realisasi kumulatif, dan deviasi dihitung otomatis dari bobot (`bobot × progres%`). Minggu berjalan dihitung dari tanggal hari ini.
 
 Data tersimpan di snapshot proyek sebagai `projectSchedule` (ikut tersinkron ke Spreadsheet). Karena `SNAPSHOT_SECTIONS` di `Code.gs` berubah (`projectSchedule` masuk izin `daily_report`), `Code.gs` harus di-paste ulang dan di-deploy sebagai New version.
+
+Warning kapasitas Import/Reschedule muncul bila salah satu ambang terlewati: ukuran file **> 20 MB**, pekerjaan terbaca **> 200 item**, atau durasi **> 100 minggu**. Nilai tepat pada ambang tidak memunculkan warning. Ini peringatan performa, bukan larangan import atau kapasitas aman terjamin. Pembatas lama 10 MB sudah diganti warning; file tetap harus berhasil dibaca dan lolos validasi sebelum disimpan.
+
+## Petunjuk Penggunaan dalam Aplikasi
+
+### Rincian Item & Volume Kurva S
+
+Setelah import master schedule, pilih **Import Rincian Item** untuk membaca workbook `.xlsx` bobot/BOQ multi-sheet. Sheet rincian memerlukan UNIT/Satuan, QTY/Quantity/Volume dan BOBOT; uraian berada tepat sebelum UNIT. Header kosong BOBOT dapat dikenali dari TOTAL tepat setelah QTY pada baris berikutnya dan selalu ditandai catatan. Item yang diikutkan harus memiliki satuan, QTY dan bobot positif; subtotal, sheet non-rincian dan baris invalid tidak menjadi input, dengan daftar pengecualian pada pratinjau.
+
+Aplikasi mengusulkan induk berdasarkan nama sheet/kelompok. Setiap kelompok mempunyai checkbox **Ikutkan kelompok ini** (awalnya dicentang), pilihan induk yang langsung terlihat, dan status **Siap / Belum pilih induk / Tidak diikutkan**. Hilangkan centang untuk melewati seluruh kelompok; pilihan induk dinonaktifkan tetapi nilainya dipertahankan jika dicentang kembali. Kelompok yang dicentang wajib memiliki induk valid. Ringkasan menunjukkan jumlah kelompok/item terpilih dan kelompok belum dipetakan. Buka **Lihat rincian** untuk memeriksa item, lalu centang konfirmasi sebelum menyimpan; perubahan pilihan membatalkan konfirmasi sebelumnya. Semua item pada satu kelompok memakai induk yang sama; tidak ada checklist per item. Belum ada penggantian rincian yang sudah tersimpan agar ID, volume dan riwayat tidak hilang.
+
+`persen item = volume kumulatif / QTY kontrak × 100`. `persen induk = Σ(bobot detail × persen item) / Σ(bobot detail)`. Kontribusi proyek tetap memakai bobot induk dari master schedule; bobot sumber tidak dikoreksi/disamakan otomatis. Induk yang tidak dipetakan tetap memakai input persen.
+
+Rincian aktif mulai minggu setelah laporan terakhir; progres historis tidak diubah dan volume historis tidak ditebak. Pada laporan volume pertama, pengguna harus memasukkan volume aktual yang menghasilkan persen induk minimal sebesar progres lama. Batas volume: tidak turun dari minggu sebelumnya, tidak melebihi QTY atau volume laporan berikutnya. Persen induk juga tunduk pada batas progres minggu sebelum/sesudahnya. Cari item/area melalui pencarian; kelompok rincian dapat dibuka/tutup.
+
+Rincian disimpan bersama `projectSchedule.detailItems`, metadata `detailSource`/`detailStartWeek` dan `progress[week].detailVolumes`, menggunakan jalur snapshot dan izin `kurva_s` yang sudah ada; tidak perlu perubahan/deploy ulang Apps Script. Reschedule/import ulang dengan rincian wajib mempertahankan ID induk, tanggal mulai dan tidak memperpendek durasi. Grafik, rekap dan PDF Kurva S tetap menggunakan progres induk terhitung, bukan menambahkan bobot detail dua kali.
+
+Setiap tab utama (Material, Aset, Ceklist, Pengetesan, Laporan, Kurva S, File), form input/detail, pengaturan, bantuan, kalkulator dan dialog PDF dilengkapi **Petunjuk Penggunaan** yang dapat dibuka/tutup. Panduan tertutup saat halaman dimuat; klik judul atau fokuskan judul lalu tekan Enter/Spasi untuk membacanya. Isinya mencakup urutan pengisian, arti pilihan, penyimpanan, cakupan PDF dan peringatan yang relevan. Panduan unggah File yang sudah ada tetap tersedia dengan rincian format dan batas ukuran. Panduan tidak mengubah izin akun atau cara penyimpanan data; tidak perlu deploy ulang Apps Script.
+
+## PDF Laporan Harian per Laporan
+
+Buka detail salah satu laporan lalu pilih **PDF Laporan Ini** untuk mencetak hanya laporan tersebut beserta penugasan, jumlah pekerja, SPV, dan tanda tangan. Laporan lain pada tanggal yang sama tidak ikut dicetak. Tombol **PDF** di daftar laporan tetap untuk ekspor akumulatif sesuai rentang tanggal. Keduanya mengikuti izin ekspor PDF akun; tidak perlu deploy ulang Apps Script.
 
 ## Pengetesan & Commissioning
 

@@ -492,6 +492,65 @@
     .file-upload-guide-table .is-warn { color: #facc15; font-weight: 700; }
     .file-upload-guide-table .is-bad { color: #f87171; font-weight: 700; }
 
+    .usage-guide {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .usage-guide summary:focus-visible {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+      border-radius: 10px;
+    }
+
+    .usage-guide .file-upload-guide-body ol {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .usage-guide .file-upload-guide-body li + li {
+      margin-top: 5px;
+    }
+
+    #kurvaProgressItems .kurva-input-name,
+    #kurvaDetailsPreview .file-upload-guide-body {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    #kurvaProgressItems [hidden] {
+      display: none !important;
+    }
+
+    #kurvaDetailsPreview select {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .kurva-mapping-card {
+      margin: 12px 0;
+      padding: 12px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      overflow-wrap: anywhere;
+    }
+
+    .kurva-mapping-choice {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    #kurvaDetailsPreview input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      accent-color: var(--brand-blue);
+    }
+
     .google-signin-container {
       display: flex;
       justify-content: center;
@@ -2720,6 +2779,11 @@
     .kurva-import-summary strong { font-size: 0.85rem; color: var(--text-dark); overflow-wrap: anywhere; }
     .kurva-import-groups { list-style: none; display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; font-size: 0.8rem; color: var(--text-dark); }
     .kurva-import-groups li { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed var(--border-subtle); padding: 4px 0; }
+    #modalKurvaProgress > .detail-modal-sheet { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+    .kurva-progress-header { flex-shrink: 0; padding: 16px 20px 10px; border-bottom: 1px solid var(--border-subtle); }
+    .kurva-progress-header h3 { margin-bottom: 0; padding-right: 0; }
+    .kurva-progress-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px 20px; }
+    #modalKurvaProgress .kurva-progress-footer { flex-shrink: 0; margin: 0; padding: 12px 20px; padding-bottom: max(12px, env(safe-area-inset-bottom)); border-top: 1px solid var(--border-subtle); }
     .kurva-progress-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; position: sticky; top: -1px; z-index: 2; background: var(--card-bg); padding: 6px 0; }
     .kurva-progress-summary div { background: var(--bg-light); border-radius: 10px; padding: 6px 8px; border: 1px solid var(--border-subtle); }
     .kurva-progress-summary span { display: block; font-size: 0.65rem; color: var(--text-muted); }
@@ -4372,6 +4436,7 @@
           <button class="btn-pdf-export" type="button" data-pdf-tab="kurvas" onclick="openPdfExportDialog('kurvas')">📄 PDF</button>
           <button class="btn-cancel" type="button" id="kurvaImportButton" onclick="openKurvaImportModal()">Import Excel</button>
           <button class="btn-cancel" type="button" id="kurvaRescheduleButton" onclick="openKurvaImportModal('reschedule')">Reschedule</button>
+          <button class="btn-cancel" type="button" id="kurvaDetailsButton" onclick="openKurvaDetailsImport()">Import Rincian Item</button>
           <button class="btn-action-primary" type="button" id="kurvaProgressButton" onclick="openKurvaProgressModal()">+ Input Progres</button>
         </div>
       </div>
@@ -4394,17 +4459,37 @@
       </div>
     </div>
 
+    <div class="modal-backdrop" id="modalKurvaDetails" role="dialog" aria-modal="true" aria-labelledby="kurvaDetailsTitle">
+      <div class="detail-modal-sheet">
+        <h3 id="kurvaDetailsTitle">Import Rincian Item &amp; Pemetaan</h3>
+        <p class="form-hint">Import Excel bobot item setelah master schedule tersedia. Periksa pemetaan setiap kelompok ke pekerjaan induk. Tidak mengubah bobot atau rencana master schedule.</p>
+        <label for="kurvaDetailsFile">File rincian bobot (.xlsx)</label>
+        <input type="file" id="kurvaDetailsFile" accept=".xlsx" onchange="handleKurvaDetailsFile(this.files[0])">
+        <div id="kurvaDetailsPreview" aria-live="polite"></div>
+        <div class="btn-group">
+          <button class="btn-cancel" type="button" onclick="closeKurvaDetailsImport()">Batal</button>
+          <button class="btn-save" type="button" id="kurvaDetailsSave" onclick="saveKurvaDetailsImport()" disabled>Simpan Pemetaan</button>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-backdrop" id="modalKurvaProgress" role="dialog" aria-modal="true" aria-labelledby="kurvaProgressTitle">
       <div class="detail-modal-sheet">
+        <div class="kurva-progress-header">
         <h3 id="kurvaProgressTitle">Input Progres Mingguan</h3>
+        </div>
+        <div class="kurva-progress-body">
         <div class="form-row">
           <label class="required-label" for="kurvaProgressWeek">Minggu</label>
           <select id="kurvaProgressWeek" onchange="renderKurvaProgressForm()"></select>
         </div>
         <p class="form-hint">Isi progres kumulatif tiap pekerjaan (0–100% dari item tersebut) sampai akhir minggu yang dipilih. Realisasi, kumulatif, dan deviasi dihitung otomatis dari bobot.</p>
         <div id="kurvaProgressSummary" class="kurva-progress-summary"></div>
+        <label for="kurvaProgressSearch">Cari item / bidang / area</label>
+        <input type="search" id="kurvaProgressSearch" placeholder="Cari pekerjaan detail..." oninput="filterKurvaProgressItems()">
         <div id="kurvaProgressItems"></div>
-        <div class="btn-group">
+        </div>
+        <div class="btn-group kurva-progress-footer">
           <button class="btn-cancel" type="button" onclick="closeKurvaProgressModal()">Batal</button>
           <button class="btn-save" type="button" onclick="saveKurvaProgress()">Simpan Progres</button>
         </div>
@@ -4590,6 +4675,7 @@
         <div id="dailyWorkDetailContent"></div>
         <div class="btn-group">
           <button class="btn-cancel" onclick="closeDailyWorkDetail()">Tutup</button>
+          <button class="btn-pdf-export" type="button" id="dailyWorkDetailPdf" data-pdf-tab="suratjalan">📄 PDF Laporan Ini</button>
         </div>
       </div>
     </div>
@@ -6145,6 +6231,7 @@
       toggle('#kurvaProgressButton', 'kurva_s');
       toggle('#kurvaImportButton', 'kurva_s');
       toggle('#kurvaRescheduleButton', 'kurva_s');
+      toggle('#kurvaDetailsButton', 'kurva_s');
       toggle('#addProjectFolderButton', 'files');
       toggle('#projectFolderContents button[onclick^="renameProjectFolder"]', 'files');
       toggle('#projectFileUploadButton', 'files');
@@ -6243,11 +6330,12 @@
       }
       if (pdfPrintCleanup) pdfPrintCleanup();
       pdfExportTab = tab;
-      pdfExportReportIds = tab === 'pengetesan' && Array.isArray(preset.reportIds) ? preset.reportIds.filter(Boolean) : [];
+      pdfExportReportIds = ['pengetesan', 'suratjalan'].includes(tab) && Array.isArray(preset.reportIds) ? preset.reportIds.filter(Boolean) : [];
       const dialog = document.getElementById('pdfExportDialog');
       const usesDates = !['assets', 'calculator'].includes(tab) && !pdfExportReportIds.length;
-      document.getElementById('pdfExportTitle').textContent = pdfExportReportIds.length
+      document.getElementById('pdfExportTitle').textContent = pdfExportReportIds.length && tab === 'pengetesan'
         ? '📄 Export PDF · Berita Acara Pengetesan'
+        : pdfExportReportIds.length && tab === 'suratjalan' ? '📄 Export PDF · Laporan Harian Ini'
         : `📄 Export PDF · ${PDF_TAB_TITLES[tab].replace(/^Laporan /, '')}`;
       document.getElementById('pdfExportDateWrap').hidden = !usesDates;
       document.getElementById('pdfExportFormatWrap').hidden = tab !== 'pengetesan';
@@ -6438,9 +6526,10 @@
         ${items.length ? `<h4>Detail Inspeksi${includePhotos ? ' & Foto Dokumentasi' : ''}</h4>${details}` : ''}`;
     }
 
-    function buildPdfDailyReport({ from, to }) {
+    function buildPdfDailyReport({ from, to, reportIds }) {
+      const ids = Array.isArray(reportIds) && reportIds.length ? new Set(reportIds) : null;
       const plans = dailyWorkPlans
-        .filter((plan) => isPdfDateInRange(plan.date, from, to))
+        .filter((plan) => ids ? ids.has(plan.id) : isPdfDateInRange(plan.date, from, to))
         .sort((first, second) => String(first.date || '').localeCompare(String(second.date || '')));
       const totalWorkers = plans.reduce((total, plan) => total + getDailyWorkStats(plan).workers, 0);
       const totalTasks = plans.reduce((total, plan) => total + getDailyWorkStats(plan).tasks, 0);
@@ -6565,6 +6654,14 @@
     }
 
     function buildPdfDocument(tab, options) {
+      if (tab === 'suratjalan' && options.reportIds?.length) {
+        const selected = dailyWorkPlans.filter((plan) => options.reportIds.includes(plan.id));
+        if (selected.length !== new Set(options.reportIds).size) {
+          throw new Error('Laporan harian tidak ditemukan. Buka ulang detail laporan lalu coba lagi.');
+        }
+        const dates = selected.map((plan) => plan.date).sort();
+        options = { ...options, from: dates[0], to: dates[dates.length - 1] };
+      }
       if (tab === 'pengetesan' && options.format === 'ba') {
         return {
           title: 'Berita Acara Pengetesan',
@@ -8630,6 +8727,9 @@
           `;
         }).join('')}
       `;
+      const pdfButton = document.getElementById('dailyWorkDetailPdf');
+      pdfButton.hidden = !canExportPdf('suratjalan');
+      pdfButton.onclick = () => openPdfExportDialog('suratjalan', { reportIds: [reportId] });
       document.getElementById('modalDailyWorkDetail').style.display = 'flex';
     }
 
@@ -11599,6 +11699,8 @@
 
     let kurvaImportDraft = null;
     let kurvaImportMode = 'import';
+    let kurvaDetailsDraft = null;
+    let kurvaDetailsRequest = 0;
     const KURVA_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
     function normalizeProjectSchedule(value) {
@@ -11636,6 +11738,188 @@
         startDate: schedule.startDate || '',
         weekCount: schedule.weekCount
       };
+    }
+
+    function openKurvaDetailsImport() {
+      if (!requireAccess('kurva_s')) return;
+      if (!projectSchedule) {
+        showAppNotice('Import master schedule terlebih dahulu.');
+        return;
+      }
+      if (projectSchedule.detailItems?.length) {
+        showAppNotice('Rincian item sudah terpasang. Untuk menjaga volume dan riwayat, penggantian rincian tidak tersedia. Gunakan Input Progres untuk melanjutkan.');
+        return;
+      }
+      kurvaDetailsDraft = null;
+      document.getElementById('kurvaDetailsFile').value = '';
+      document.getElementById('kurvaDetailsPreview').innerHTML = '';
+      document.getElementById('kurvaDetailsSave').disabled = true;
+      document.getElementById('modalKurvaDetails').style.display = 'flex';
+    }
+
+    function closeKurvaDetailsImport() {
+      kurvaDetailsRequest += 1;
+      kurvaDetailsDraft = null;
+      document.getElementById('modalKurvaDetails').style.display = 'none';
+    }
+
+    async function handleKurvaDetailsFile(file) {
+      const request = ++kurvaDetailsRequest;
+      const schedule = projectSchedule;
+      const projectId = activeProjectId;
+      const preview = document.getElementById('kurvaDetailsPreview');
+      const button = document.getElementById('kurvaDetailsSave');
+      kurvaDetailsDraft = null;
+      button.disabled = true;
+      preview.textContent = '';
+      if (!file) return;
+      preview.innerHTML = `${renderKurvaImportWarnings(getKurvaImportWarnings(file.size))}<p>Membaca rincian Excel...</p>`;
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        const parsed = await kurvaSCore.parseDetailFile(await file.arrayBuffer());
+        if (request !== kurvaDetailsRequest || schedule !== projectSchedule || projectId !== activeProjectId) return;
+        const groups = new Map();
+        parsed.items.forEach((item) => {
+          if (!groups.has(item.mappingKey)) groups.set(item.mappingKey, []);
+          groups.get(item.mappingKey).push(item);
+        });
+        kurvaDetailsDraft = { ...parsed, fileName: file.name, groups: [...groups], schedule, projectId };
+        const startWeek = kurvaSCore.computeCurve(schedule).lastReportedWeek + 1;
+        preview.innerHTML = `
+          ${renderKurvaImportWarnings(getKurvaImportWarnings(file.size, parsed.items.length, schedule.weekCount))}
+          <p><strong>${parsed.items.length} item detail · ${groups.size} kelompok · ${parsed.sheets.length} sheet rincian</strong></p>
+          <p class="form-hint">Volume kumulatif berlaku mulai minggu ${startWeek}. Progres minggu lama tidak diubah. Bila sudah ada progres induk, volume pertama harus menghasilkan progres yang tidak lebih rendah. Periksa QTY, satuan, bobot, konteks dan pemetaan; subtotal tidak diinput sebagai item.</p>
+          <p class="form-hint">Progres induk = Σ(bobot detail × volume/QTY) ÷ Σ(bobot detail). Bobot induk master tetap, tidak dikoreksi mengikuti total bobot file rincian. Pekerjaan induk tanpa rincian tetap diinput persen.</p>
+          ${parsed.notes.map((note) => `<p class="kurva-alert">${escapeHtml(note)}</p>`).join('')}
+          <details class="kurva-group"><summary>Baris / sheet dilewati (${parsed.skipped.length}) — periksa sebelum konfirmasi</summary><ul>${parsed.skipped.map((entry) => `<li>${escapeHtml(entry.sheet)}${entry.row ? ` baris ${entry.row}` : ''}: ${escapeHtml(entry.reason)}</li>`).join('')}</ul></details>
+          <p class="form-hint"><strong>1.</strong> Centang kelompok yang ingin digunakan. <strong>2.</strong> Pilih pekerjaan induknya. <strong>3.</strong> Buka rincian bila perlu, lalu centang konfirmasi di bawah. Kelompok yang tidak dicentang tidak ikut disimpan.</p>
+          <p id="kurvaMappingSummary" role="status" aria-live="polite"></p>
+          ${[...groups].map(([key, items], index) => {
+            const suggestion = kurvaSCore.suggestDetailParent(items[0], schedule.items);
+            return `<section class="kurva-mapping-card">
+              <label class="kurva-mapping-choice" for="kurvaInclude${index}">
+                <input type="checkbox" id="kurvaInclude${index}" data-detail-include="${index}" checked onchange="updateKurvaMappingSelection()">
+                <span>Ikutkan kelompok ini: ${escapeHtml(key.replace('|', ' · '))} · ${items.length} item</span>
+              </label>
+              <p id="kurvaMapStatus${index}" class="form-hint"></p>
+              <label for="kurvaMap${index}">Pekerjaan induk (usulan wajib diperiksa)</label>
+              <select id="kurvaMap${index}" data-detail-map="${index}" onchange="updateKurvaMappingSelection()">
+                <option value="">-- Pilih induk --</option>
+                ${schedule.items.map((parent) => `<option value="${escapeHtml(parent.id)}"${parent.id === suggestion ? ' selected' : ''}>${escapeHtml([parent.group, parent.subgroup, parent.name].filter(Boolean).join(' · '))}</option>`).join('')}
+              </select>
+              <details class="kurva-group">
+              <summary>Lihat rincian ${items.length} item: QTY, satuan &amp; bobot</summary>
+              <div class="file-upload-guide-body">${items.map((item) => `<p><strong>${escapeHtml(item.name)}</strong><br>${escapeHtml([item.location, item.context].filter(Boolean).join(' · '))}<br>${escapeHtml(item.sheet)} baris ${item.row} · QTY ${formatPdfNumber(item.qty)} ${escapeHtml(item.unit)} · bobot ${formatKurvaPercent(item.weight, 6)}</p>`).join('')}</div>
+              </details>
+            </section>`;
+          }).join('')}
+          <label><input type="checkbox" id="kurvaMappingConfirmed"> Saya sudah memeriksa seluruh pemetaan, QTY, satuan, bobot dan baris yang dilewati/dikecualikan.</label>`;
+        updateKurvaMappingSelection();
+        if (startWeek > schedule.weekCount) {
+          preview.insertAdjacentHTML('beforeend', '<p class="kurva-alert is-error">Semua minggu sudah memiliki progres. Tidak ada minggu baru untuk mengaktifkan volume detail.</p>');
+          return;
+        }
+        button.disabled = false;
+      } catch (error) {
+        if (request !== kurvaDetailsRequest) return;
+        console.error('Import rincian Kurva S gagal', error);
+        preview.innerHTML = `<div class="kurva-alert is-error" role="alert">${escapeHtml(error.message || 'Rincian tidak dapat dibaca.')}</div>`;
+      }
+    }
+
+    function updateKurvaMappingSelection() {
+      if (!kurvaDetailsDraft) return;
+      const parents = new Set(kurvaDetailsDraft.schedule.items.map((item) => item.id));
+      let included = 0;
+      let pending = 0;
+      let items = 0;
+      kurvaDetailsDraft.groups.forEach(([, entries], index) => {
+        const checked = document.getElementById(`kurvaInclude${index}`).checked;
+        const select = document.getElementById(`kurvaMap${index}`);
+        select.disabled = !checked;
+        const valid = parents.has(select.value);
+        select.setAttribute('aria-invalid', String(checked && !valid));
+        document.getElementById(`kurvaMapStatus${index}`).textContent = !checked
+          ? 'Tidak diikutkan — seluruh item kelompok ini dilewati.'
+          : valid ? 'Siap — periksa induk yang dipilih sebelum konfirmasi.'
+          : 'Belum pilih induk — pilih tujuan kelompok ini atau hilangkan centangnya.';
+        if (checked) {
+          included += 1;
+          items += entries.length;
+          if (!valid) pending += 1;
+        }
+      });
+      document.getElementById('kurvaMappingSummary').textContent =
+        `${included} kelompok dicentang (${items} item) · ${pending} belum pilih induk · ${kurvaDetailsDraft.groups.length - included} kelompok tidak diikutkan.`;
+      document.getElementById('kurvaMappingConfirmed').checked = false;
+    }
+
+    async function saveKurvaDetailsImport() {
+      if (!requireAccess('kurva_s') || !kurvaDetailsDraft) return;
+      const draft = kurvaDetailsDraft;
+      if (draft.schedule !== projectSchedule || draft.projectId !== activeProjectId) {
+        showAppNotice('Proyek/jadwal berubah. Buka ulang import rincian.');
+        return;
+      }
+      if (!document.getElementById('kurvaMappingConfirmed').checked) {
+        showAppNotice('Periksa pemetaan dan centang konfirmasi sebelum menyimpan.');
+        return;
+      }
+      const parents = new Set(projectSchedule.items.map((item) => item.id));
+      const details = [];
+      for (let index = 0; index < draft.groups.length; index += 1) {
+        if (!document.getElementById(`kurvaInclude${index}`).checked) continue;
+        const select = document.getElementById(`kurvaMap${index}`);
+        const parentId = select.value;
+        if (!parents.has(parentId)) {
+          select.focus();
+          showAppNotice(`Kelompok "${draft.groups[index][0].replace('|', ' · ')}" masih dicentang tetapi belum memiliki induk. Pilih induk atau hilangkan centang kelompok ini.`);
+          return;
+        }
+        details.push(...draft.groups[index][1].map((item) => ({ ...item, parentId })));
+      }
+      if (!details.length) {
+        showAppNotice('Minimal satu item harus dipetakan ke master schedule.');
+        return;
+      }
+      const previous = projectSchedule;
+      const startWeek = kurvaSCore.computeCurve(previous).lastReportedWeek + 1;
+      if (startWeek > previous.weekCount) {
+        showAppNotice('Tidak ada minggu baru untuk mengaktifkan volume detail.');
+        return;
+      }
+      const button = document.getElementById('kurvaDetailsSave');
+      button.disabled = true;
+      projectSchedule = { ...previous, detailItems: details, detailStartWeek: startWeek,
+        detailSource: { fileName: draft.fileName, importedAt: new Date().toISOString(), importedBy: getSignedInName(), excludedCount: draft.items.length - details.length, skippedCount: draft.skipped.length } };
+      const saved = await persistActiveProjectData();
+      button.disabled = false;
+      if (!saved) {
+        projectSchedule = previous;
+        return;
+      }
+      closeKurvaDetailsImport();
+      renderKurvaS();
+      showAppNotice(`Rincian tersimpan: ${details.length} item. Input volume berlaku mulai minggu ${startWeek}; progres lama tetap dipertahankan.`);
+    }
+
+    function isKurvaDetailWeek(week) {
+      return Boolean(projectSchedule?.detailItems?.length && week >= projectSchedule.detailStartWeek);
+    }
+
+    function filterKurvaProgressItems() {
+      const query = document.getElementById('kurvaProgressSearch').value.trim().toLowerCase();
+      document.querySelectorAll('#kurvaProgressItems .kurva-input-row').forEach((row) => {
+        row.hidden = Boolean(query && !row.textContent.toLowerCase().includes(query));
+      });
+      document.querySelectorAll('#kurvaProgressItems details').forEach((group) => {
+        group.hidden = ![...group.querySelectorAll('.kurva-input-row')].some((row) => !row.hidden);
+        if (query && !group.hidden) group.open = true;
+      });
+    }
+
+    function getKurvaDraftVolumes() {
+      return Object.fromEntries([...document.querySelectorAll('#kurvaProgressItems input[data-detail-id]')].map((input) => [input.dataset.detailId, Number(input.value)]));
     }
 
     function getKurvaFinishDate(startDate, planCumulative) {
@@ -11739,6 +12023,8 @@
       container.classList.remove('kurva-animate');
       const rescheduleButton = document.getElementById('kurvaRescheduleButton');
       if (rescheduleButton) rescheduleButton.hidden = !projectSchedule;
+      const detailsButton = document.getElementById('kurvaDetailsButton');
+      detailsButton.hidden = !projectSchedule || !canAccess('kurva_s');
       if (!projectSchedule) {
         container.innerHTML = `
           <div class="kurva-empty">
@@ -11771,7 +12057,7 @@
           const itemDone = progressAtReport[item.id];
           return `
             <div class="kurva-item-row">
-              <div class="kurva-item-name">${escapeHtml([item.subgroup, item.name].filter(Boolean).join(' · '))}<small>Bobot ${formatKurvaPercent(item.weight, 3)} · Minggu ${item.startWeek}–${item.endWeek}</small></div>
+              <div class="kurva-item-name">${escapeHtml([item.subgroup, item.name].filter(Boolean).join(' · '))}<small>Bobot ${formatKurvaPercent(item.weight, 3)} · Minggu ${item.startWeek}–${item.endWeek}${projectSchedule.detailItems?.some((detail) => detail.parentId === item.id) ? ' · progres dari volume rincian item' : ''}</small></div>
               <div class="kurva-item-values"><span>${formatKurvaPercent(itemDone, 0)}</span><small>rencana ${formatKurvaPercent(itemPlan, 0)}</small></div>
               <div class="kurva-bar-track"><span class="kurva-bar-plan" style="width:${itemPlan}%"></span><span class="kurva-bar-actual ${itemDone + 0.5 < itemPlan ? 'is-behind' : ''}" style="width:${itemDone}%"></span></div>
             </div>`;
@@ -11819,6 +12105,7 @@
         <div class="kurva-meta">
           <strong>${escapeHtml(projectSchedule.title || getActiveProjectName())}</strong>
           <span>Mulai ${escapeHtml(formatKurvaDate(projectSchedule.startDate, true))} · ${projectSchedule.weekCount} minggu · Total bobot ${formatKurvaPercent(curve.totalWeight)}</span>
+          ${projectSchedule.detailItems?.length ? `<span>${projectSchedule.detailItems.length} item rincian · sumber: ${escapeHtml(projectSchedule.detailSource?.fileName || '')} · volume mulai minggu ${projectSchedule.detailStartWeek}</span>` : ''}
           ${revision ? `<div class="kurva-revision-badge"><b>Revisi ke-${revision}</b><span>${escapeHtml(shiftLabel)}${projectSchedule.revisionNote ? ` · ${escapeHtml(projectSchedule.revisionNote)}` : ''}</span></div>` : ''}
         </div>
         <div class="kurva-summary">
@@ -12003,18 +12290,32 @@
       document.getElementById('modalKurvaImport').style.display = 'none';
     }
 
+    // ==== KURVA IMPORT WARNINGS START ====
+    function getKurvaImportWarnings(fileBytes, itemCount = 0, weekCount = 0) {
+      const warnings = [];
+      if (fileBytes > 20 * 1024 * 1024) warnings.push('Ukuran file lebih dari 20 MB.');
+      if (itemCount > 200) warnings.push(`Jumlah pekerjaan ${itemCount} item melebihi ambang 200 item.`);
+      if (weekCount > 100) warnings.push(`Durasi ${weekCount} minggu melebihi ambang 100 minggu.`);
+      return warnings;
+    }
+
+    function renderKurvaImportWarnings(warnings) {
+      if (!warnings.length) return '';
+      return `<div class="kurva-alert" role="status"><strong>Peringatan kapasitas jadwal</strong><ul>${warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join('')}</ul>Ini hanya peringatan, bukan batas maksimum atau jaminan kapasitas aman. Pembacaan, grafik dan sinkronisasi dapat lebih lambat, terutama di HP. Import tetap dapat dilanjutkan setelah file berhasil dibaca; periksa pratinjau sebelum menyimpan.</div>`;
+    }
+    // ==== KURVA IMPORT WARNINGS END ====
+
     async function handleKurvaFileSelected(file) {
       const preview = document.getElementById('kurvaImportPreview');
       const saveButton = document.getElementById('kurvaImportSave');
       kurvaImportDraft = null;
       saveButton.disabled = true;
+      preview.innerHTML = '';
       if (!file) return;
-      if (file.size > 10 * 1024 * 1024) {
-        preview.innerHTML = '<div class="kurva-alert is-error">Ukuran file maksimal 10 MB.</div>';
-        return;
-      }
-      preview.innerHTML = '<div class="form-hint">Membaca file Excel…</div>';
+      const sizeWarning = renderKurvaImportWarnings(getKurvaImportWarnings(file.size));
+      preview.innerHTML = `${sizeWarning}<div class="form-hint">Membaca file Excel…</div>`;
       try {
+        await new Promise((resolve) => setTimeout(resolve, 30));
         const parsed = await kurvaSCore.parseScheduleFile(await file.arrayBuffer());
         kurvaImportDraft = { ...parsed, fileName: file.name };
         const isReschedule = kurvaImportMode === 'reschedule' && projectSchedule;
@@ -12026,6 +12327,7 @@
         const groups = getKurvaGroups(parsed.items).map(([group, items]) =>
           `<li><span>${escapeHtml(group)}</span><strong>${formatKurvaPercent(items.reduce((sum, item) => sum + item.weight, 0))}</strong></li>`).join('');
         preview.innerHTML = `
+          ${renderKurvaImportWarnings(getKurvaImportWarnings(file.size, parsed.items.length, parsed.weekCount))}
           ${isReschedule ? `
           <div class="form-row">
             <label class="required-label" for="kurvaRevisionNote">Alasan revisi</label>
@@ -12052,7 +12354,7 @@
           ${lostItems ? `<div class="kurva-alert">${lostItems} pekerjaan yang sudah punya progres tidak ditemukan di file revisi, progresnya tidak akan ikut terbawa.</div>` : ''}`;
         saveButton.disabled = false;
       } catch (error) {
-        preview.innerHTML = `<div class="kurva-alert is-error">${escapeHtml(error.message || 'File tidak dapat dibaca.')}</div>`;
+        preview.innerHTML = `${sizeWarning}<div class="kurva-alert is-error">${escapeHtml(error.message || 'File tidak dapat dibaca.')}</div>`;
       }
     }
 
@@ -12071,9 +12373,18 @@
         return;
       }
       const itemIds = new Set(kurvaImportDraft.items.map((item) => item.id));
+      if (projectSchedule?.detailItems?.some((item) => !itemIds.has(item.parentId))) {
+        showAppNotice('Jadwal baru menghilangkan/mengganti induk yang memiliki rincian volume. Pertahankan identitas induk agar rincian dan progres tidak hilang.');
+        return;
+      }
+      if (projectSchedule?.detailItems?.length && (startDate !== projectSchedule.startDate || kurvaImportDraft.weekCount < projectSchedule.weekCount)) {
+        showAppNotice('Jadwal dengan rincian volume harus mempertahankan tanggal mulai dan tidak mempersingkat jumlah minggu agar riwayat volume tetap utuh.');
+        return;
+      }
       const progress = kurvaSCore.remapProgress(projectSchedule?.progress, projectSchedule?.startDate, startDate, kurvaImportDraft.weekCount, itemIds);
       const previous = projectSchedule;
       const next = {
+        ...(previous?.detailItems?.length ? { detailItems: previous.detailItems, detailStartWeek: previous.detailStartWeek, detailSource: previous.detailSource } : {}),
         title: document.getElementById('kurvaImportName').value.trim() || kurvaImportDraft.title,
         fileName: kurvaImportDraft.fileName,
         sheetName: kurvaImportDraft.sheetName,
@@ -12126,7 +12437,8 @@
         const flags = [projectSchedule.progress[week] ? '✓' : '', projectSchedule.holidays.includes(week) ? 'libur' : ''].filter(Boolean).join(' ');
         return `<option value="${week}">Minggu ${week}${projectSchedule.startDate ? ` · ${escapeHtml(getKurvaWeekRange(week))}` : ''}${flags ? ` (${flags})` : ''}</option>`;
       }).join('');
-      select.value = String(currentWeek);
+      select.value = String(projectSchedule.detailItems?.length ? Math.min(projectSchedule.weekCount, Math.max(currentWeek, projectSchedule.detailStartWeek)) : currentWeek);
+      document.getElementById('kurvaProgressSearch').value = '';
       renderKurvaProgressForm();
       document.getElementById('modalKurvaProgress').style.display = 'flex';
     }
@@ -12139,6 +12451,15 @@
       const week = Number(document.getElementById('kurvaProgressWeek').value) || 1;
       const previous = kurvaSCore.getItemProgressAt(projectSchedule, week - 1);
       const current = kurvaSCore.getItemProgressAt(projectSchedule, week);
+      const useDetails = isKurvaDetailWeek(week);
+      const details = useDetails ? projectSchedule.detailItems : [];
+      const volumes = useDetails ? kurvaSCore.getDetailVolumesAt(projectSchedule, week) : {};
+      const previousVolumes = useDetails ? kurvaSCore.getDetailVolumesAt(projectSchedule, week - 1) : {};
+      const detailsByParent = new Map();
+      details.forEach((detail) => {
+        if (!detailsByParent.has(detail.parentId)) detailsByParent.set(detail.parentId, []);
+        detailsByParent.get(detail.parentId).push(detail);
+      });
       document.getElementById('kurvaProgressItems').innerHTML = getKurvaGroups(projectSchedule.items).map(([group, items]) => `
         <div class="kurva-input-group">
           <h4>${escapeHtml(group)}</h4>
@@ -12146,24 +12467,63 @@
             const plan = Math.min(100, getKurvaItemPlanAt(item, week) / item.weight * 100);
             const limit = kurvaSCore.getItemProgressLimit(projectSchedule, week, item.id);
             const notStarted = week < item.startWeek;
+            const children = detailsByParent.get(item.id) || [];
             return `
               <label class="kurva-input-row${notStarted ? ' is-muted' : ''}">
                 <span class="kurva-input-name">${escapeHtml([item.subgroup, item.name].filter(Boolean).join(' · '))}
                   <small>Bobot ${formatKurvaPercent(item.weight, 3)} · rencana ${formatKurvaPercent(plan, 0)} · minggu lalu ${formatKurvaPercent(previous[item.id], 0)}${notStarted ? ` · mulai minggu ${item.startWeek}` : ''}</small>
                 </span>
                 <span class="kurva-input-field">
-                  <input type="number" inputmode="decimal" step="any" min="${previous[item.id]}" max="${limit}" value="${current[item.id]}" data-item-id="${escapeHtml(item.id)}" oninput="updateKurvaProgressSummary()" aria-label="Progres ${escapeHtml(item.name)} dalam persen">
+                  <input type="number" inputmode="decimal" step="any" min="${previous[item.id]}" max="${limit}" value="${current[item.id]}" data-item-id="${escapeHtml(item.id)}"${children.length ? ' readonly title="Dihitung dari volume rincian di bawah"' : ''} oninput="updateKurvaProgressSummary()" aria-label="Progres ${escapeHtml(item.name)} dalam persen">
                   <span>%</span>
                 </span>
-              </label>`;
+              </label>
+              ${children.length ? `<details class="kurva-group">
+                <summary>${escapeHtml(item.name)} · ${children.length} item detail (volume kumulatif)</summary>
+                <p class="form-hint">Persentase = volume / QTY kontrak × 100%. Isi volume sejak awal pekerjaan, bukan tambahan minggu ini. Progres induk dibobot relatif terhadap seluruh rincian yang dipetakan.</p>
+                ${children.map((detail) => `<label class="kurva-input-row">
+                  <span class="kurva-input-name">${escapeHtml(detail.name)}
+                    <small>${escapeHtml([detail.sheet, detail.section, detail.location, detail.context].filter(Boolean).join(' · '))} · baris ${detail.row}</small>
+                    <small>QTY ${formatPdfNumber(detail.qty)} ${escapeHtml(detail.unit)} · bobot ${formatKurvaPercent(detail.weight, 6)} · volume sebelumnya ${formatPdfNumber(previousVolumes[detail.id])}</small>
+                    <small data-detail-percent="${escapeHtml(detail.id)}">${formatKurvaPercent(volumes[detail.id] / detail.qty * 100)}</small>
+                  </span>
+                  <span class="kurva-input-field">
+                    <input type="number" inputmode="decimal" step="any" min="${previousVolumes[detail.id]}" max="${kurvaSCore.getDetailVolumeLimit(projectSchedule, week, detail)}" value="${volumes[detail.id]}" data-detail-id="${escapeHtml(detail.id)}" oninput="updateKurvaProgressSummary()" aria-label="Volume ${escapeHtml(detail.name)} (${escapeHtml(detail.unit)})">
+                    <span>${escapeHtml(detail.unit)}</span>
+                  </span>
+                </label>`).join('')}
+              </details>` : ''}`;
           }).join('')}
         </div>`).join('');
       updateKurvaProgressSummary();
+      filterKurvaProgressItems();
     }
 
     function updateKurvaProgressSummary() {
       const week = Number(document.getElementById('kurvaProgressWeek').value) || 1;
       const itemsById = new Map(projectSchedule.items.map((item) => [item.id, item]));
+      if (isKurvaDetailWeek(week)) {
+        const volumes = getKurvaDraftVolumes();
+        let valid = true;
+        document.querySelectorAll('#kurvaProgressItems input[data-detail-id]').forEach((input) => {
+          const invalid = input.value === '' || !input.checkValidity() || !Number.isFinite(Number(input.value));
+          input.classList.toggle('is-invalid', invalid);
+          if (invalid) valid = false;
+        });
+        if (!valid) {
+          document.getElementById('kurvaProgressSummary').innerHTML = '<p class="kurva-alert is-error" role="alert">Perbaiki volume kosong/di luar batas sebelum menghitung atau menyimpan progres.</p>';
+          return;
+        }
+        const derived = kurvaSCore.aggregateDetailProgress(projectSchedule.detailItems, volumes);
+        document.querySelectorAll('#kurvaProgressItems input[data-item-id]').forEach((input) => {
+          if (input.readOnly) input.value = String(derived[input.dataset.itemId]);
+        });
+        const byId = new Map(projectSchedule.detailItems.map((item) => [item.id, item]));
+        document.querySelectorAll('#kurvaProgressItems [data-detail-percent]').forEach((label) => {
+          const detail = byId.get(label.dataset.detailPercent);
+          label.textContent = formatKurvaPercent(volumes[detail.id] / detail.qty * 100);
+        });
+      }
       let actual = 0;
       document.querySelectorAll('#kurvaProgressItems input[data-item-id]').forEach((input) => {
         const item = itemsById.get(input.dataset.itemId);
@@ -12185,19 +12545,39 @@
       const previous = kurvaSCore.getItemProgressAt(projectSchedule, week - 1);
       const itemsById = new Map(projectSchedule.items.map((item) => [item.id, item]));
       const values = {};
+      let detailVolumes;
+      if (isKurvaDetailWeek(week)) {
+        for (const input of document.querySelectorAll('#kurvaProgressItems input[data-detail-id]')) {
+          if (input.value === '' || !input.checkValidity() || !Number.isFinite(Number(input.value))) {
+            const group = input.closest('details');
+            group.open = true;
+            input.closest('.kurva-input-row').hidden = false;
+            group.hidden = false;
+            input.focus();
+            showAppNotice(`Volume harus antara ${input.min} dan ${input.max}; tidak boleh turun, melampaui QTY atau volume minggu sesudahnya.`);
+            return;
+          }
+        }
+        detailVolumes = getKurvaDraftVolumes();
+        updateKurvaProgressSummary();
+      }
       for (const input of document.querySelectorAll('#kurvaProgressItems input[data-item-id]')) {
         const item = itemsById.get(input.dataset.itemId);
         const value = Number(input.value);
         if (input.value === '' || !Number.isFinite(value) || value < Number(input.min) || value > Number(input.max)) {
+          if (input.readOnly) {
+            showAppNotice(`Progres induk "${item?.name || 'pekerjaan'}" hasil rincian harus antara ${input.min}% dan ${input.max}%. Sesuaikan volume kumulatif item detail dengan kondisi aktual; progres lama tidak diubah otomatis.`);
+            return;
+          }
           input.focus();
           alert(`Progres "${item?.name || 'pekerjaan'}" harus antara ${input.min}% dan ${input.max}%.\nProgres kumulatif tidak boleh turun dari minggu sebelumnya atau melebihi minggu sesudahnya.`);
           return;
         }
-        const rounded = Math.round(value * 100) / 100;
-        if (rounded !== previous[input.dataset.itemId]) values[input.dataset.itemId] = rounded;
+        const rounded = input.readOnly ? value : Math.round(value * 100) / 100;
+        if (input.readOnly || rounded !== previous[input.dataset.itemId]) values[input.dataset.itemId] = rounded;
       }
       const oldEntry = projectSchedule.progress[week];
-      projectSchedule.progress[week] = { values, updatedAt: new Date().toISOString(), updatedBy: getSignedInName() };
+      projectSchedule.progress[week] = { values, ...(detailVolumes ? { detailVolumes } : {}), updatedAt: new Date().toISOString(), updatedBy: getSignedInName() };
       if (!await persistActiveProjectData()) {
         if (oldEntry) projectSchedule.progress[week] = oldEntry;
         else delete projectSchedule.progress[week];
@@ -12564,6 +12944,446 @@
     });
     // ==== NETWORK & BUG REPORT CLIENT END ====
 
+    // ==== USAGE GUIDES START ====
+    const USAGE_GUIDES = [
+      {
+        anchor: '#tabViewMaterial > .section-header', title: 'Material',
+        sections: [
+          ['Langkah penggunaan', [
+            'Pastikan proyek di header sudah benar. Pilih + Catat Masuk untuk mencatat kedatangan material.',
+            'Isi nama material, satuan, jumlah, tanggal dan nomor surat jalan; tambahkan foto bukti lalu simpan.',
+            'Ketuk kartu material untuk melihat stok dan riwayat masuk/keluar. Catat pengambilan dari detail material, bukan mengurangi angka stok secara manual.'
+          ]],
+          ['Cari, filter & PDF', [
+            'Gunakan pencarian material dan ikon filter untuk mempersempit daftar. Bersihkan pencarian/filter bila data tidak terlihat.',
+            'PDF mengekspor laporan material sesuai periode di dialog PDF. Periksa isi sebelum memilih Simpan sebagai PDF.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#tabViewAssets > .section-header', title: 'Aset Alat Kerja',
+        sections: [
+          ['Langkah penggunaan', [
+            'Pilih tambah aset, isi nama alat, kode aset, jumlah, lokasi/pemegang dan kondisi. Foto alat bersifat opsional.',
+            'Ketuk kartu aset untuk melihat detail. Gunakan Ubah Aset untuk memperbarui kondisi atau pemegang.',
+            'Cari nama/kode alat dan gunakan filter untuk menemukan aset. PDF mencetak inventaris aset, bukan riwayat berdasarkan tanggal.'
+          ]],
+          ['Arti kondisi', [
+            'Tersedia: siap digunakan. Dipakai: sedang digunakan. Perbaikan: sedang ditangani. Rusak: alat tidak layak digunakan.',
+            'Hapus Aset menghapus catatan aset setelah konfirmasi; periksa kode alat agar tidak salah pilih.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#checklistInspectionView > .section-header', title: 'Ceklist Lapangan',
+        sections: [
+          ['Langkah penggunaan', [
+            'Pilih + Inspeksi Baru, tentukan bidang MEP / Sipil Struktur / Sipil Arsitektur dan lokasi Area atau SHAFT Riser.',
+            'Isi pekerjaan, tanggal, SPV, status dan progres sesuai kondisi aktual. Tambahkan foto dokumentasi serta catatan, lalu simpan.',
+            'Ketuk kartu inspeksi untuk melihat foto, catatan dan riwayat status. Perubahan status dilakukan dari detail dengan peran serta nama pengubah.'
+          ]],
+          ['Status, filter & PDF', [
+            'Belum Mulai untuk pekerjaan belum dimulai; Dalam Proses untuk pekerjaan berjalan; Selesai untuk pekerjaan tuntas; Defect untuk temuan yang perlu tindak lanjut.',
+            'Gunakan pencarian dan filter kategori/status/tanggal untuk menelusuri inspeksi. PDF mempunyai periode sendiri di dialog; periksa kembali tanggal ekspor.',
+            'Untuk hasil pengujian terstruktur dan Berita Acara, pilih subtab Pengetesan.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#testReportView > .section-header', title: 'Pengetesan & Commissioning',
+        sections: [
+          ['Langkah penggunaan', [
+            'Pilih + Tes Baru, tentukan jenis tes, sistem/item yang diuji, area, tanggal dan Diuji oleh (SPV).',
+            'Isi parameter pengukuran sesuai metode dan satuan yang tampil. Tambahkan foto serta saksi/catatan lalu simpan.',
+            'Ketuk kartu tes untuk membaca detail, memperbesar foto, Edit atau Hapus sesuai izin akun.'
+          ]],
+          ['Kop & PDF Berita Acara', [
+            'Atur Kop & TTD sekali untuk proyek aktif; pengaturan dipakai kembali pada BA pengetesan berikutnya.',
+            'Tombol BA di detail mencetak satu tes. Tombol PDF di daftar menyediakan BA per tes atau Rekap & detail, dengan rentang tanggal.',
+            'Foto Sebelum (Open) dan Sesudah (Close) khusus Tes Pipa; keduanya berdampingan pada lampiran BA.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#tabViewSuratJalan > .section-header', title: 'Laporan Harian',
+        sections: [
+          ['Membuat laporan', [
+            'Pilih + Laporan Harian, isi judul laporan, tanggal dan nama SPV.',
+            'Isi bidang, pekerjaan, area dan jumlah orang, lalu tekan + Tambah Penugasan. Ulangi untuk setiap pekerjaan; periksa daftar penugasan sebelum Simpan Laporan.',
+            'Ketuk kartu laporan untuk melihat rincian per bidang, total orang dan jumlah penugasan.'
+          ]],
+          ['PDF per laporan & akumulatif', [
+            'Untuk satu laporan: buka kartunya lalu pilih PDF Laporan Ini. Laporan lain, termasuk pada tanggal sama, tidak ikut dicetak.',
+            'Untuk akumulatif: pilih PDF di halaman daftar, lalu isi rentang tanggal atau kosongkan untuk semua tanggal.',
+            'Isi nama penanda tangan, pilih Buat PDF, lalu Simpan sebagai PDF di jendela cetak. Cari/filter daftar tidak menggantikan pilihan periode PDF.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#tabViewFiles > .section-header', title: 'Folder & File Proyek',
+        sections: [
+          ['Mengelola dokumen', [
+            'Pilih + Folder, beri nama yang jelas, kemudian buka folder tujuan sebelum + Unggah File.',
+            'Pilih dokumen dari perangkat. Tunggu pesan berhasil; nama file asli dipertahankan. Rincian format, ukuran dan penanganan gagal ada di Panduan Unggah File di bawah.',
+            'Buka untuk pratinjau PDF atau Unduh untuk membuka dokumen di aplikasi perangkat. Gunakan tombol Folder untuk kembali; Ubah nama mengganti nama folder aktif.'
+          ]],
+          ['Pencarian & hapus', [
+            'Pencarian file berlaku pada proyek aktif. Periksa kata kunci dan filter jenis file bila dokumen tidak ditemukan.',
+            'Periksa nama dokumen pada konfirmasi Hapus File. Penghapusan bukan cara memindahkan file ke folder lain.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#tabViewKurvaS > .section-header', title: 'Kurva S',
+        sections: [
+          ['Urutan penggunaan', [
+            'Import Excel: unggah master schedule .xlsx, periksa hasil pembacaan pekerjaan, bobot dan minggu, tentukan tanggal minggu pertama lalu Simpan Jadwal.',
+            'Input Progres: tanpa rincian, isi progres kumulatif induk 0–100%. Setelah Import Rincian Item, isi volume kumulatif terpasang per item; persentase serta progres induk dihitung otomatis, bukan diisi manual.',
+            'Baca grafik rencana dan realisasi, tabel mingguan serta deviasi. Bobot item digunakan otomatis untuk menghitung kontribusi progres proyek.'
+          ]],
+          ['Rincian bobot & volume pekerjaan', [
+            'Pilih Import Rincian Item setelah master schedule tersedia. Unggah .xlsx bobot item; aplikasi membaca semua sheet dengan UNIT, QTY dan BOBOT, bukan hanya satu sheet jadwal.',
+            'Centang Ikutkan kelompok ini untuk kelompok yang digunakan, lalu pilih induknya, contoh pipa/valve per lantai ke Plumbing Installation. Hilangkan centang untuk tidak mengikutkan seluruh kelompok. Status dan jumlah kelompok belum dipetakan tampil langsung; usulan wajib diperiksa sebelum konfirmasi.',
+            'Item memerlukan satuan, QTY dan bobot angka positif. Subtotal bukan item; baris Incl./kosong/error dan sheet tanpa format rincian dilaporkan agar dapat diperiksa. Jika header BOBOT kosong tetapi TOTAL berada tepat setelah QTY, aplikasi memberi catatan penggunaan kolom tersebut.',
+            'Volume terpasang dibagi QTY kontrak menghasilkan persen item. Persen induk = Σ(bobot detail × persen item) ÷ Σ(bobot detail yang dipetakan). Bobot induk/master tidak diubah; bukan merata-ratakan persen item.',
+            'Volume dimulai pada minggu setelah laporan terakhir sehingga progres lama tetap. Isi volume awal yang sesuai kondisi lapangan agar hasil induk tidak turun dari progres lama; volume detail lama tidak ditebak otomatis.',
+            'Rincian yang sudah disimpan tidak dapat diganti lewat import ulang. Reschedule harus mempertahankan identitas induk, tanggal mulai dan tidak memperpendek minggu agar riwayat volume tetap utuh.'
+          ]],
+          ['Ketentuan file & susunan jadwal', [
+            'Import Kurva S menerima file .xlsx. Header harus memuat ITEM / Pekerjaan / Uraian (termasuk Uraian Pekerjaan) serta Bobot atau Bobot (%).',
+            'Posisi tabel tidak dikunci: header boleh mulai di baris 51, ITEM boleh di kolom A dan Bobot di kolom J. ITEM dan Bobot harus berada pada baris header yang sama. Jarak kolom boleh kosong; yang penting struktur dan nama header sesuai.',
+            'Letakkan nama pekerjaan sebelum Bobot. Semua isi kolom dari No (jika ada, jika tidak dari ITEM) sampai sebelum Bobot digabung sebagai nama/penanda pekerjaan. Jangan sisipkan QTY, satuan, harga atau PIC berisi data di rentang itu karena akan ikut terbaca sebagai nama. Bobot di kiri ITEM tidak didukung.',
+            'Sediakan kolom minggu mulai (Minggu Ke / Mulai / Start) dan minggu selesai (Selesai / Finish / Akhir). Jika header selesai tidak ditemukan, aplikasi memakai kolom tepat di kanan kolom mulai.',
+            'Nomor minggu harus berupa angka berurutan 1, 2, 3, dan seterusnya, minimal 3 minggu. Letakkan pada baris header atau maksimal 5 baris setelah header; bukan teks seperti "Minggu 1".',
+            'Contoh header di baris 51: nomor minggu harus berada pada salah satu baris 51–56, lalu baris pekerjaan berada di bawah baris nomor minggu. Jangan letakkan urutan angka 1, 2, 3 lain pada area header yang dapat disangka nomor minggu.',
+            'Item yang dibaca harus memiliki nama pekerjaan, bobot angka lebih dari 0, serta minggu mulai dan selesai berupa angka. Kolom uraian item berada sebelum kolom Bobot.',
+            'Simpan Bobot, minggu mulai/selesai dan rencana mingguan sebagai angka Excel, bukan teks seperti "10%" atau "minggu 2". Bobot memakai satuan poin persentase: untuk bobot 12,25% masukkan angka 12,25, bukan sel persentase Excel bernilai dasar 0,1225. Hasil rumus perlu memiliki nilai numerik tersimpan; hitung ulang lalu simpan workbook di Excel sebelum diunggah.',
+            'Isi rencana bobot per minggu dengan angka. Jika seluruh rencana mingguan suatu item kosong atau nol, aplikasi membagi bobot item merata dari minggu mulai sampai selesai.',
+            'Baris ringkasan Rencana / Realisasi / Deviasi diletakkan setelah seluruh item karena pembacaan item berhenti pada baris ringkasan tersebut.',
+            'Jika workbook memiliki beberapa sheet, hanya sheet pertama yang berhasil dikenali sebagai jadwal yang diambil; sheet tidak digabungkan.',
+            'Tanggal awal dicari dari angka tanggal Excel di atas header; periksa kembali tanggal minggu pertama pada form. Sebelum Simpan, cocokkan jumlah item, nama pekerjaan, bobot, jumlah minggu dan kurva rencana dengan sumber Excel. Posisi fleksibel tidak berarti semua format Excel didukung.'
+          ]],
+          ['Ketentuan Excel rincian bobot / BOQ', [
+            'Gunakan .xlsx dengan header UNIT / SATUAN, QTY / QUANTITY / VOLUME dan BOBOT / BOBOT TOTAL / BOBOT (%) pada baris yang sama. Baris header bebas, termasuk baris 51; Bobot boleh di J meskipun terpisah dari QTY.',
+            'Nama/deskripsi item wajib berada tepat satu kolom di kiri UNIT/SATUAN. Kode kelompok/nomor dibaca dari satu kolom di kiri deskripsi. Memindahkan deskripsi jauh dari UNIT belum didukung meskipun header DESCRIPTION tersedia.',
+            'Setiap item harus memiliki nama, satuan terisi, QTY dan bobot berupa angka positif. Angka berbentuk teks, Incl., nol, kosong atau error pada QTY/bobot tidak dihitung. Gunakan bobot dalam skala yang konsisten dan periksa pratinjau; subtotal tidak menjadi item.',
+            'Jika BOBOT tidak ditemukan, pengecualian khusus hanya berlaku bila sel pada baris tepat di bawah header dan kolom tepat di kanan QTY berisi TOTAL. Kolom itu dipakai sebagai bobot dengan catatan untuk diperiksa, bukan menebak sembarang kolom.',
+            'Semua sheet yang sesuai dibaca. Periksa catatan dan daftar baris/sheet yang dilewati, lalu cocokkan kelompok BOQ dengan induk schedule yang sama lingkup serta gedung/areanya. Jangan memaksakan kelompok yang tidak sesuai ke induk lain.'
+          ]],
+          ['Jumlah baris, kolom & ukuran', [
+            'Saat ini belum ada batas maksimum baris, kolom, jumlah minggu atau ukuran file yang ditetapkan khusus untuk Import Kurva S. Warning muncul jika file lebih dari 20 MB, pekerjaan lebih dari 200 item, atau durasi lebih dari 100 minggu. Warning tidak memblokir import dan bukan jaminan kapasitas aman.',
+            'Satu minggu memakai satu kolom mingguan: jadwal 52 minggu memerlukan 52 kolom mingguan ditambah kolom identitas pekerjaan.',
+            'File besar atau banyak item/minggu dapat memperberat pembacaan, grafik, input progres dan sinkronisasi, terutama di HP. Gunakan workbook seperlunya dan periksa pratinjau sebelum menyimpan.',
+            'Batas unggah 200 MB pada tab File bukan batas Import Kurva S. Belum ada angka maksimum kapasitas aman yang diverifikasi melalui uji khusus.'
+          ]],
+          ['Reschedule & PDF', [
+            'Reschedule dipakai untuk revisi rencana, bukan menghapus realisasi. Periksa tanggal mulai minggu ke-1 serta pratinjau revisi sebelum menyimpan.',
+            'Periksa riwayat revisi untuk menelusuri perubahan. PDF mencetak laporan Kurva S; rentang tanggal dipilih pada dialog ekspor.',
+            'Progres item tidak boleh turun dari minggu sebelumnya. Periksa item dan minggu bila nilai ditolak.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#modalInput h3', title: 'Mencatat Material Masuk',
+        sections: [
+          ['Cara mengisi', [
+            'Isi nama/spesifikasi material secara konsisten, pilih satuan yang sesuai, lalu masukkan jumlah positif, tanggal dan nomor surat jalan.',
+            'Jika nama sudah ada, periksa peringatan duplikasi dan gunakan alur tambah kedatangan dari detail material yang benar.',
+            'Lampirkan foto surat jalan/material bila diperlukan. Pilih Simpan dan tunggu proses selesai; Batal menutup form tanpa menyimpan isian baru.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#modalDetail h3', title: 'Detail Material',
+        sections: [
+          ['Stok & transaksi', [
+            'Periksa nama material, satuan, stok dan riwayat kedatangan/pengambilan sebelum mencatat transaksi baru.',
+            'Tambah kedatangan untuk stok masuk; catat pengambilan untuk stok keluar. Jumlah keluar tidak boleh melebihi stok tersedia.',
+            'Ketuk foto bukti untuk memperbesar. Riwayat membantu menelusuri tanggal, petugas dan area penggunaan material.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#modalIssue h3', title: 'Pengambilan Material',
+        sections: [
+          ['Cara mengisi', [
+            'Pastikan nama material benar. Isi petugas logistik, nama pengambil, jumlah keluar, area penggunaan, pekerjaan dan tanggal.',
+            'Gunakan satuan stok yang ditampilkan. Jumlah harus positif dan tidak melebihi stok; periksa petunjuk stok di bawah kolom jumlah.',
+            'Tekan Simpan Pengeluaran lalu tunggu selesai. Transaksi tersimpan masuk ke riwayat dan mengurangi stok material.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#modalAssetForm h3', title: 'Tambah / Ubah Aset',
+        sections: [
+          ['Cara mengisi', [
+            'Isi nama alat dan kode/nomor aset yang mudah dilacak, jumlah bilangan bulat minimal 1, lalu kategori serta lokasi/pemegang.',
+            'Pilih kondisi sesuai keadaan alat. Foto opsional dapat dipilih dari perangkat; tunggu proses foto selesai sebelum menyimpan.',
+            'Saat mengubah aset, periksa kode dan lokasi agar catatan alat tidak tertukar, lalu pilih Simpan Aset.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#modalAssetDetail h3', title: 'Detail Aset',
+        sections: [
+          ['Tindakan pada aset', [
+            'Periksa kode, jumlah, kondisi, lokasi/pemegang dan waktu pembaruan. Ketuk foto untuk pratinjau.',
+            'Pilih Ubah Aset untuk memperbarui data, atau Hapus Aset untuk menghapus catatan setelah konfirmasi. Tombol perubahan mengikuti izin akun.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#modalChecklist h3', title: 'Form Inspeksi',
+        sections: [
+          ['Lokasi & pekerjaan', [
+            'Pilih bidang terlebih dahulu agar pilihan pekerjaan sesuai MEP, Struktur atau Arsitektur.',
+            'Pilih Area untuk ruangan/lokasi biasa atau Area SHAFT Riser untuk jalur riser. Isi lantai, nomor area/shaft dan pekerjaan; pilih isian lainnya bila pekerjaan tidak tersedia.',
+            'Isi tanggal inspeksi dan nama SPV. Sesuaikan status/progres dengan kondisi lapangan, bukan target rencana.'
+          ]],
+          ['Temuan & foto', [
+            'Untuk Defect, lengkapi PIC tindak lanjut dan target penyelesaian sesuai kolom yang diminta.',
+            'Tambahkan foto dokumentasi, periksa pratinjau dan hapus foto salah pilih sebelum simpan. Tunggu pemrosesan foto selesai.',
+            'Isi hasil uji/catatan yang relevan lalu simpan. Gunakan menu Pengetesan bila memerlukan parameter tes lengkap dan BA.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#modalChecklistDetail h3', title: 'Detail & Perubahan Status Inspeksi',
+        sections: [
+          ['Memperbarui status', [
+            'Baca catatan, foto dan riwayat status sebelum mengubah hasil inspeksi.',
+            'Pilih status baru serta progres yang tersedia, tentukan peran pengubah (SPV Pemeriksa atau PIC Tindak Lanjut) dan isi nama.',
+            'Pilih Simpan Perubahan Status, lalu tunggu selesai. Riwayat mencatat perubahan; tombol Tutup sendiri tidak menyimpan perubahan status.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#modalDailyWorkForm h3', title: 'Form Laporan Harian',
+        sections: [
+          ['Langkah pengisian', [
+            'Isi nama/jenis laporan, tanggal pekerjaan dan SPV penanggung jawab.',
+            'Untuk setiap penugasan isi bidang (misalnya Plumbing/Struktur), uraian pekerjaan, area dan jumlah orang minimal 1.',
+            'Tekan + Tambah Penugasan agar isian masuk ke daftar. Isian penugasan yang belum ditambahkan belum menjadi bagian laporan.',
+            'Periksa daftar dan hapus penugasan yang salah, lalu Simpan Laporan. Total orang adalah penjumlahan orang per penugasan; jangan menghitung pekerja yang sama dua kali bila yang dimaksud jumlah orang unik.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#modalDailyWorkDetail h3', title: 'Detail & PDF Laporan Harian',
+        sections: [
+          ['Membaca & mencetak', [
+            'Rincian dikelompokkan per bidang; total orang merupakan penjumlahan jumlah pekerja seluruh penugasan.',
+            'Pilih PDF Laporan Ini untuk mencetak hanya laporan yang dibuka. Isi penanda tangan lalu Buat PDF dan Simpan sebagai PDF.',
+            'Untuk menggabungkan beberapa tanggal, tutup detail lalu gunakan tombol PDF pada daftar Laporan Harian.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#modalTestReport h3', title: 'Form Pengetesan',
+        sections: [
+          ['Identitas & hasil', [
+            'Pilih jenis tes, tanggal, area, sistem/item, nomor BA bila ada dan Diuji oleh (SPV). Isi hasil pengukuran aktual sesuai satuan kolom.',
+            'Periksa hasil otomatis setelah data lengkap; jika memilih hasil manual, isi sesuai keputusan pemeriksa dan jelaskan alasannya pada catatan.'
+          ]],
+          ['Metode tes pipa', [
+            'Air Bersih, Air Panas, Sprinkler dan Hydrant: Hydrotest, isi tekanan uji, durasi, tekanan awal/akhir dan toleransi penurunan (bar).',
+            'Air Kotor, Air Bekas dan Air Hujan: pilih Tes Glontor (durasi, kondisi aliran dan kebocoran) atau Tes Rendam (durasi, muka air dan kebocoran), tanpa tekanan.',
+            'Khusus Tes Pipa, pisahkan foto Sebelum (Open) dan Sesudah (Close); foto pendukung lain masuk kelompok bukti lainnya.'
+          ]],
+          ['Megger, grounding & tata udara', [
+            'Megger: pilih tegangan uji dan batas minimum, lalu isi bacaan pasangan konduktor yang diukur dalam MΩ. Grounding: pilih metode serta isi tahanan terukur dan batas maksimum dalam Ω.',
+            'Tata Udara: pilih item dahulu (ducting, pipa refrigerant, drain AC atau unit/fan), lalu metode yang tersedia. Isi parameter kebocoran, debit, tekanan nitrogen, vakum, aliran drain atau performa sesuai kolom.',
+            'Uji Fungsi / Lainnya: dokumentasikan hasil pemeriksaan dan keputusan manual. Batas pengujian harus disetujui engineer; nilai bawaan aplikasi bukan pengganti spesifikasi proyek.'
+          ]],
+          ['Sebelum menyimpan', [
+            'Tambahkan foto dari kamera/galeri, periksa tahap dan pratinjaunya, lalu tunggu pemrosesan selesai.',
+            'Lengkapi saksi serta catatan kendala/tindak lanjut. Periksa hasil Lulus/Gagal kemudian simpan.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#modalTestReportDetail h3', title: 'Detail & BA Pengetesan',
+        sections: [
+          ['Tindakan pada tes', [
+            'Periksa parameter, hasil, SPV, saksi dan foto bukti. Ketuk foto untuk memperbesar.',
+            'Pilih BA untuk mencetak satu tes menggunakan Kop & TTD proyek. Format Rekap tersedia di pilihan format dialog PDF.',
+            'Edit memperbarui tes yang sama; Hapus menghapus catatan setelah konfirmasi. Periksa identitas tes sebelum melanjutkan.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#modalTestDocSettings h3', title: 'Kop & Tanda Tangan BA',
+        sections: [
+          ['Pengaturan sekali per proyek', [
+            'Isi judul proyek, owner, kontraktor, judul/subjudul dokumen, paket, lampiran dan logo opsional. Periksa ejaan serta logo sebelum simpan.',
+            'Atur maksimal 4 kolom tanda tangan. Kosongkan seluruh isian dalam satu kolom untuk menyembunyikannya; nama kosong pada Dibuat oleh diisi SPV penguji.',
+            'Simpan memakai pengaturan ini untuk BA Pengetesan berikutnya di proyek aktif; bukan untuk semua proyek atau PDF laporan harian.',
+            'Reset Default mengembalikan isian form ke default. Tekan Simpan bila ingin menerapkannya; Batal menutup tanpa menyimpan perubahan form.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#modalKurvaImport h3', title: 'Import & Reschedule Jadwal',
+        sections: [
+          ['Import awal / penggantian jadwal', [
+            'Siapkan master schedule .xlsx dengan ITEM, Bobot, Minggu Ke dan rencana per minggu. Pilih file lalu periksa pratinjau sebelum Simpan Jadwal.',
+            'Pastikan tanggal minggu pertama benar. Import ulang mengganti jadwal; cek kecocokan nama item agar progres yang dipertahankan sesuai pekerjaan.',
+            'Nomor minggu berupa angka berurutan mulai 1, minimal 3 minggu, pada baris header atau maksimal 5 baris setelahnya. Item memerlukan nama, bobot angka lebih dari 0 dan minggu mulai/selesai berupa angka.',
+            'Warning muncul jika file lebih dari 20 MB, pekerjaan lebih dari 200 item, atau durasi lebih dari 100 minggu. Import tidak diblokir oleh warning; ini bukan batas maksimum atau jaminan kapasitas aman. Batas 200 MB tab File tidak berlaku untuk import ini.',
+            'Ketentuan lengkap susunan kolom, rencana mingguan, baris ringkasan dan pemilihan sheet tersedia pada Petunjuk Penggunaan Kurva S di halaman utama tab ini.',
+            'Header boleh di baris 51 dan Bobot di J; ITEM dan Bobot wajib satu baris. Jika header di 51, baris angka minggu harus di 51–56. Kolom berisi QTY/harga/PIC di antara ITEM dan Bobot dapat ikut menjadi nama pekerjaan; jangan gunakan susunan itu.'
+          ]],
+          ['Saat Reschedule', [
+            'Unggah jadwal revisi dan isi alasan revisi. Periksa tanggal mulai minggu ke-1; biasanya tetap sama agar nomor minggu progres tidak bergeser. Baseline dan riwayat revisi dipakai untuk menelusuri perubahan.',
+            'Periksa validasi bobot, minggu, tanggal dan pemetaan item. Bila ada pesan kesalahan, perbaiki sumber jadwal atau isian lalu coba kembali, jangan memaksakan penyimpanan.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#modalKurvaDetails h3', title: 'Import Rincian & Pemetaan',
+        sections: [
+          ['Periksa sebelum simpan', [
+            'Unggah workbook rincian .xlsx. Sheet/unit/QTY/bobot terbaca otomatis; periksa jumlah item, catatan kolom dan daftar baris yang dilewati.',
+            'Header UNIT/SATUAN, QTY/QUANTITY/VOLUME dan BOBOT harus satu baris. Header boleh di baris 51 dan Bobot di J. Deskripsi item wajib tepat di kiri UNIT; QTY dan bobot harus angka positif, bukan teks. Ketentuan lengkap BOQ tersedia pada petunjuk tab Kurva S.',
+            'Centang Ikutkan kelompok ini dan pilih induk yang benar. Hilangkan centang untuk melewati seluruh kelompok; pilihan induk menjadi nonaktif. Status Siap / Belum pilih induk / Tidak diikutkan tampil tanpa perlu membuka rincian.',
+            'Buka Lihat rincian untuk memeriksa nama, konteks, baris sumber, QTY, satuan dan bobot. Perubahan centang atau induk membatalkan konfirmasi lama sehingga harus diperiksa kembali.',
+            'Centang konfirmasi setelah semua pemetaan diperiksa, lalu Simpan Pemetaan. Bobot master dan progres historis tidak diubah.',
+            'Mulai minggu aktivasi, isi volume kumulatif melalui Input Progres. Setiap induk yang dipetakan dihitung dari seluruh item detailnya, sedangkan induk tanpa rincian tetap memakai persen.',
+            'Penggantian rincian setelah disimpan belum tersedia agar riwayat volume tidak hilang. Pastikan pemetaan sudah final sebelum menyimpan.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#modalKurvaProgress .kurva-progress-body .form-row', title: 'Input Progres Mingguan',
+        sections: [
+          ['Cara mengisi', [
+            'Daftar item dapat digulir tanpa menggeser tombol Batal dan Simpan Progres di bawah. Batal menutup tanpa menyimpan; gunakan Simpan Progres untuk menyimpan perubahan.',
+            'Pilih minggu laporan yang benar. Isi persentase kumulatif setiap item sejak awal pekerjaan sampai akhir minggu terpilih.',
+            'Contoh: minggu lalu 20% dan bertambah 10%, maka masukkan 30%, bukan 10%. Nilai tiap item 0–100% dan tidak boleh turun dari minggu sebelumnya.',
+            'Bila rincian item sudah dipasang dan minggu aktivasi tercapai, buka kelompok rincian lalu isi volume kumulatif sesuai satuan (m, m², unit dan lainnya), bukan persen induk. Gunakan pencarian untuk menemukan item/area.',
+            'Volume minimal sama dengan volume sebelumnya, maksimal QTY kontrak dan tidak melebihi volume minggu sesudahnya. Persentase induk otomatis juga tidak boleh turun dari progres lama.',
+            'Bobot dan kontribusi proyek dihitung otomatis. Periksa ringkasan lalu Simpan Progres; hasilnya tampil pada grafik dan tabel Kurva S.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#modalProjectFolder h3', title: 'Membuat Folder',
+        sections: [['Cara mengisi', [
+          'Pastikan proyek aktif benar, lalu isi nama folder yang menjelaskan kelompok dokumen, misalnya Shop Drawing atau Dokumen BA.',
+          'Simpan folder, buka folder tersebut dari tab File, lalu pilih + Unggah File untuk menambahkan dokumen.'
+        ]]]
+      },
+      {
+        anchor: '#modalConfirmFileDelete h3', title: 'Konfirmasi Hapus File',
+        sections: [['Sebelum menghapus', [
+          'Periksa nama file dan proyek aktif. Hapus hanya bila dokumen memang tidak diperlukan; unduh salinan terlebih dahulu bila masih dibutuhkan.',
+          'Pilih Batal untuk mempertahankan dokumen, atau tombol hapus untuk melanjutkan. Tunggu proses dan hasilnya sebelum mencoba kembali.'
+        ]]]
+      },
+      {
+        anchor: '#modalProjectManager h3', title: 'Pilih / Tambah Proyek',
+        sections: [['Cara penggunaan', [
+          'Pilih proyek dari daftar yang diizinkan untuk akun Anda. Tunggu sinkronisasi selesai sebelum mengisi atau mengubah data.',
+          'Jika tombol Buat Proyek tersedia, isi nama proyek yang jelas lalu pilih + Buat Proyek. Hak akses dan data tetap mengikuti proyek yang sedang aktif.',
+          'Preview memakai data lokal untuk mencoba aplikasi, bukan bukti data sudah tersimpan di Spreadsheet proyek.'
+        ]]]
+      },
+      {
+        anchor: '#modalSettings h3', title: 'Pengaturan & Bantuan',
+        sections: [['Pilihan yang tersedia', [
+          'Unggah Foto / Hapus Foto mengatur foto akun di perangkat. Pilih tema Terang atau Gelap sesuai kenyamanan.',
+          'Laporkan Masalah untuk mengirim bug, masalah tampilan/data, kelambatan atau saran. Laporan Saya untuk memantau tindak lanjut.',
+          'Keluar mengakhiri sesi aplikasi. Pastikan proses simpan, sinkronisasi dan unggah selesai terlebih dahulu.'
+        ]]]
+      },
+      {
+        anchor: '#modalNetworkInfo h3', title: 'Kualitas Sinyal',
+        sections: [['Membaca indikator', [
+          'Ping menunjukkan waktu respons koneksi (ms), bukan kecepatan unduh dalam Mbps. Respons server adalah durasi permintaan Apps Script terakhir dan dapat lebih lama.',
+          'Cek Sekarang memperbarui pengukuran. Jika gagal atau koneksi lambat, periksa internet dan pesan sinkronisasi sebelum mengulang penyimpanan.',
+          'Jangan refresh atau menutup aplikasi saat proses simpan/unggah masih berjalan. Tunggu status selesai atau pesan gagal yang jelas.'
+        ]]]
+      },
+      {
+        anchor: '#modalBugReport h3', title: 'Mengirim Laporan Masalah',
+        sections: [['Cara mengisi', [
+          'Pilih jenis dan tingkat dampaknya. Kritis untuk masalah yang menghambat pekerjaan utama; gunakan Saran untuk usulan fitur.',
+          'Jelaskan langkah sebelum masalah, hasil yang diharapkan dan hasil yang terjadi. Sertakan tanggal/nama item seperlunya tanpa kata sandi atau informasi rahasia.',
+          'Tambahkan maksimal 3 screenshot bila membantu. Info teknis proyek/tab/perangkat ikut terkirim; periksa screenshot agar tidak memuat data sensitif.',
+          'Pilih Kirim Laporan dan tunggu konfirmasi. Pantau status melalui Laporan Saya; jangan mengirim laporan sama berulang kali.'
+        ]]]
+      },
+      {
+        anchor: '#modalBugReportList h3', title: 'Memantau Laporan Masalah',
+        sections: [['Cara membaca', [
+          'Baca status dan catatan tindak lanjut pada laporan. Pilih Muat Ulang untuk meminta pembaruan terbaru.',
+          'Tampilan developer dapat menyediakan pengelolaan status/catatan sesuai izin; pengguna biasa memantau laporan miliknya.'
+        ]]]
+      },
+      {
+        anchor: '#pdfExportSubtitle', title: 'Export PDF',
+        sections: [
+          ['Periode & cakupan', [
+            'Pada ekspor daftar, isi Dari/Sampai Tanggal; tanggal awal tidak boleh melewati tanggal akhir. Kosongkan untuk semua tanggal.',
+            'PDF Laporan Ini dan BA dari detail memakai laporan terpilih, bukan seluruh daftar. Aset dan kalkulator tidak menggunakan periode tanggal.',
+            'Pada Pengetesan pilih BA per tes untuk kop proyek atau Rekap & detail. BA menggunakan Kop & TTD; laporan biasa menggunakan nama penanda tangan di dialog.'
+          ]],
+          ['Menyimpan file', [
+            'Isi penanda tangan yang diperlukan lalu pilih Buat PDF. Tunggu penyusunan laporan/foto tanpa klik ulang.',
+            'Di jendela cetak pilih Simpan sebagai PDF, periksa pratinjau dan ukuran A4, lalu Simpan serta tentukan nama/lokasi file.',
+            'Export tidak otomatis mengunggah PDF ke tab File atau Drive. Jika perlu arsip proyek, unggah file hasil simpan ke folder proyek.'
+          ]]
+        ]
+      },
+      {
+        anchor: '#mep-calc-dialog > .mep-calc-header', title: 'Kalkulator Master MEP',
+        sections: [
+          ['Cara menggunakan setiap pilihan', [
+            'Pilih jenis kalkulator pada deretan tab, lalu isi parameter sesuai nama dan satuannya. Hasil diperbarui otomatis saat isian berubah.',
+            'Buka catatan/asumsi pada jenis perhitungan yang aktif untuk memahami rumus dan batas pemakaiannya. Perbaiki isian bila muncul pesan validasi.',
+            'Baca hasil beserta status serta keterangannya, bukan angkanya saja. PDF mengekspor jenis kalkulator yang sedang aktif beserta input/hasil.',
+            'Input kalkulator hanya di memori halaman dan tidak disimpan atau dikirim. Catat atau export hasil sebelum refresh; keputusan desain tetap diverifikasi engineer.'
+          ]]
+        ]
+      }
+    ];
+
+    function initializeUsageGuides() {
+      USAGE_GUIDES.forEach(({ anchor, title, sections }) => {
+        const target = document.querySelector(anchor);
+        if (!target) throw new Error(`Lokasi panduan tidak ditemukan: ${anchor}`);
+        const guide = document.createElement('details');
+        guide.className = 'file-upload-guide usage-guide';
+        const summary = document.createElement('summary');
+        summary.textContent = `Petunjuk Penggunaan · ${title}`;
+        const body = document.createElement('div');
+        body.className = 'file-upload-guide-body';
+        sections.forEach(([heading, steps]) => {
+          const section = document.createElement('section');
+          const label = document.createElement('h5');
+          label.textContent = heading;
+          const list = document.createElement('ol');
+          steps.forEach((step) => {
+            const item = document.createElement('li');
+            item.textContent = step;
+            list.append(item);
+          });
+          section.append(label, list);
+          body.append(section);
+        });
+        if (target.matches('.section-header')) {
+          const note = document.createElement('p');
+          note.className = 'form-hint';
+          note.textContent = 'Tombol tambah, ubah, hapus dan PDF mengikuti izin akun. Saat sinkronisasi atau unggah berlangsung, tunggu status selesai sebelum melanjutkan; jika gagal, baca pesannya dan periksa koneksi.';
+          body.append(note);
+        }
+        guide.append(summary, body);
+        target.after(guide);
+      });
+    }
+    // ==== USAGE GUIDES END ====
+
+    initializeUsageGuides();
     initializeAppTheme();
     initializeModalCloseButtons();
     initializeNetworkMonitor();
@@ -12822,6 +13642,129 @@
         return Math.min(100, Math.max(0, Number(value) || 0));
       }
 
+      function parseDetailGrids(grids) {
+        const items = [];
+        const skipped = [];
+        const sheets = [];
+        const notes = [];
+        const clean = (value) => typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+        for (const { name: sheet, grid } of grids) {
+          const rows = Object.keys(grid).map(Number).sort((a, b) => a - b);
+          let header = null;
+          for (const row of rows) {
+            const cells = grid[row];
+            const find = (re) => Number(Object.keys(cells).find((c) => re.test(clean(cells[c])))) || 0;
+            const unit = find(/^(unit|satuan)$/i);
+            const qty = find(/^(qty|quantity|volume)$/i);
+            let weight = find(/^bobot(\s*(total|\(%\)))?$/i);
+            if (unit && qty && !weight && /^total$/i.test(clean(grid[row + 1]?.[qty + 1]))) {
+              weight = qty + 1;
+              notes.push(`${sheet}: header BOBOT kosong; kolom TOTAL tepat setelah QTY digunakan sebagai bobot. Periksa angka pada pratinjau.`);
+            }
+            if (unit && qty && weight) {
+              header = { row, unit, qty, weight, description: unit - 1 };
+              break;
+            }
+          }
+          if (!header) {
+            skipped.push({ sheet, row: 0, reason: 'Tidak memiliki header UNIT, QTY dan BOBOT; bukan sheet rincian volume.' });
+            continue;
+          }
+          sheets.push(sheet);
+          let section = '';
+          let context = '';
+          let location = '';
+          for (const row of rows.filter((r) => r > header.row)) {
+            const cells = grid[row];
+            const description = clean(cells[header.description]);
+            const code = cells[header.description - 1];
+            const unit = clean(cells[header.unit]);
+            const qty = cells[header.qty];
+            const weight = cells[header.weight];
+            if (!description) continue;
+            const isTotal = /^(sub[\s-]*total|total|jumlah|grand total)\b/i.test(description);
+            if (isTotal) continue;
+            if (!unit) {
+              if (typeof code === 'string' && /^[A-Z]+(?:[.\d]+)?\.?$/.test(code.trim()) && !(typeof weight === 'number' && weight > 0)) {
+                if (/^[A-Z]+\.?$/.test(code.trim())) {
+                  section = description;
+                  location = '';
+                } else location = description;
+                context = '';
+              } else if (!(typeof weight === 'number' && weight > 0)) {
+                context = description;
+              }
+              continue;
+            }
+            if (!(typeof qty === 'number' && Number.isFinite(qty) && qty > 0)
+              || !(typeof weight === 'number' && Number.isFinite(weight) && weight > 0)) {
+              skipped.push({ sheet, row, reason: `${description}: QTY dan BOBOT harus angka positif (Incl./kosong/error tidak dihitung).` });
+              continue;
+            }
+            items.push({
+              id: `${sheet}|row-${row}`, sheet, row, section: section || sheet, location,
+              name: description, context, unit, qty, weight,
+              mappingKey: `${sheet}|${section || sheet}`
+            });
+          }
+        }
+        if (!items.length) throw new Error('Tidak ada rincian item dengan UNIT, QTY dan BOBOT positif yang terbaca.');
+        return { items, skipped, sheets, notes };
+      }
+
+      async function parseDetailFile(buffer) {
+        return parseDetailGrids(await readWorkbookGrids(buffer));
+      }
+
+      function suggestDetailParent(detail, parents) {
+        const words = (value) => String(value || '').toUpperCase().replace(/SRUCTURE/g, 'STRUCTURE')
+          .replace(/INSTALATION/g, 'INSTALLATION').replace(/\bINST\b/g, 'INSTALLATION')
+          .replace(/\bEQUIP\b/g, 'EQUIPMENT').replace(/\bSB\b/g, 'SERVICE BUILDING')
+          .replace(/[^A-Z0-9]+/g, ' ').trim().split(/\s+/)
+          .filter((word) => word.length > 1 && !['WORKS', 'WORK', 'AND', 'THE'].includes(word));
+        const source = new Set(words(`${detail.sheet} ${detail.section}`));
+        const sheetWords = new Set(words(detail.sheet));
+        const required = ['PLUMBING', 'ARCHITECTURE', 'STRUCTURE', 'EXTERNAL', 'CONTRACTOR', 'PRELIM',
+          'PODIUM', 'TOWER', 'SERVICE', 'BUILDING'].filter((word) => sheetWords.has(word));
+        const scored = parents.map((parent) => {
+          const target = [...new Set(words(`${parent.group} ${parent.subgroup} ${parent.name}`))];
+          const score = required.every((word) => target.includes(word))
+            ? target.filter((word) => source.has(word)).length / Math.max(1, target.length) : 0;
+          return { id: parent.id, score };
+        }).sort((a, b) => b.score - a.score);
+        return scored[0]?.score >= 0.6 && (!scored[1] || scored[0].score > scored[1].score) ? scored[0].id : '';
+      }
+
+      function getDetailVolumesAt(schedule, week) {
+        const result = Object.fromEntries((schedule.detailItems || []).map((item) => [item.id, 0]));
+        reportedWeeks(schedule).filter((w) => w <= week).forEach((w) => {
+          Object.entries(schedule.progress[w]?.detailVolumes || {}).forEach(([id, value]) => {
+            if (id in result) result[id] = Number(value);
+          });
+        });
+        return result;
+      }
+
+      function getDetailVolumeLimit(schedule, week, detail) {
+        const later = reportedWeeks(schedule).find((w) => w > week && detail.id in (schedule.progress[w]?.detailVolumes || {}));
+        return later ? Number(schedule.progress[later].detailVolumes[detail.id]) : detail.qty;
+      }
+
+      function aggregateDetailProgress(details, volumes) {
+        const totals = new Map();
+        details.forEach((item) => {
+          const volume = Number(volumes[item.id]);
+          if (!Number.isFinite(volume) || volume < 0 || volume > item.qty) {
+            throw new Error(`Volume "${item.name}" harus antara 0 dan ${item.qty} ${item.unit}.`);
+          }
+          const total = totals.get(item.parentId) || { weight: 0, done: 0 };
+          total.weight += item.weight;
+          total.done += item.weight * volume / item.qty;
+          totals.set(item.parentId, total);
+        });
+        return Object.fromEntries([...totals].map(([id, value]) => [id, round(value.done / value.weight * 100)]));
+      }
+
       function reportedWeeks(schedule) {
         return Object.keys(schedule?.progress || {}).map(Number)
           .filter((week) => Number.isInteger(week) && week >= 1 && week <= schedule.weekCount)
@@ -12929,6 +13872,12 @@
       }
 
       return {
+        parseDetailGrids,
+        parseDetailFile,
+        suggestDetailParent,
+        getDetailVolumesAt,
+        getDetailVolumeLimit,
+        aggregateDetailProgress,
         parseScheduleFile,
         parseScheduleGrid,
         parseSheetXml,

@@ -55,6 +55,50 @@ test('rejects files without a schedule header', () => {
   assert.throws(() => kurva.parseScheduleGrid({ 1: { 1: 'Hello' } }), /Header jadwal/);
 });
 
+test('schedule header at row 51, No in A and Bobot in J preserves schedule values', () => {
+  const grid = {
+    1: { 1: 'PROYEK LAIN' },
+    2: { 1: 46314 },
+    51: { 1: 'No.', 2: 'ITEM', 10: 'Bobot', 11: 'Mulai', 12: 'Selesai' },
+    53: { 14: 1, 15: 2, 16: 3 },
+    54: { 1: 'I', 2: 'PLUMBING', 10: 100 },
+    55: { 1: 1, 2: 'Pipa air bersih', 10: 100, 11: 1, 12: 3, 14: 20, 15: 30, 16: 50 }
+  };
+  const schedule = kurva.parseScheduleGrid(grid);
+  assert.equal(schedule.items.length, 1);
+  assert.equal(schedule.items[0].name, 'Pipa air bersih');
+  assert.equal(schedule.items[0].group, 'PLUMBING');
+  assert.equal(schedule.items[0].weight, 100);
+  assert.equal(schedule.startDate, '2026-10-19');
+  assert.equal(schedule.weekCount, 3);
+  assert.deepEqual(Array.from(kurva.computeCurve(schedule).planCumulative), [20, 50, 100]);
+  // ITEM may itself be in A when a separate No column is absent.
+  delete grid[51][1];
+  grid[51][1] = 'ITEM';
+  delete grid[51][2];
+  delete grid[54];
+  grid[55][1] = grid[55][2];
+  delete grid[55][2];
+  assert.equal(kurva.parseScheduleGrid(grid).items[0].name, 'Pipa air bersih');
+});
+
+test('week header must remain within five rows of the detected schedule header', () => {
+  const grid = sampleGrid();
+  grid[27] = grid[24];
+  delete grid[24];
+  assert.equal(kurva.parseScheduleGrid(grid).weekCount, 6);
+  grid[28] = grid[27];
+  delete grid[27];
+  assert.throws(() => kurva.parseScheduleGrid(grid), /Baris nomor minggu/);
+});
+
+test('nonempty metadata between ITEM and Bobot is currently included in the work name', () => {
+  const grid = sampleGrid();
+  grid[22][8] = 'PIC';
+  grid[26][8] = 'Mandor A';
+  assert.equal(kurva.parseScheduleGrid(grid).items[0].name, 'MAIN PRELIM Mandor A');
+});
+
 test('computes plan, carried-forward actual progress and deviation', () => {
   const schedule = kurva.parseScheduleGrid(sampleGrid());
   const [prelim, podiumWp] = schedule.items;
@@ -162,6 +206,24 @@ test('reads an xlsx workbook with shared strings and picks the schedule sheet', 
   assert.equal(schedule.items.length, 1);
   assert.equal(schedule.items[0].name, 'Pekerjaan A & B');
   assert.deepEqual(Array.from(schedule.items[0].plan), [30, 30, 40]);
+});
+
+test('xlsx import reads A51 ITEM and J51 Bobot without fixed row or column positions', async () => {
+  const cell = (ref, value) => typeof value === 'string'
+    ? `<c r="${ref}" t="inlineStr"><is><t>${value}</t></is></c>`
+    : `<c r="${ref}"><v>${value}</v></c>`;
+  const buffer = buildZip({
+    'xl/worksheets/sheet1.xml': `<worksheet><sheetData>
+      <row r="1">${cell('A1', 46314)}</row>
+      <row r="51">${cell('A51', 'ITEM')}${cell('J51', 'Bobot')}${cell('K51', 'Mulai')}${cell('L51', 'Selesai')}</row>
+      <row r="52">${cell('N52', 1)}${cell('O52', 2)}${cell('P52', 3)}</row>
+      <row r="53">${cell('A53', 'Pipa')}${cell('J53', 100)}${cell('K53', 1)}${cell('L53', 3)}${cell('N53', 20)}${cell('O53', 30)}${cell('P53', 50)}</row>
+    </sheetData></worksheet>`
+  });
+  const schedule = await kurva.parseScheduleFile(buffer);
+  assert.equal(schedule.items[0].name, 'Pipa');
+  assert.equal(schedule.items[0].weight, 100);
+  assert.deepEqual(Array.from(kurva.computeCurve(schedule).planCumulative), [20, 50, 100]);
 });
 
 test('aligns the baseline curve to the revised schedule and reports finish shift', () => {
