@@ -1130,10 +1130,10 @@ function saveProjectFolders_(projectId, folders, email) {
   const spreadsheet = getSpreadsheet_();
   const sheet = getSchemaSheet_(spreadsheet, PROJECT_FOLDERS_SHEET_NAME, PROJECT_FOLDER_HEADERS);
   const existing = readProjectFolders_(spreadsheet, new Set([projectId]));
-  const createdAtById = new Map(existing.map((folder) => [folder.id, folder.createdAt]));
+  const existingById = new Map(existing.map((folder) => [folder.id, folder]));
   const seenIds = new Set();
   const seenNames = new Set();
-  const rows = folders.map((folder) => {
+  const savedFolders = folders.map((folder) => {
     const id = String(folder?.id || '').trim();
     const name = String(folder?.name || '').trim();
     const normalizedName = name.toLocaleLowerCase('id-ID');
@@ -1141,16 +1141,24 @@ function saveProjectFolders_(projectId, folders, email) {
     if (seenIds.has(id) || seenNames.has(normalizedName)) throw new Error('ID atau nama folder duplikat.');
     seenIds.add(id);
     seenNames.add(normalizedName);
-    return sheetRowFromObject_(sheet, {
-      'Folder ID': id,
-      'Project ID': projectId,
-      'Folder Name': name,
-      'Created At': createdAtById.get(id) || folder.createdAt || new Date().toISOString(),
-      'Created By': email
-    });
+    const previous = existingById.get(id);
+    return {
+      id: id,
+      projectId: projectId,
+      name: name,
+      createdAt: previous ? previous.createdAt : new Date().toISOString(),
+      createdBy: previous ? previous.createdBy : email
+    };
   });
+  const rows = savedFolders.map((folder) => sheetRowFromObject_(sheet, {
+      'Folder ID': folder.id,
+      'Project ID': projectId,
+      'Folder Name': folder.name,
+      'Created At': folder.createdAt,
+      'Created By': folder.createdBy
+    }));
   replaceProjectRows_(sheet, projectId, rows, 'Project ID');
-  return folders.map((folder) => ({ ...folder, projectId: projectId, createdBy: email }));
+  return savedFolders;
 }
 
 function readOperationalRecords_(spreadsheet, projectIds) {

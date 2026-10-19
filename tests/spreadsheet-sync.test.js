@@ -81,6 +81,39 @@ const headers = ['record_id', 'project_id', 'asset_name', 'payload_json', 'updat
 const row = (id, name = id) => [id, 'project-a', name, JSON.stringify({ id, name }), 'old-date', 'old-user', 'old-user'];
 const ignored = ['updated_at', 'email', 'reporter'];
 
+test('folder saves preserve original creator and timestamp across users and trust only server identity for new folders', () => {
+  const { context } = backend();
+  const creator = 'karyavictoryutama@gmail.com';
+  const folderHeaders = ['Folder ID', 'Project ID', 'Folder Name', 'Created At', 'Created By'];
+  const folders = sheet(folderHeaders, [
+    ['a', 'project-a', 'Drawing', '2026-10-09T18:57:03.487Z', creator],
+    ['legacy', 'project-a', 'Legacy', '', ''],
+    ['other', 'project-b', 'Other project', 'other-date', 'other@example.com']
+  ]);
+  context.getSpreadsheet_ = () => ({});
+  context.getSchemaSheet_ = () => folders;
+  let saved = context.saveProjectFolders_('project-a', [
+    { id: 'a', name: 'Drawing renamed', createdAt: 'forged-date', createdBy: 'forged@example.com' },
+    { id: 'legacy', name: 'Legacy' },
+    { id: 'new', name: 'New folder', createdAt: 'forged-date', createdBy: 'forged@example.com' }
+  ], 'editor@example.com');
+  assert.equal(saved[0].createdBy, creator);
+  assert.equal(saved[0].createdAt, '2026-10-09T18:57:03.487Z');
+  assert.equal(saved[1].createdBy, '', 'unknown historical creator must not be invented');
+  assert.equal(saved[1].createdAt, '');
+  assert.equal(saved[2].createdBy, 'editor@example.com');
+  assert.ok(Number.isFinite(Date.parse(saved[2].createdAt)));
+  const newTimestamp = saved[2].createdAt;
+  saved = context.saveProjectFolders_('project-a', saved, creator);
+  assert.equal(saved[2].createdBy, 'editor@example.com', 'later save does not change creation attribution');
+  assert.equal(saved[2].createdAt, newTimestamp);
+  assert.deepEqual(folders.data.find((row) => row[0] === 'other'),
+    ['other', 'project-b', 'Other project', 'other-date', 'other@example.com']);
+  const before = JSON.stringify(folders.data);
+  assert.throws(() => context.saveProjectFolders_('project-a', [{ id: 'a', name: 'Same' }, { id: 'a', name: 'Other' }], creator), /duplikat/);
+  assert.equal(JSON.stringify(folders.data), before);
+});
+
 function materialFrontend(snapshot) {
   const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
   const helpers = html.slice(html.indexOf('    function parseNonNegativeNumber('), html.indexOf('    function validateNewMaterialInput('));

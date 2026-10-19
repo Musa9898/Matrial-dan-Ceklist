@@ -150,6 +150,21 @@ Badge Attention pada header menghitung induk pekerjaan yang tertinggal pada ming
 
 Klik badge, buka pekerjaan dan isi penyebab terverifikasi, tindakan/recovery plan, PIC dan tanggal target. Simpan per pekerjaan; izin edit mengikuti `kurva_s`, akun lain hanya membaca. Catatan disimpan dalam `projectSchedule.attentionReviews` berdasarkan revisi, tanggal awal dan minggu laporan, lalu ID induk. Snapshot yang sama menyimpan data ini tanpa perubahan Apps Script. Catatan tidak menonaktifkan Attention; progres yang sudah mengejar rencana menghilangkan item dari daftar aktif. Catatan minggu/revisi lama tetap tersimpan, namun daftar aktif hanya menampilkan peninjauan minggu/revisi saat ini.
 
+### Identitas pembuat folder
+
+Pada sheet `ProjectFolders`, `Created By` dan `Created At` adalah metadata pembuatan,
+bukan akun/tanggal penyimpanan terakhir. Backend mempertahankan nilai folder yang
+sudah ada saat rename, penambahan folder lain atau sinkronisasi. Folder baru memakai
+email Google terverifikasi dari server dan waktu server; nilai pembuat/tanggal dari
+payload klien tidak dipercaya. Metadata lama yang kosong tetap kosong karena asalnya
+tidak diketahui. Deploy ulang `Code.gs` diperlukan untuk perbaikan ini.
+
+Versi sebelumnya menimpa `Created By` seluruh daftar dengan akun penyimpan terakhir.
+Perbaikan tidak otomatis mengembalikan pembuat historis yang sudah tertimpa.
+Gunakan riwayat versi Spreadsheet atau bukti pembuatan untuk memverifikasi dan
+memperbaiki sel pada baris yang terkonfirmasi; jangan mengganti semua baris berdasarkan
+akun yang sedang login.
+
 ### Download Excel dengan format sumber
 
 Di tab Kurva S, **Download Excel** tersedia untuk akun dengan izin `kurva_s`.
