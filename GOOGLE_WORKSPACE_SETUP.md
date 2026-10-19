@@ -150,6 +150,34 @@ Badge Attention pada header menghitung induk pekerjaan yang tertinggal pada ming
 
 Klik badge, buka pekerjaan dan isi penyebab terverifikasi, tindakan/recovery plan, PIC dan tanggal target. Simpan per pekerjaan; izin edit mengikuti `kurva_s`, akun lain hanya membaca. Catatan disimpan dalam `projectSchedule.attentionReviews` berdasarkan revisi, tanggal awal dan minggu laporan, lalu ID induk. Snapshot yang sama menyimpan data ini tanpa perubahan Apps Script. Catatan tidak menonaktifkan Attention; progres yang sudah mengejar rencana menghilangkan item dari daftar aktif. Catatan minggu/revisi lama tetap tersimpan, namun daftar aktif hanya menampilkan peninjauan minggu/revisi saat ini.
 
+### Download Excel dengan format sumber
+
+Di tab Kurva S, **Download Excel** tersedia untuk akun dengan izin `kurva_s`.
+Simpan progres terlebih dahulu, pilih jenis **Master Kurva S** atau **Rincian Bobot / BOQ**,
+pilih minggu akhir riwayat, lalu pilih kembali workbook `.xlsx` asli. File template tidak
+disimpan di Spreadsheet: pemilihan ulang ini juga mendukung proyek yang sudah diimpor.
+Master diperiksa terhadap ID, jumlah item, bobot, jumlah minggu dan rencana aktif;
+setelah Reschedule gunakan master revisi. BOQ harus memuat seluruh identitas rincian
+tersimpan dengan nama, konteks, QTY, satuan dan bobot yang sama. Baris tambahan sumber
+yang tidak ada di katalog aplikasi tetap berada di sheet asli, bukan dianggap progres baru.
+
+Ekspor mempertahankan bagian workbook sumber (sheet, styles, gambar/grafik, rumus,
+merged cell dan pengaturan cetak) tanpa serialisasi ulang. Hanya daftar sheet,
+relasi workbook dan content types diperbarui untuk menambahkan **Realisasi Progres**;
+nama hasil diberi akhiran nomor bila sudah ada. File sumber dan snapshot proyek tidak
+ditulis. Template bertanda tangan digital, struktur workbook terkunci, ZIP64/multi-disk,
+dan format workbook nonstandar yang belum didukung ditolak dengan pesan eksplisit.
+
+Sheet tambahan memuat ringkasan minggu 1 sampai minggu terpilih serta riwayat induk
+(master) atau rincian (BOQ). Status membedakan laporan tersimpan dari minggu tanpa
+laporan; nilai carry-forward bukan laporan baru. Pemetaan mengikuti versi pada setiap
+minggu, termasuk sebelum aktivasi dan kelompok yang dikecualikan. Bobot/kontribusi
+ditulis dalam poin persentase proyek; persentase item/induk dalam angka 0–100.
+Kontribusi rincian = bobot induk × bobot rincian / total bobot rincian aktif induk ×
+volume/QTY. Angka ini tidak ditambahkan lagi ke bobot master. Rekap proyek tetap
+memakai nilai laporan induk tersimpan, bukan menghitung ulang laporan historis
+dari volume yang mungkin belum tersedia. Tidak ada perubahan Apps Script untuk fitur ini.
+
 ### Rincian Item & Volume Kurva S
 
 Pemetaan kelompok mengutamakan kecocokan nama jenis pekerjaan dan total bobot BOQ terhadap satu induk yang unik (toleransi 0,000001 poin persentase); bila tidak cocok, gunakan usulan nama yang sudah ada. Pada koreksi tersedia **Usulkan ulang induk berdasarkan nama & bobot kelompok** untuk memperbaiki pilihan dengan pratinjau, bukan menyimpan otomatis. Konflik gedung eksplisit (Tower/Podium/Service Building) ditolak. Header sumber yang ambigu tetap diperiksa manusia; jangan menghapus induk hanya karena nama pekerjaannya berulang di gedung berbeda. Contoh EHJ: delapan total kelompok ARCHITECTURE-TOWER cocok dengan delapan bobot master di bawah header STRUCTURE RETROFITTING pada kelompok ARCHITECTURE WORKS. ID dan label master asli tidak diganti otomatis.

@@ -4448,6 +4448,7 @@
         <div class="section-title"><span>📈</span> Kurva S</div>
         <div class="kurva-actions">
           <button class="btn-pdf-export" type="button" data-pdf-tab="kurvas" onclick="openPdfExportDialog('kurvas')">📄 PDF</button>
+          <button class="btn-cancel" type="button" id="kurvaExcelButton" onclick="openKurvaExcelExport()">Download Excel</button>
           <button class="btn-cancel" type="button" id="kurvaImportButton" onclick="openKurvaImportModal()">Import Excel</button>
           <button class="btn-cancel" type="button" id="kurvaRescheduleButton" onclick="openKurvaImportModal('reschedule')">Reschedule</button>
           <button class="btn-cancel" type="button" id="kurvaDetailsButton" onclick="openKurvaDetailsImport()">Import Rincian Bobot</button>
@@ -4456,6 +4457,31 @@
       </div>
       <div id="kurvaContent"></div>
     </main>
+
+    <div class="modal-backdrop" id="modalKurvaExcel" role="dialog" aria-modal="true" aria-labelledby="kurvaExcelTitle">
+      <div class="detail-modal-sheet">
+        <h3 id="kurvaExcelTitle">Download Excel dengan Format Asli</h3>
+        <p class="form-hint">Pilih kembali file .xlsx asli yang sesuai dengan jadwal/BOQ proyek ini. Sheet asli tidak ditulis ulang; hasil ditambahkan sebagai sheet Realisasi Progres. Hanya progres yang sudah disimpan yang diekspor, tanpa mengubah data proyek.</p>
+        <div class="form-row">
+          <label for="kurvaExcelType">Jenis file asli</label>
+          <select id="kurvaExcelType"><option value="schedule">Master Kurva S</option><option value="details">Rincian Bobot / BOQ</option></select>
+        </div>
+        <div class="form-row">
+          <label for="kurvaExcelWeek">Riwayat sampai minggu</label>
+          <select id="kurvaExcelWeek"></select>
+        </div>
+        <div class="form-row">
+          <label for="kurvaExcelFile">File Excel asli (.xlsx)</label>
+          <input id="kurvaExcelFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+        </div>
+        <p class="form-hint">Minggu tanpa laporan ditandai; angka bawaan dari laporan sebelumnya bukan laporan baru. Pemetaan mengikuti versi tiap minggu. Bobot realisasi detail bersifat relatif terhadap induknya, bukan penambahan bobot proyek.</p>
+        <p id="kurvaExcelStatus" role="status" aria-live="polite"></p>
+        <div class="btn-group">
+          <button class="btn-cancel" id="kurvaExcelCancel" type="button" onclick="closeKurvaExcelExport()">Batal</button>
+          <button class="btn-save" id="kurvaExcelSave" type="button" onclick="downloadKurvaExcel()">Download Excel</button>
+        </div>
+      </div>
+    </div>
 
     <div class="modal-backdrop" id="modalKurvaImport" role="dialog" aria-modal="true" aria-labelledby="kurvaImportTitle">
       <div class="modal-sheet">
@@ -6257,6 +6283,7 @@
       toggle('#kurvaImportButton', 'kurva_s');
       toggle('#kurvaRescheduleButton', 'kurva_s');
       toggle('#kurvaDetailsButton', 'kurva_s');
+      toggle('#kurvaExcelButton', 'kurva_s');
       toggle('#addProjectFolderButton', 'files');
       toggle('#projectFolderContents button[onclick^="renameProjectFolder"]', 'files');
       toggle('#projectFileUploadButton', 'files');
@@ -10137,6 +10164,7 @@
         modalBugReport: closeBugReportForm,
         modalBugReportList: closeBugReportList,
         modalAppNotice: closeAppNotice,
+        modalKurvaExcel: closeKurvaExcelExport,
         modalAssetForm: closeAssetForm,
         modalAssetDetail: closeAssetDetail,
         modalProjectFolder: closeProjectFolderModal,
@@ -12240,6 +12268,70 @@
       showAppNotice('Peninjauan tersimpan. Attention tetap muncul sampai progres pekerjaan tidak tertinggal.');
     }
 
+    let kurvaExcelExportContext = null;
+
+    function openKurvaExcelExport() {
+      if (!requireAccess('kurva_s')) return;
+      if (!projectSchedule) { showAppNotice('Import jadwal terlebih dahulu.'); return; }
+      kurvaExcelExportContext = { schedule: projectSchedule, projectId: activeProjectId, busy: false };
+      const lastWeek = kurvaSCore.computeCurve(projectSchedule).lastReportedWeek;
+      document.getElementById('kurvaExcelWeek').innerHTML = Array.from({ length: projectSchedule.weekCount }, (_, index) =>
+        `<option value="${index + 1}">Minggu ${index + 1}${projectSchedule.progress[index + 1] ? ' (laporan tersimpan)' : ' (belum ada laporan)'}</option>`).join('');
+      document.getElementById('kurvaExcelWeek').value = String(lastWeek || 1);
+      document.getElementById('kurvaExcelType').value = 'schedule';
+      document.getElementById('kurvaExcelFile').value = '';
+      document.getElementById('kurvaExcelStatus').textContent = '';
+      document.getElementById('modalKurvaExcel').style.display = 'flex';
+    }
+
+    function closeKurvaExcelExport() {
+      if (kurvaExcelExportContext?.busy) return;
+      kurvaExcelExportContext = null;
+      document.getElementById('modalKurvaExcel').style.display = 'none';
+      document.getElementById('kurvaExcelFile').value = '';
+    }
+
+    async function downloadKurvaExcel() {
+      if (!requireAccess('kurva_s')) return;
+      const context = kurvaExcelExportContext;
+      if (!context || context.busy) return;
+      if (context.projectId !== activeProjectId || context.schedule !== projectSchedule) {
+        showAppNotice('Proyek/jadwal berubah. Buka ulang Download Excel.');
+        return;
+      }
+      const file = document.getElementById('kurvaExcelFile').files[0];
+      if (!file || !/\.xlsx$/i.test(file.name)) { showAppNotice('Pilih file Excel asli berformat .xlsx.'); return; }
+      const kind = document.getElementById('kurvaExcelType').value;
+      const week = Number(document.getElementById('kurvaExcelWeek').value);
+      const ids = ['kurvaExcelType', 'kurvaExcelWeek', 'kurvaExcelFile', 'kurvaExcelCancel', 'kurvaExcelSave'];
+      context.busy = true;
+      ids.forEach((id) => { document.getElementById(id).disabled = true; });
+      const status = document.getElementById('kurvaExcelStatus');
+      status.textContent = 'Memeriksa template dan menyiapkan Excel. Mohon tunggu...';
+      try {
+        const result = await kurvaExcelCore.exportWorkbook(await file.arrayBuffer(), context.schedule, kind, week);
+        if (context.projectId !== activeProjectId || context.schedule !== projectSchedule || !requireAccess('kurva_s')) {
+          throw new Error('Proyek, jadwal atau akses berubah. Buka ulang Download Excel.');
+        }
+        const url = URL.createObjectURL(result.blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${file.name.replace(/\.xlsx$/i, '')}-realisasi-minggu-${week}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        status.textContent = `Excel siap diunduh. Sheet asli dipertahankan; hasil pada sheet "${result.sheetName}".`;
+      } catch (error) {
+        console.error('Ekspor Excel Kurva S gagal', error);
+        status.textContent = `Ekspor gagal: ${error.message}`;
+        showAppNotice(status.textContent);
+      } finally {
+        context.busy = false;
+        ids.forEach((id) => { document.getElementById(id).disabled = false; });
+      }
+    }
+
     function renderKurvaS(options = {}) {
       if (kurvaSetupDraft && (kurvaSetupDraft.projectId !== activeProjectId || projectSchedule)) {
         kurvaSetupDraft = null;
@@ -12254,6 +12346,7 @@
       const rescheduleButton = document.getElementById('kurvaRescheduleButton');
       if (rescheduleButton) rescheduleButton.hidden = !projectSchedule;
       const detailsButton = document.getElementById('kurvaDetailsButton');
+      document.getElementById('kurvaExcelButton').hidden = !projectSchedule || !canAccess('kurva_s');
       detailsButton.hidden = !canAccess('kurva_s');
       document.getElementById('kurvaImportButton').textContent = projectSchedule ? 'Import Excel' : '2. Import Kurva S';
       detailsButton.textContent = projectSchedule ? 'Import Rincian Bobot' : '1. Import Rincian Bobot';
@@ -13313,6 +13406,14 @@
             'Input Progres: tanpa rincian, isi progres kumulatif induk 0–100%. Setelah Import Rincian Bobot, isi volume kumulatif terpasang per item; persentase serta progres induk dihitung otomatis, bukan diisi manual.',
             'Baca grafik rencana dan realisasi, tabel mingguan serta deviasi. Bobot item digunakan otomatis untuk menghitung kontribusi progres proyek.'
           ]],
+          ['Download Excel dengan format asli', [
+            'Simpan progres terlebih dahulu, lalu pilih Download Excel di tab Kurva S. Pilih Master Kurva S atau Rincian Bobot / BOQ dan minggu akhir riwayat yang ingin diekspor.',
+            'Pilih kembali workbook .xlsx asli yang sesuai jadwal aktif atau katalog BOQ. File yang berbeda item, identitas/baris, bobot atau rencana ditolak. Setelah Reschedule, gunakan master revisi yang sesuai jadwal aktif.',
+            'Sheet asli, format, rumus, grafik dan pengaturan cetaknya tidak ditulis ulang. Aplikasi menambahkan sheet Realisasi Progres; jika nama itu sudah ada, sheet hasil memakai akhiran nomor. File sumber di komputer dan data proyek tidak diubah.',
+            'Sheet hasil memuat ringkasan mingguan dan riwayat induk atau rincian sampai minggu terpilih. Minggu tanpa laporan ditandai; nilai bawaan laporan sebelumnya bukan laporan baru. Data rincian mengikuti versi pemetaan tiap minggu, item tidak aktif ditandai dan tidak diberi kontribusi.',
+            'Persentase pada sheet hasil ditulis sebagai angka 0–100. Kontribusi detail dihitung relatif terhadap total bobot rincian aktif pada induknya, dikalikan bobot induk; jangan menjumlahkan kembali bobot BOQ dengan bobot master.',
+            'Ekspor hanya membaca progres yang sudah disimpan, bukan isian modal yang belum disimpan. Template terkunci strukturnya, bertanda tangan digital atau ZIP64 belum didukung; buka proteksi pada salinan template bila diperlukan.'
+          ]],
           ['Rincian bobot & volume pekerjaan', [
             'Import Rincian Bobot menjadi langkah pertama pada proyek baru; pada proyek lama dapat ditambahkan setelah jadwal tersedia. Unggah .xlsx bobot item; aplikasi membaca semua sheet dengan UNIT, QTY dan BOBOT, bukan hanya satu sheet jadwal.',
             'Centang Ikutkan kelompok ini untuk kelompok yang digunakan, lalu pilih induknya, contoh pipa/valve per lantai ke Plumbing Installation. Hilangkan centang untuk tidak mengikutkan seluruh kelompok. Status dan jumlah kelompok belum dipetakan tampil langsung; usulan wajib diperiksa sebelum konfirmasi.',
@@ -13711,6 +13812,10 @@
           if (view.getUint32(index, true) === 0x06054b50) { end = index; break; }
         }
         if (end < 0) throw new Error('File bukan Excel .xlsx yang valid.');
+        if (view.getUint16(end + 4, true) || view.getUint16(end + 6, true)
+          || view.getUint16(end + 10, true) === 65535 || view.getUint32(end + 16, true) === 0xffffffff) {
+          throw new Error('Excel ZIP64/multi-disk belum didukung.');
+        }
         const count = view.getUint16(end + 10, true);
         let pointer = view.getUint32(end + 16, true);
         const decoder = new TextDecoder();
@@ -13718,15 +13823,93 @@
         for (let index = 0; index < count && view.getUint32(pointer, true) === 0x02014b50; index += 1) {
           const nameLength = view.getUint16(pointer + 28, true);
           const name = decoder.decode(bytes.subarray(pointer + 46, pointer + 46 + nameLength));
+          if (entries[name] || view.getUint16(pointer + 8, true) & 1) throw new Error('Entri Excel duplikat atau terenkripsi tidak didukung.');
+          const next = pointer + 46 + nameLength + view.getUint16(pointer + 30, true) + view.getUint16(pointer + 32, true);
           entries[name] = {
             method: view.getUint16(pointer + 10, true),
             size: view.getUint32(pointer + 20, true),
-            offset: view.getUint32(pointer + 42, true)
+            offset: view.getUint32(pointer + 42, true),
+            central: bytes.slice(pointer, next)
           };
-          pointer += 46 + nameLength + view.getUint16(pointer + 30, true) + view.getUint16(pointer + 32, true);
+          pointer = next;
         }
+        if (Object.keys(entries).length !== count) throw new Error('Direktori Excel tidak lengkap.');
         return {
           names: Object.keys(entries),
+          async rewrite(changes) {
+            if (typeof CompressionStream === 'undefined') throw new Error('Browser belum mendukung pembuatan Excel. Gunakan browser terbaru.');
+            const encoder = new TextEncoder();
+            const parts = [];
+            const central = [];
+            let offset = 0;
+            Object.entries(entries).forEach(([name, entry]) => {
+              if (changes.has(name)) return;
+              const dataStart = entry.offset + 30 + view.getUint16(entry.offset + 26, true) + view.getUint16(entry.offset + 28, true);
+              let dataEnd = dataStart + entry.size;
+              if (view.getUint16(entry.offset + 6, true) & 8) {
+                dataEnd += view.getUint32(dataEnd, true) === 0x08074b50 ? 16 : 12;
+              }
+              const local = bytes.slice(entry.offset, dataEnd);
+              const directory = entry.central.slice();
+              new DataView(directory.buffer).setUint32(42, offset, true);
+              parts.push(local);
+              central.push(directory);
+              offset += local.length;
+            });
+            for (const [name, text] of changes) {
+              const filename = encoder.encode(name);
+              const data = encoder.encode(text);
+              const compressed = new Uint8Array(await new Response(new Blob([data]).stream()
+                .pipeThrough(new CompressionStream('deflate'))).arrayBuffer());
+              // ZIP stores raw DEFLATE, without the zlib header and Adler-32 trailer.
+              const payload = compressed.subarray(2, compressed.length - 4);
+              let crc = 0xffffffff;
+              for (const byte of data) {
+                crc ^= byte;
+                for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
+              }
+              crc = (crc ^ 0xffffffff) >>> 0;
+              const local = new Uint8Array(30 + filename.length);
+              const header = new DataView(local.buffer);
+              header.setUint32(0, 0x04034b50, true);
+              header.setUint16(4, 20, true);
+              header.setUint16(6, 0x800, true);
+              header.setUint16(8, 8, true);
+              header.setUint16(12, 0x21, true);
+              header.setUint32(14, crc, true);
+              header.setUint32(18, payload.length, true);
+              header.setUint32(22, data.length, true);
+              header.setUint16(26, filename.length, true);
+              local.set(filename, 30);
+              const directory = new Uint8Array(46 + filename.length);
+              const record = new DataView(directory.buffer);
+              record.setUint32(0, 0x02014b50, true);
+              record.setUint16(4, 20, true);
+              record.setUint16(6, 20, true);
+              record.setUint16(8, 0x800, true);
+              record.setUint16(10, 8, true);
+              record.setUint16(14, 0x21, true);
+              record.setUint32(16, crc, true);
+              record.setUint32(20, payload.length, true);
+              record.setUint32(24, data.length, true);
+              record.setUint16(28, filename.length, true);
+              record.setUint32(42, offset, true);
+              directory.set(filename, 46);
+              parts.push(local, payload);
+              central.push(directory);
+              offset += local.length + payload.length;
+            }
+            const centralSize = central.reduce((sum, part) => sum + part.length, 0);
+            if (central.length >= 65535 || offset + centralSize + 22 >= 0xffffffff) throw new Error('Hasil Excel melebihi batas ZIP standar.');
+            const ending = new Uint8Array(22);
+            const footer = new DataView(ending.buffer);
+            footer.setUint32(0, 0x06054b50, true);
+            footer.setUint16(8, central.length, true);
+            footer.setUint16(10, central.length, true);
+            footer.setUint32(12, centralSize, true);
+            footer.setUint32(16, offset, true);
+            return new Blob([...parts, ...central, ending], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          },
           async read(name) {
             const entry = entries[name];
             if (!entry) return null;
@@ -14272,6 +14455,7 @@
 
       return {
         parseDetailGrids,
+        unzip,
         parseDetailFile,
         suggestDetailParent,
         getDetailVolumesAt,
@@ -14298,6 +14482,156 @@
         getWeekStartDate,
         excelSerialToISO
       };
+    })();
+  </script>
+  <script id="kurva-excel-core">
+    const kurvaExcelCore = (() => {
+      const xml = (value) => String(value ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+      const near = (first, second) => Math.abs(first - second) <= 0.000001;
+
+      async function validateTemplate(buffer, schedule, kind) {
+        if (kind === 'schedule') {
+          const parsed = await kurvaSCore.parseScheduleFile(buffer);
+          const byId = new Map(parsed.items.map((item) => [item.id, item]));
+          if (parsed.weekCount !== schedule.weekCount || parsed.items.length !== schedule.items.length
+            || schedule.items.some((item) => {
+              const source = byId.get(item.id);
+              return !source || !near(source.weight, item.weight)
+                || source.plan.length !== item.plan.length || source.plan.some((value, index) => !near(value, item.plan[index]));
+            })) throw new Error('Template master tidak cocok dengan jadwal aktif. Pilih file master/revisi yang diimpor untuk jadwal ini.');
+        } else if (kind === 'details') {
+          if (!schedule.detailItems?.length) throw new Error('Proyek belum memiliki rincian bobot tersimpan.');
+          const parsed = await kurvaSCore.parseDetailFile(buffer);
+          const catalog = kurvaSCore.mergeDetailCatalog(schedule, []);
+          const ids = new Set(parsed.items.map((item) => item.id));
+          if (catalog.some((item) => !ids.has(item.id))) {
+            throw new Error('Template BOQ tidak cocok dengan katalog rincian tersimpan. Gunakan workbook asli dengan sheet dan baris yang sama.');
+          }
+          kurvaSCore.mergeDetailCatalog(schedule, parsed.items);
+        } else throw new Error('Jenis ekspor Excel tidak valid.');
+      }
+
+      function buildRows(schedule, kind, lastWeek) {
+        if (!['schedule', 'details'].includes(kind) || !Number.isInteger(lastWeek) || lastWeek < 1 || lastWeek > schedule.weekCount) {
+          throw new Error('Jenis ekspor atau minggu tidak valid.');
+        }
+        const rows = [
+          ['REALISASI PROGRES', schedule.title || 'Proyek', kind === 'schedule' ? 'Master Kurva S' : 'Rincian Bobot / BOQ'],
+          ['Riwayat sampai minggu', lastWeek, 'Tanggal mulai jadwal', schedule.startDate || ''],
+          ['Satuan persen', 'Angka 0-100; bobot dan kontribusi dalam poin persentase proyek.'],
+          ['Catatan', 'Sheet sumber tetap utuh. Data tersimpan saja; minggu tanpa laporan bukan laporan baru. Pemetaan mengikuti versi tiap minggu.'],
+          ['Rekap vs rincian', 'Rekap memakai laporan induk tersimpan. Kontribusi rincian dihitung dari volume pada versi pemetaan tiap minggu; tidak menghitung ulang laporan lama.'],
+          ['Minggu', 'Tanggal mulai', 'Status laporan', 'Rencana mingguan (poin)', 'Rencana kumulatif (poin)',
+            'Realisasi mingguan (poin)', 'Realisasi kumulatif (poin)', 'Deviasi (poin)']
+        ];
+        const curve = kurvaSCore.computeCurve(schedule);
+        for (let week = 1; week <= lastWeek; week += 1) {
+          const reported = Boolean(schedule.progress?.[week]);
+          rows.push([week, kurvaSCore.getWeekStartDate(schedule.startDate, week), reported ? 'Tersimpan' : 'Belum ada laporan',
+            curve.planWeekly[week - 1], curve.planCumulative[week - 1],
+            curve.actualWeekly[week - 1], curve.actualCumulative[week - 1], curve.deviation[week - 1]]);
+        }
+        rows.push([]);
+        const catalog = kind === 'details' ? kurvaSCore.mergeDetailCatalog(schedule, []) : [];
+        rows.push(kind === 'schedule'
+          ? ['Minggu', 'Status laporan', 'ID induk', 'Kelompok', 'Subkelompok', 'Pekerjaan', 'Bobot induk (poin)',
+            'Rencana kumulatif (poin)', 'Progres kumulatif (%)', 'Realisasi berbobot (poin)', 'Deviasi (poin)', 'Mode input']
+          : ['Minggu', 'Status laporan', 'ID rincian', 'Sheet sumber', 'Baris sumber', 'Kelompok BOQ', 'Lokasi', 'Konteks', 'Uraian',
+            'QTY', 'Satuan', 'Bobot BOQ (poin)', 'Status pemetaan', 'ID induk', 'Induk', 'Volume kumulatif',
+            'Progres item (%)', 'Kontribusi dari volume (poin proyek)']);
+        const parents = new Map(schedule.items.map((item) => [item.id, item]));
+        const count = kind === 'schedule' ? schedule.items.length : catalog.length;
+        if (rows.length + count * lastWeek > 1048576) throw new Error('Riwayat melebihi batas baris Excel. Pilih minggu akhir yang lebih kecil.');
+        for (let week = 1; week <= lastWeek; week += 1) {
+          const status = schedule.progress?.[week] ? 'Tersimpan' : 'Belum ada laporan; bawaan laporan sebelumnya';
+          const active = kurvaSCore.getDetailItemsAt(schedule, week);
+          if (kind === 'schedule') {
+            const values = kurvaSCore.getItemProgressAt(schedule, week);
+            const detailed = new Set(active.map((item) => item.parentId));
+            schedule.items.forEach((item) => {
+              const planned = item.plan.slice(0, week).reduce((sum, value) => sum + Number(value), 0);
+              const done = item.weight * values[item.id] / 100;
+              rows.push([week, status, item.id, item.group, item.subgroup, item.name, item.weight, planned,
+                values[item.id], done, done - planned, detailed.has(item.id) ? 'Rekap rincian' : 'Persen manual']);
+            });
+          } else {
+            const mapped = new Map(active.map((item) => [item.id, item]));
+            const volumes = kurvaSCore.getDetailVolumesAt(schedule, week);
+            const weights = new Map();
+            active.forEach((item) => weights.set(item.parentId, (weights.get(item.parentId) || 0) + item.weight));
+            catalog.forEach((item) => {
+              const detail = mapped.get(item.id);
+              const parent = detail && parents.get(detail.parentId);
+              const volume = detail ? volumes[item.id] : null;
+              const percent = detail ? volume / item.qty * 100 : null;
+              const contribution = parent ? parent.weight * item.weight / weights.get(parent.id) * volume / item.qty : null;
+              rows.push([week, status, item.id, item.sheet, item.row, item.section, item.location, item.context, item.name,
+                item.qty, item.unit, item.weight, detail ? 'Aktif' : 'Tidak aktif pada minggu ini', detail?.parentId,
+                parent ? [parent.group, parent.subgroup, parent.name].filter(Boolean).join(' / ') : '',
+                volume, percent, contribution]);
+            });
+          }
+        }
+        return rows;
+      }
+
+      function sheetXml(rows) {
+        const column = (index) => {
+          let result = '';
+          for (let value = index + 1; value; value = Math.floor((value - 1) / 26)) result = String.fromCharCode(65 + (value - 1) % 26) + result;
+          return result;
+        };
+        return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+          <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+          <sheetViews><sheetView workbookViewId="0"/></sheetViews>
+          <cols><col min="1" max="2" width="22" customWidth="1"/><col min="3" max="18" width="30" customWidth="1"/></cols>
+          <sheetData>${rows.map((row, index) => `<row r="${index + 1}">${row.map((value, cell) => {
+            if (value === null || value === undefined || value === '') return '';
+            const ref = `${column(cell)}${index + 1}`;
+            if (typeof value === 'number') {
+              if (!Number.isFinite(value)) throw new Error(`Nilai ekspor tidak valid pada ${ref}.`);
+              return `<c r="${ref}"><v>${value}</v></c>`;
+            }
+            if (String(value).length > 32767) throw new Error(`Teks melebihi batas sel Excel pada ${ref}.`);
+            return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${xml(value)}</t></is></c>`;
+          }).join('')}</row>`).join('')}</sheetData></worksheet>`;
+      }
+
+      async function exportWorkbook(buffer, schedule, kind, week) {
+        const rows = buildRows(schedule, kind, week);
+        await validateTemplate(buffer, schedule, kind);
+        const zip = await kurvaSCore.unzip(buffer);
+        if (zip.names.some((name) => /^_xmlsignatures\//i.test(name))) throw new Error('Template bertanda tangan digital tidak dapat diubah tanpa membatalkan tanda tangan.');
+        const workbook = await zip.read('xl/workbook.xml');
+        const relationships = await zip.read('xl/_rels/workbook.xml.rels');
+        const types = await zip.read('[Content_Types].xml');
+        if (!workbook?.includes('</sheets>') || !workbook.includes('xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"')
+          || !relationships?.includes('</Relationships>') || !types?.includes('</Types>')) {
+          throw new Error('Struktur template Excel belum didukung. Gunakan workbook .xlsx standar.');
+        }
+        if (/<workbookProtection\b[^>]*\blockStructure="(?:1|true)"/.test(workbook)) {
+          throw new Error('Struktur workbook terkunci. Buka proteksi pada salinan template terlebih dahulu.');
+        }
+        const names = new Set([...workbook.matchAll(/<sheet\b[^>]*\bname="([^"]*)"/g)].map((match) => match[1].toLowerCase()));
+        let sheetName = 'Realisasi Progres';
+        for (let suffix = 2; names.has(sheetName.toLowerCase()); suffix += 1) sheetName = `Realisasi Progres (${suffix})`;
+        let number = 1;
+        while (zip.names.includes(`xl/worksheets/sheet${number}.xml`)) number += 1;
+        let relationship = 1;
+        while (new RegExp(`\\bId="rId${relationship}"`).test(relationships)) relationship += 1;
+        const sheetId = Math.max(0, ...[...workbook.matchAll(/\bsheetId="(\d+)"/g)].map((match) => Number(match[1]))) + 1;
+        const path = `xl/worksheets/sheet${number}.xml`;
+        const changes = new Map([
+          ['xl/workbook.xml', workbook.replace('</sheets>', `<sheet name="${xml(sheetName)}" sheetId="${sheetId}" r:id="rId${relationship}"/></sheets>`)],
+          ['xl/_rels/workbook.xml.rels', relationships.replace('</Relationships>', `<Relationship Id="rId${relationship}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${number}.xml"/></Relationships>`)],
+          ['[Content_Types].xml', types.replace('</Types>', `<Override PartName="/${path}" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`)],
+          [path, sheetXml(rows)]
+        ]);
+        return { blob: await zip.rewrite(changes), sheetName };
+      }
+
+      return { exportWorkbook, buildRows, sheetXml, validateTemplate };
     })();
   </script>
   <script id="mep-calc-script">
