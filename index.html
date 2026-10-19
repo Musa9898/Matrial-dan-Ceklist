@@ -11851,6 +11851,8 @@
           ${renderKurvaImportWarnings(getKurvaImportWarnings(draft.fileSize, parsed.items.length, schedule?.weekCount))}
           <p><strong>${parsed.items.length} item detail · ${groups.length} kelompok · ${parsed.sheets.length} sheet rincian</strong></p>
           ${draft.correction ? `<p class="kurva-alert">Koreksi berlaku mulai minggu ${startWeek}. Laporan lama tidak dihitung ulang. Ubah induk/centang kelompok di bawah; unggah BOQ lagi hanya untuk menambahkan kelompok yang belum tersedia. Item lama tidak ditimpa oleh file baru. Perubahan nama, QTY, satuan atau bobot pada identitas item lama ditolak.</p>
+          <button type="button" class="btn-cancel" onclick="matchKurvaDetailGroups()">Usulkan ulang induk berdasarkan nama &amp; bobot kelompok</button>
+          <p class="form-hint">Usulan memakai kecocokan nama dan total bobot kelompok yang unik, tanpa memindahkan antar gedung yang jelas berbeda. Label sumber yang ambigu tetap harus diperiksa. Tidak menyimpan otomatis.</p>
           <label for="kurvaCorrectionReason">Alasan koreksi (wajib)</label>
           <input id="kurvaCorrectionReason" maxlength="500" placeholder="Contoh: kelompok Tower salah dipetakan ke Podium">
           <div id="kurvaCorrectionImpact" role="status" aria-live="polite"></div>` : ''}
@@ -11861,7 +11863,7 @@
           <p class="form-hint">${schedule ? 'Centang kelompok, pilih induk yang sesuai lingkup/gedung, lalu konfirmasi pemetaan. Induk tanpa rincian tetap memakai input persen manual.' : 'Centang kelompok yang ingin digunakan lalu lanjut ke import Kurva S. Pilihan induk muncul setelah jadwal terbaca.'} Kelompok yang tidak dicentang tidak ikut disimpan.</p>
           <p id="kurvaMappingSummary" role="status" aria-live="polite"></p>
           ${groups.map(([key, items], index) => {
-            const suggestion = draft.correction ? draft.mappings[index] : schedule ? kurvaSCore.suggestDetailParent(items[0], schedule.items) : '';
+            const suggestion = draft.correction ? draft.mappings[index] : schedule ? kurvaSCore.matchDetailGroup(items, schedule.items) : '';
             return `<section class="kurva-mapping-card">
               <label class="kurva-mapping-choice" for="kurvaInclude${index}">
                 <input type="checkbox" id="kurvaInclude${index}" data-detail-include="${index}"${!draft.included || draft.included.includes(index) ? ' checked' : ''} onchange="updateKurvaMappingSelection()">
@@ -11903,6 +11905,8 @@
         document.getElementById(`kurvaMapStatus${index}`).textContent = !checked
           ? 'Tidak diikutkan — seluruh item kelompok ini dilewati.'
           : !kurvaDetailsDraft.schedule ? 'Dipilih — induk dipilih setelah import Kurva S.'
+          : valid && kurvaSCore.detailBuildingConflict(entries[0], kurvaDetailsDraft.schedule.items.find((item) => item.id === select.value))
+            ? 'Perhatian — gedung sumber dan induk berbeda. Pemetaan ini harus diperbaiki.'
           : valid ? 'Siap — periksa induk yang dipilih sebelum konfirmasi.'
           : 'Belum pilih induk — pilih tujuan kelompok ini atau hilangkan centangnya.';
         if (checked) {
@@ -11925,6 +11929,20 @@
           <p class="form-hint">Simulasi memakai volume terakhir, bukan laporan baru. Induk tanpa rincian tetap manual. Progres minggu pertama setelah koreksi harus memenuhi batas laporan sebelum/sesudahnya; volume tidak dinaikkan otomatis.</p>
           ${changes.parents.map((parent) => `<p>${escapeHtml(parent.name)}: progres laporan terakhir ${formatKurvaPercent(parent.previous)} → ${parent.next === null ? 'input persen manual' : `hasil rincian ${formatKurvaPercent(parent.next)}`}</p>`).join('')}`;
       }
+    }
+
+    function matchKurvaDetailGroups() {
+      const draft = kurvaDetailsDraft;
+      if (!draft?.schedule || !requireAccess('kurva_s')) return;
+      let changed = 0;
+      draft.groups.forEach(([, entries], index) => {
+        if (!document.getElementById(`kurvaInclude${index}`).checked) return;
+        const target = kurvaSCore.matchDetailGroup(entries, draft.schedule.items);
+        const select = document.getElementById(`kurvaMap${index}`);
+        if (target && select.value !== target) { select.value = target; changed += 1; }
+      });
+      updateKurvaMappingSelection();
+      showAppNotice(`${changed} kelompok mendapat usulan induk berbeda. Periksa pratinjau dampak, isi alasan dan konfirmasi sebelum menyimpan. Nama dan bobot yang cocok bukan bukti tunggal lingkup pekerjaan.`);
     }
 
     async function saveKurvaDetailsImport() {
@@ -11957,6 +11975,12 @@
         if (!parents.has(parentId)) {
           select.focus();
           showAppNotice(`Kelompok "${draft.groups[index][0].replace('|', ' · ')}" masih dicentang tetapi belum memiliki induk. Pilih induk atau hilangkan centang kelompok ini.`);
+          return;
+        }
+        const parent = schedule.items.find((item) => item.id === parentId);
+        if (kurvaSCore.detailBuildingConflict(draft.groups[index][1][0], parent)) {
+          select.focus();
+          showAppNotice(`Gedung sumber kelompok "${draft.groups[index][0]}" berbeda dari induk "${parent.name}". Pilih induk dengan gedung yang sesuai.`);
           return;
         }
         details.push(...draft.groups[index][1].map((item) => ({ ...item, parentId })));
@@ -13296,6 +13320,7 @@
             'Volume terpasang dibagi QTY kontrak menghasilkan persen item. Persen induk = Σ(bobot detail × persen item) ÷ Σ(bobot detail yang dipetakan). Bobot induk/master tidak diubah; bukan merata-ratakan persen item.',
             'Volume dimulai pada minggu setelah laporan terakhir sehingga progres lama tetap. Isi volume awal yang sesuai kondisi lapangan agar hasil induk tidak turun dari progres lama; volume detail lama tidak ditebak otomatis.',
             'Gunakan Koreksi Pemetaan Bobot untuk memperbaiki induk atau kelompok terlewat. Wajib isi alasan, periksa jumlah item berubah dan simulasi dampak sebelum konfirmasi. Koreksi berlaku mulai minggu setelah laporan terakhir (minggu 1 jika belum ada laporan); riwayat lama tidak dihitung ulang.',
+            'Jika nama induk sumber membingungkan, Usulkan ulang induk berdasarkan nama & bobot kelompok mencari kecocokan nama pekerjaan dan jumlah bobot BOQ yang unik (toleransi 0,000001 poin). Ini hanya usulan untuk diperiksa; tidak mengubah ID, bobot, jadwal atau menyimpan otomatis. Sumber Tower ke induk Podium, atau sebaliknya, ditolak.',
             'Kelompok yang dikecualikan tersedia dari katalog BOQ tersimpan. Untuk data lama tanpa katalog lengkap, unggah kembali workbook sumber agar kelompok terlewat bisa ditambahkan tanpa menghapus item lama. Nama/QTY/satuan/bobot/konteks item dengan ID yang sudah tersimpan tidak boleh berubah; pertahankan sheet dan baris sumber.',
             'Riwayat koreksi tampil di ringkasan Kurva S. Jika semua minggu sudah dilaporkan, koreksi tidak bisa berlaku; lakukan Reschedule yang memperpanjang durasi bila memang disetujui. Reschedule harus mempertahankan semua induk dalam pemetaan lama/baru, tanggal mulai dan tidak memperpendek minggu.'
           ]],
@@ -13975,6 +14000,32 @@
         return parseDetailGrids(await readWorkbookGrids(buffer));
       }
 
+      function detailBuildingConflict(detail, parent) {
+        const buildings = (value) => {
+          const words = String(value || '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ');
+          return ['PODIUM', 'TOWER', 'SERVICE'].filter((name) => new RegExp(`\\b${name}\\b`).test(words)
+            || (name === 'SERVICE' && /\bSB\b/.test(words)));
+        };
+        const source = buildings(detail?.sheet);
+        const target = buildings(`${parent?.group || ''} ${parent?.subgroup || ''}`);
+        return source.length > 0 && target.length > 0 && !source.some((name) => target.includes(name));
+      }
+
+      function matchDetailGroup(details, parents) {
+        if (!details.length) return '';
+        const normalize = (value) => String(value || '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
+        const total = details.reduce((sum, item) => sum + item.weight, 0);
+        const section = normalize(details[0].section);
+        const sourceArchitecture = /\bARCHITECTURE\b/.test(normalize(details[0].sheet));
+        const exact = parents.filter((parent) =>
+          normalize(parent.name) === section
+          && (!sourceArchitecture || /\bARCHITECTURE\b/.test(normalize(parent.group)))
+          && !detailBuildingConflict(details[0], parent)
+          && Math.abs(parent.weight - total) <= 0.000001);
+        if (exact.length === 1) return exact[0].id;
+        return suggestDetailParent(details[0], parents);
+      }
+
       function suggestDetailParent(detail, parents) {
         const words = (value) => String(value || '').toUpperCase().replace(/SRUCTURE/g, 'STRUCTURE')
           .replace(/INSTALATION/g, 'INSTALLATION').replace(/\bINST\b/g, 'INSTALLATION')
@@ -14052,6 +14103,7 @@
         const parents = new Set(schedule.items.map((item) => item.id));
         details.forEach((item) => {
           if (ids.has(item.id) || !parents.has(item.parentId)) throw new Error('Identitas rincian duplikat atau induk tidak valid.');
+          if (detailBuildingConflict(item, schedule.items.find((parent) => parent.id === item.parentId))) throw new Error('Gedung rincian berbeda dari gedung induk. Perbaiki pemetaan sebelum menyimpan.');
           ids.add(item.id);
         });
         mergeDetailCatalog(schedule, details);
@@ -14238,6 +14290,8 @@
         mergeDetailCatalog,
         compareDetailMapping,
         reviseDetailMapping,
+        matchDetailGroup,
+        detailBuildingConflict,
         getAttention,
         getItemProgressLimit,
         getWeekForDate,

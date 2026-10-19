@@ -10,6 +10,64 @@ vm.runInContext(html.match(/<script id="kurva-s-core">([\s\S]*?)<\/script>/)[1] 
 const api = context.api;
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
+test('unique group name and total weight match ambiguous Tower heading without merging it into Podium', () => {
+  const tower = [{ sheet: 'ARCHITECTURE-TOWER', section: 'SANITAIR', weight: 0.2 },
+    { sheet: 'ARCHITECTURE-TOWER', section: 'SANITAIR', weight: 0.294312 }];
+  const parents = [
+    { id: 'podium', group: 'ARCHITECTURE WORKS', subgroup: 'PODIUM ARCHITECTURE WORKS', name: 'SANITAIR', weight: 0.325498 },
+    { id: 'tower', group: 'ARCHITECTURE WORKS', subgroup: 'STRUCTURE RETROFITTING', name: 'SANITAIR', weight: 0.494312 }
+  ];
+  assert.equal(api.matchDetailGroup(tower, parents), 'tower');
+  assert.equal(api.detailBuildingConflict(tower[0], parents[0]), true);
+  assert.equal(api.detailBuildingConflict(tower[0], parents[1]), false);
+  assert.equal(api.matchDetailGroup(tower, [parents[0]]), '');
+  assert.equal(api.matchDetailGroup(tower, [...parents, { ...parents[1], id: 'ambiguous' }]), '');
+  assert.equal(api.matchDetailGroup(tower, [{ ...parents[0], weight: 0.494312 }]), '', 'same weight does not override known building conflict');
+  assert.equal(api.matchDetailGroup(tower.map((item) => ({ ...item, weight: 1 })), parents), '', 'do not infer Tower from arbitrary weight');
+  const podium = tower.map((item) => ({ ...item, sheet: 'ARCHITECTURE-PODIUM' }));
+  assert.equal(api.detailBuildingConflict(podium[0], { subgroup: 'TOWER ARCHITECTURE WORKS' }), true);
+  assert.equal(api.detailBuildingConflict({ sheet: 'ARCHITECTURE-SB' }, { subgroup: 'SERVICE BUILDING' }), false);
+});
+
+test('mapping corrections reject explicit Tower to Podium conflicts without mutating saved data', () => {
+  const detail = { id: 'tower|row-1', sheet: 'ARCHITECTURE-TOWER', section: 'SANITAIR',
+    parentId: 'tower', name: 'Basin', qty: 10, unit: 'pcs', weight: 0.494312 };
+  const schedule = { weekCount: 2, detailStartWeek: 1, detailItems: [detail], progress: {},
+    items: [
+      { id: 'podium', group: 'ARCHITECTURE WORKS', subgroup: 'PODIUM ARCHITECTURE WORKS', weight: 0.325498, plan: [0.325498, 0] },
+      { id: 'tower', group: 'ARCHITECTURE WORKS', subgroup: 'STRUCTURE RETROFITTING', weight: 0.494312, plan: [0.494312, 0] }
+    ] };
+  const before = JSON.stringify(schedule);
+  assert.throws(() => api.reviseDetailMapping(schedule, [{ ...detail, parentId: 'podium' }], 'Fix', 'PM', {}), /Gedung rincian berbeda/);
+  assert.equal(JSON.stringify(schedule), before);
+  assert.equal(api.reviseDetailMapping(schedule, [detail], 'Confirm Tower', 'PM', {})[0].items[0].parentId, 'tower');
+});
+
+test('rematching proposes checked groups only and invalidates confirmation without persisting', () => {
+  const elements = {
+    kurvaInclude0: { checked: true }, kurvaMap0: { value: 'old' },
+    kurvaInclude1: { checked: false }, kurvaMap1: { value: 'excluded' },
+    kurvaMappingConfirmed: { checked: true }
+  };
+  let updates = 0;
+  let saves = 0;
+  const sandbox = vm.createContext({
+    document: { getElementById: (id) => elements[id] },
+    kurvaDetailsDraft: { schedule: { items: [] }, groups: [['a', [{}]], ['b', [{}]]] },
+    requireAccess: () => true, kurvaSCore: { matchDetailGroup: () => 'proposed' },
+    updateKurvaMappingSelection: () => { updates += 1; elements.kurvaMappingConfirmed.checked = false; },
+    showAppNotice() {}, persistActiveProjectData: () => { saves += 1; }
+  });
+  const start = html.indexOf('    function matchKurvaDetailGroups()');
+  vm.runInContext(html.slice(start, html.indexOf('    async function saveKurvaDetailsImport()', start)), sandbox);
+  sandbox.matchKurvaDetailGroups();
+  assert.equal(elements.kurvaMap0.value, 'proposed');
+  assert.equal(elements.kurvaMap1.value, 'excluded');
+  assert.equal(elements.kurvaMappingConfirmed.checked, false);
+  assert.equal(updates, 1);
+  assert.equal(saves, 0);
+});
+
 test('correction versions preserve historical parents, volumes and curve while previewing affected parents', () => {
   const a = { id: 'a', parentId: 'old', name: 'Pipe', qty: 10, unit: 'm', weight: 2, mappingKey: 'pipes' };
   const b = { id: 'b', parentId: 'old', name: 'Valve', qty: 5, unit: 'unit', weight: 1, mappingKey: 'valves' };
@@ -332,7 +390,7 @@ test('saving includes every item only in checked groups and rejects incomplete s
       items: [1, 2, 3], skipped: [],
       groups: [['one', [{ id: 'a' }, { id: 'b' }]], ['two', [{ id: 'c' }]]] },
     requireAccess: () => true, showAppNotice: (message) => notices.push(message),
-    kurvaSCore: { computeCurve: () => ({ lastReportedWeek: 0 }) },
+    kurvaSCore: { ...api, computeCurve: () => ({ lastReportedWeek: 0 }) },
     getSignedInName: () => 'Tester',
     persistActiveProjectData: async () => { saved += 1; return true; },
     closeKurvaDetailsImport() {}, renderKurvaS() {}
@@ -371,7 +429,8 @@ test('group checklist updates status, disables excluded mappings and resets conf
   const sandbox = vm.createContext({
     document: { getElementById: (id) => elements[id] },
     kurvaDetailsDraft: { schedule: { items: [{ id: 'parent' }] },
-      groups: [['a', [1, 2]], ['b', [3]], ['c', [4]]] }
+      groups: [['a', [1, 2]], ['b', [3]], ['c', [4]]] },
+    kurvaSCore: api
   });
   const start = html.indexOf('    function updateKurvaMappingSelection()');
   const end = html.indexOf('    async function saveKurvaDetailsImport()', start);
