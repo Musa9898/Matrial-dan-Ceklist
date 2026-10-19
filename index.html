@@ -3825,6 +3825,10 @@
     .pdf-export-status { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #eef2ff; color: #3730a3; font-size: 0.8rem; font-weight: 600; }
     .pdf-export-status[hidden] { display: none; }
     @media (max-width: 540px) {
+      #tabViewKurvaS > .section-header { flex-direction: column; align-items: stretch; gap: 12px; }
+      #tabViewKurvaS .kurva-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      #tabViewKurvaS .kurva-actions > button { min-width: 0; width: 100%; min-height: 42px; margin: 0; padding: 9px 8px; white-space: normal; overflow-wrap: anywhere; justify-content: center; line-height: 1.4; }
+      #tabViewKurvaS #kurvaProgressButton { grid-column: 1 / -1; }
       .section-actions { flex-wrap: nowrap; gap: 6px; }
       .section-actions .btn-pdf-export { padding: 7px 9px; font-size: 0.72rem; }
       .section-actions .btn-action-primary { white-space: nowrap; }
@@ -4436,7 +4440,7 @@
           <button class="btn-pdf-export" type="button" data-pdf-tab="kurvas" onclick="openPdfExportDialog('kurvas')">📄 PDF</button>
           <button class="btn-cancel" type="button" id="kurvaImportButton" onclick="openKurvaImportModal()">Import Excel</button>
           <button class="btn-cancel" type="button" id="kurvaRescheduleButton" onclick="openKurvaImportModal('reschedule')">Reschedule</button>
-          <button class="btn-cancel" type="button" id="kurvaDetailsButton" onclick="openKurvaDetailsImport()">Import Rincian Item</button>
+          <button class="btn-cancel" type="button" id="kurvaDetailsButton" onclick="openKurvaDetailsImport()">Import Rincian Bobot</button>
           <button class="btn-action-primary" type="button" id="kurvaProgressButton" onclick="openKurvaProgressModal()">+ Input Progres</button>
         </div>
       </div>
@@ -4461,7 +4465,7 @@
 
     <div class="modal-backdrop" id="modalKurvaDetails" role="dialog" aria-modal="true" aria-labelledby="kurvaDetailsTitle">
       <div class="detail-modal-sheet">
-        <h3 id="kurvaDetailsTitle">Import Rincian Item &amp; Pemetaan</h3>
+        <h3 id="kurvaDetailsTitle">Import Rincian Bobot &amp; Pemetaan</h3>
         <p class="form-hint">Import Excel bobot item setelah master schedule tersedia. Periksa pemetaan setiap kelompok ke pekerjaan induk. Tidak mengubah bobot atau rencana master schedule.</p>
         <label for="kurvaDetailsFile">File rincian bobot (.xlsx)</label>
         <input type="file" id="kurvaDetailsFile" accept=".xlsx" onchange="handleKurvaDetailsFile(this.files[0])">
@@ -13038,11 +13042,11 @@
         sections: [
           ['Urutan penggunaan', [
             'Import Excel: unggah master schedule .xlsx, periksa hasil pembacaan pekerjaan, bobot dan minggu, tentukan tanggal minggu pertama lalu Simpan Jadwal.',
-            'Input Progres: tanpa rincian, isi progres kumulatif induk 0–100%. Setelah Import Rincian Item, isi volume kumulatif terpasang per item; persentase serta progres induk dihitung otomatis, bukan diisi manual.',
+            'Input Progres: tanpa rincian, isi progres kumulatif induk 0–100%. Setelah Import Rincian Bobot, isi volume kumulatif terpasang per item; persentase serta progres induk dihitung otomatis, bukan diisi manual.',
             'Baca grafik rencana dan realisasi, tabel mingguan serta deviasi. Bobot item digunakan otomatis untuk menghitung kontribusi progres proyek.'
           ]],
           ['Rincian bobot & volume pekerjaan', [
-            'Pilih Import Rincian Item setelah master schedule tersedia. Unggah .xlsx bobot item; aplikasi membaca semua sheet dengan UNIT, QTY dan BOBOT, bukan hanya satu sheet jadwal.',
+            'Pilih Import Rincian Bobot setelah master schedule tersedia. Unggah .xlsx bobot item; aplikasi membaca semua sheet dengan UNIT, QTY dan BOBOT, bukan hanya satu sheet jadwal.',
             'Centang Ikutkan kelompok ini untuk kelompok yang digunakan, lalu pilih induknya, contoh pipa/valve per lantai ke Plumbing Installation. Hilangkan centang untuk tidak mengikutkan seluruh kelompok. Status dan jumlah kelompok belum dipetakan tampil langsung; usulan wajib diperiksa sebelum konfirmasi.',
             'Item memerlukan satuan, QTY dan bobot angka positif. Subtotal bukan item; baris Incl./kosong/error dan sheet tanpa format rincian dilaporkan agar dapat diperiksa. Jika header BOBOT kosong tetapi TOTAL berada tepat setelah QTY, aplikasi memberi catatan penggunaan kolom tersebut.',
             'Volume terpasang dibagi QTY kontrak menghasilkan persen item. Persen induk = Σ(bobot detail × persen item) ÷ Σ(bobot detail yang dipetakan). Bobot induk/master tidak diubah; bukan merata-ratakan persen item.',
