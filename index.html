@@ -4861,6 +4861,7 @@
       <div class="detail-modal-sheet">
         <h3>Detail Inspeksi Ceklist</h3>
         <div class="detail-title" id="checklistDetailWork">-</div>
+        <button class="btn-pdf-export" id="checklistDetailPdfButton" type="button" data-pdf-tab="ceklist" onclick="exportSelectedChecklistPdf()">PDF Item Ini</button>
         <div class="detail-grid checklist-detail-grid">
           <div class="detail-stat">
             <span>Area</span>
@@ -6382,12 +6383,13 @@
       }
       if (pdfPrintCleanup) pdfPrintCleanup();
       pdfExportTab = tab;
-      pdfExportReportIds = ['pengetesan', 'suratjalan'].includes(tab) && Array.isArray(preset.reportIds) ? preset.reportIds.filter(Boolean) : [];
+      pdfExportReportIds = ['pengetesan', 'suratjalan', 'ceklist'].includes(tab) && Array.isArray(preset.reportIds) ? preset.reportIds.filter(Boolean) : [];
       const dialog = document.getElementById('pdfExportDialog');
       const usesDates = !['assets', 'calculator'].includes(tab) && !pdfExportReportIds.length;
       document.getElementById('pdfExportTitle').textContent = pdfExportReportIds.length && tab === 'pengetesan'
         ? '📄 Export PDF · Berita Acara Pengetesan'
         : pdfExportReportIds.length && tab === 'suratjalan' ? '📄 Export PDF · Laporan Harian Ini'
+        : pdfExportReportIds.length && tab === 'ceklist' ? '📄 Export PDF · Item Ceklist Ini'
         : `📄 Export PDF · ${PDF_TAB_TITLES[tab].replace(/^Laporan /, '')}`;
       document.getElementById('pdfExportDateWrap').hidden = !usesDates;
       document.getElementById('pdfExportFormatWrap').hidden = tab !== 'pengetesan';
@@ -6529,10 +6531,12 @@
       return getPreviewImageUrl(source).replace('sz=w1600', 'sz=w800');
     }
 
-    function buildPdfChecklistReport({ from, to, includePhotos }) {
+    function buildPdfChecklistReport({ from, to, includePhotos, reportIds }) {
+      const ids = Array.isArray(reportIds) && reportIds.length ? new Set(reportIds) : null;
       const items = checklistItems
-        .filter((item) => isPdfDateInRange(item.date, from, to))
+        .filter((item) => ids ? ids.has(item.id) : isPdfDateInRange(item.date, from, to))
         .sort((first, second) => String(first.date || '').localeCompare(String(second.date || '')) || String(first.work || '').localeCompare(String(second.work || ''), 'id-ID'));
+      if (ids && items.length !== ids.size) throw new Error('Item ceklist tidak ditemukan. Buka ulang detail inspeksi lalu coba lagi.');
       const count = (status) => String(items.filter((item) => item.status === status).length);
       const statusCell = (status) => {
         const tone = status === 'Selesai' ? 'ok' : status === 'Defect' ? 'bad' : 'warn';
@@ -6562,6 +6566,13 @@
             </div>
             ${item.note ? `<div class="pdf-note"><strong>Catatan:</strong> ${escapeHtml(item.note)}</div>` : ''}
             ${item.testingNote ? `<div class="pdf-note"><strong>Pengetesan:</strong> ${escapeHtml(item.testingNote)}</div>` : ''}
+            ${ids ? `<h4>Riwayat Perubahan Status</h4>${pdfTable(
+              ['Tanggal', 'Peran', 'Nama', 'Dari', 'Menjadi', ['Progres', true]],
+              (item.statusHistory || []).map((entry) => [
+                escapeHtml(formatChecklistDate(entry.date)), escapeHtml(entry.role || '-'), escapeHtml(entry.by || '-'),
+                escapeHtml(getChecklistStatusLabel(entry.from)), escapeHtml(getChecklistStatusLabel(entry.to)),
+                `${escapeHtml(entry.progress ?? 0)}%`
+              ]), 'Belum ada perubahan status.')}` : ''}
             ${photoHtml}
           </div>`;
       }).join('');
@@ -6706,6 +6717,14 @@
     }
 
     function buildPdfDocument(tab, options) {
+      if (tab === 'ceklist' && options.reportIds?.length) {
+        const selected = checklistItems.filter((item) => options.reportIds.includes(item.id));
+        if (selected.length !== new Set(options.reportIds).size) {
+          throw new Error('Item ceklist tidak ditemukan. Buka ulang detail inspeksi lalu coba lagi.');
+        }
+        const dates = selected.map((item) => item.date).sort();
+        options = { ...options, from: dates[0], to: dates[dates.length - 1] };
+      }
       if (tab === 'suratjalan' && options.reportIds?.length) {
         const selected = dailyWorkPlans.filter((plan) => options.reportIds.includes(plan.id));
         if (selected.length !== new Set(options.reportIds).size) {
@@ -9668,6 +9687,7 @@
       if (!item) return;
 
       selectedChecklistDetailId = checklistId;
+      document.getElementById('checklistDetailPdfButton').hidden = !canExportPdf('ceklist');
       document.getElementById('checklistDetailWork').textContent = item.work;
       document.getElementById('checklistDetailArea').textContent = getChecklistArea(item);
       document.getElementById('checklistDetailDate').textContent = formatChecklistDate(item.date);
@@ -9699,6 +9719,14 @@
       document.getElementById('checklistDetailProgress').value = item.progress;
       updateChecklistDetailStatusControls();
       document.getElementById('modalChecklistDetail').style.display = 'flex';
+    }
+
+    function exportSelectedChecklistPdf() {
+      if (!checklistItems.some((item) => item.id === selectedChecklistDetailId)) {
+        showAppNotice('Item ceklist tidak ditemukan. Buka ulang detail inspeksi.');
+        return;
+      }
+      openPdfExportDialog('ceklist', { reportIds: [selectedChecklistDetailId] });
     }
 
     function closeChecklistDetail() {
@@ -13528,6 +13556,10 @@
       {
         anchor: '#modalChecklistDetail h3', title: 'Detail & Perubahan Status Inspeksi',
         sections: [
+          ['PDF per item', [
+            'Klik PDF Item Ini pada detail inspeksi untuk mengekspor hanya ceklist yang sedang dibuka, bukan semua inspeksi pada tanggal yang sama. Pilih sertakan foto dan isi penandatangan, lalu gunakan Simpan sebagai PDF pada dialog cetak browser.',
+            'PDF memakai data yang sudah disimpan: area, tanggal, pekerjaan, kategori, status/progres, SPV, PIC/target, catatan, pengetesan dan riwayat perubahan status. Simpan perubahan status terlebih dahulu jika ingin hasil terbaru. Tombol mengikuti izin PDF Ceklist; PDF pada tab tetap untuk rekap berdasarkan tanggal.'
+          ]],
           ['Memperbarui status', [
             'Baca catatan, foto dan riwayat status sebelum mengubah hasil inspeksi.',
             'Pilih status baru serta progres yang tersedia, tentukan peran pengubah (SPV Pemeriksa atau PIC Tindak Lanjut) dan isi nama.',

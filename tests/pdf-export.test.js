@@ -122,3 +122,63 @@ test('missing selected daily report surfaces an error instead of exporting all r
   assert.throws(() => sandbox.buildDocument('suratjalan', { reportIds: ['missing'] }), /Laporan harian tidak ditemukan/);
   assert.throws(() => sandbox.buildDocument('suratjalan', { reportIds: ['first', 'missing'] }), /Laporan harian tidak ditemukan/);
 });
+
+function checklistPdfContext() {
+  const sandbox = dailyPdfContext();
+  sandbox.checklistItems = [
+    { id: 'water', date: '2026-10-20', work: 'Pemasangan Water meter', status: 'Selesai', progress: 100,
+      supervisor: 'maman', area: 'Kamar TEST', note: 'Catatan terverifikasi', testingNote: 'Uji aliran',
+      photos: ['photo-water'], statusHistory: [{ date: '2026-10-20', role: 'SPV', by: 'Pemeriksa',
+        from: 'Proses', to: 'Selesai', progress: 100 }] },
+    { id: 'other', date: '2026-10-20', work: 'Inspeksi lain', status: 'Belum', progress: 0 },
+    { id: 'later', date: '2026-10-21', work: 'Inspeksi besok', status: 'Belum', progress: 0 }
+  ];
+  Object.assign(sandbox, {
+    getChecklistStatusLabel: (value) => value,
+    getChecklistArea: (item) => item.area || '-',
+    getChecklistWorkCategory: () => 'Mekanikal',
+    getPdfChecklistPhotoUrl: (value) => value
+  });
+  sandbox.PDF_TAB_TITLES.ceklist = 'Laporan Ceklist Lapangan';
+  vm.runInContext(getFunction('buildPdfChecklistReport'), sandbox);
+  return sandbox;
+}
+
+test('single checklist PDF includes only selected saved inspection, photos and status history', () => {
+  const sandbox = checklistPdfContext();
+  const report = sandbox.buildDocument('ceklist', { reportIds: ['water'], includePhotos: true,
+    from: '2099-01-01', to: '2099-01-01' });
+  assert.match(report.html, /Pemasangan Water meter/);
+  assert.match(report.html, /Kamar TEST/);
+  assert.match(report.html, /Catatan terverifikasi/);
+  assert.match(report.html, /Uji aliran/);
+  assert.match(report.html, /photo-water/);
+  assert.match(report.html, /Riwayat Perubahan Status/);
+  assert.match(report.html, /Pemeriksa/);
+  assert.match(report.html, /"Total Inspeksi","1"/);
+  assert.doesNotMatch(report.html, /Inspeksi lain|Inspeksi besok|2099/);
+  const withoutPhotos = sandbox.buildDocument('ceklist', { reportIds: ['water'], includePhotos: false });
+  assert.doesNotMatch(withoutPhotos.html, /photo-water/);
+  assert.throws(() => sandbox.buildDocument('ceklist', { reportIds: ['missing'] }), /Item ceklist tidak ditemukan/);
+});
+
+test('checklist recap keeps date filtering and detail PDF passes selected ID through permission-checked dialog', () => {
+  const sandbox = checklistPdfContext();
+  const recap = sandbox.buildPdfChecklistReport({ from: '2026-10-20', to: '2026-10-20' });
+  assert.match(recap, /Inspeksi lain/);
+  assert.doesNotMatch(recap, /Inspeksi besok/);
+  assert.doesNotMatch(recap, /Riwayat Perubahan Status/);
+  let selection;
+  let notice = '';
+  sandbox.selectedChecklistDetailId = 'water';
+  sandbox.openPdfExportDialog = (tab, preset) => { selection = { tab, ids: [...preset.reportIds] }; };
+  sandbox.showAppNotice = (value) => { notice = value; };
+  vm.runInContext(getFunction('exportSelectedChecklistPdf'), sandbox);
+  sandbox.exportSelectedChecklistPdf();
+  assert.deepEqual(selection, { tab: 'ceklist', ids: ['water'] });
+  sandbox.selectedChecklistDetailId = 'missing';
+  selection = null;
+  sandbox.exportSelectedChecklistPdf();
+  assert.equal(selection, null);
+  assert.match(notice, /tidak ditemukan/);
+});

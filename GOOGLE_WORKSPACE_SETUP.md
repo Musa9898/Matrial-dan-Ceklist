@@ -150,6 +150,17 @@ Badge Attention pada header menghitung induk pekerjaan yang tertinggal pada ming
 
 Klik badge, buka pekerjaan dan isi penyebab terverifikasi, tindakan/recovery plan, PIC dan tanggal target. Simpan per pekerjaan; izin edit mengikuti `kurva_s`, akun lain hanya membaca. Catatan disimpan dalam `projectSchedule.attentionReviews` berdasarkan revisi, tanggal awal dan minggu laporan, lalu ID induk. Snapshot yang sama menyimpan data ini tanpa perubahan Apps Script. Catatan tidak menonaktifkan Attention; progres yang sudah mengejar rencana menghilangkan item dari daftar aktif. Catatan minggu/revisi lama tetap tersimpan, namun daftar aktif hanya menampilkan peninjauan minggu/revisi saat ini.
 
+### PDF per item ceklist
+
+Buka detail inspeksi pada tab Ceklist lalu pilih **PDF Item Ini**. Dialog PDF yang
+sama menyediakan pilihan foto dan penandatangan; gunakan Simpan sebagai PDF pada
+dialog cetak browser. Ekspor dipilih berdasarkan ID inspeksi, bukan tanggal, sehingga
+inspeksi lain pada hari yang sama tidak ikut. Hasil memuat metadata inspeksi, status,
+progres, catatan/pengetesan, PIC/target, foto opsional dan riwayat perubahan status.
+Perubahan formulir yang belum disimpan tidak diekspor. Izin tetap mengikuti PDF
+Ceklist, dan tombol PDF tingkat tab tetap mengekspor rekap dengan filter tanggal.
+Tidak memerlukan perubahan/deploy Apps Script.
+
 ### Identitas pembuat folder
 
 Pada sheet `ProjectFolders`, `Created By` dan `Created At` adalah metadata pembuatan,
