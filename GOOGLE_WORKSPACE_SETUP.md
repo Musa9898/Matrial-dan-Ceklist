@@ -105,6 +105,8 @@ Pengujian regresi backend lokal (Node.js, tanpa mengakses Sheets/Drive produksi)
 
 Frontend mengirim ID token ke Apps Script; Apps Script memverifikasi token ke Google dan mengecek email/proyek aktif di tab `Access`. Token login tidak disimpan di `localStorage`; hanya profil tampilan `mep_user` yang disimpan. Jangan gunakan Preview Dashboard untuk akses data produksi karena Preview Mode memang melewati login.
 
+Untuk presentasi atau metode kerja, tambahkan `?demo=1` di akhir URL website (contoh: `https://musa9898.github.io/Matrial-dan-Ceklist/?demo=1`). Link ini langsung membuka Preview Mode dengan data contoh tanpa login. Mode demo tidak mengirim request ke Sheets/Drive dan memakai penyimpanan browser terpisah (awalan `demo:`), sehingga data proyek asli dan cache login di browser yang sama tidak ikut tampil. Perubahan di mode demo hanya tersimpan di browser yang membukanya.
+
 Browser tidak memakai `fetch()` langsung ke URL Apps Script. `index.html` membuat iframe tersembunyi ke mode `bridge=1`, lalu mengirim request lewat `postMessage`; iframe meneruskan pemanggilan ke `google.script.run`. Karena itu, request tidak muncul di Fetch/XHR browser. Periksa **Apps Script > Executions** untuk melihat pemanggilan server. Bridge hanya menerima origin yang tercantum di `FRONTEND_ORIGINS` pada `Code.gs`; pastikan origin GitHub Pages tepat, simpan script, dan deploy versi baru.
 
 Pola ini menghindari CORS `ContentService` karena pemanggilan Sheets/Drive terjadi di dalam Apps Script, bukan `fetch()` cross-origin dari halaman. `TextOutput` memang tidak menyediakan API untuk menambahkan header `Access-Control-Allow-Origin` kustom.

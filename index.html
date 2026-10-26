@@ -5477,13 +5477,16 @@
     let selectedChecklistPhotoFiles = [];
     let editingAssetId = '';
     let selectedAssetDetailId = '';
-    const CHECKLIST_STORAGE_KEY = 'project-monitor-checklists';
-    const PROJECT_REGISTRY_KEY = 'project-monitor-projects';
-    const ACTIVE_PROJECT_KEY = 'project-monitor-active-project';
-    const PROJECT_DATA_PREFIX = 'project-monitor-project-data:';
+    const IS_DEMO_LINK = new URLSearchParams(window.location.search).get('demo') === '1';
+    // Link demo memakai penyimpanan terpisah agar cache proyek asli di browser yang sama tidak ikut tampil.
+    const STORAGE_NAMESPACE = IS_DEMO_LINK ? 'demo:' : '';
+    const CHECKLIST_STORAGE_KEY = `${STORAGE_NAMESPACE}project-monitor-checklists`;
+    const PROJECT_REGISTRY_KEY = `${STORAGE_NAMESPACE}project-monitor-projects`;
+    const ACTIVE_PROJECT_KEY = `${STORAGE_NAMESPACE}project-monitor-active-project`;
+    const PROJECT_DATA_PREFIX = `${STORAGE_NAMESPACE}project-monitor-project-data:`;
     const THEME_STORAGE_KEY = 'project-monitor-theme';
-    const PROJECT_FOLDER_PREFIX = 'project-monitor-project-folders:';
-    const PROJECT_FILES_DATABASE = 'project-monitor-file-storage';
+    const PROJECT_FOLDER_PREFIX = `${STORAGE_NAMESPACE}project-monitor-project-folders:`;
+    const PROJECT_FILES_DATABASE = `${STORAGE_NAMESPACE}project-monitor-file-storage`;
     const DEFAULT_PROJECT_ID = 'sentral-tower';
     let currentAuthUser = null;
     let currentAuthProfile = null;
@@ -6132,7 +6135,7 @@
       renderDailyDeliveryReport();
     }
 
-    const DAILY_WORK_STORAGE_KEY = 'project-monitor-daily-work-reports';
+    const DAILY_WORK_STORAGE_KEY = `${STORAGE_NAMESPACE}project-monitor-daily-work-reports`;
     const defaultDailyWorkPlans = [{
       id: 'whatsapp-work-plan-2026-09-29',
       title: 'Rencana Kerja MEP VUK · Lembur',
@@ -6367,7 +6370,7 @@
       kurvas: 'Laporan Kurva S Progres Proyek',
       calculator: 'Laporan Kalkulator MEP'
     };
-    const PDF_SIGNERS_STORAGE_KEY = 'pdfExportSigners';
+    const PDF_SIGNERS_STORAGE_KEY = `${STORAGE_NAMESPACE}pdfExportSigners`;
     let pdfExportTab = '';
     let pdfExportReportIds = [];
     let pdfExportBusy = false;
@@ -10096,13 +10099,13 @@
     }
 
     function isPreviewModeAllowed() {
-      return ['localhost', '127.0.0.1'].includes(window.location.hostname);
+      return IS_DEMO_LINK || ['localhost', '127.0.0.1'].includes(window.location.hostname);
     }
 
     function enterPreviewMode() {
       if (!isPreviewModeAllowed()) return;
       currentGoogleCredential = '';
-      localStorage.removeItem('mep_user');
+      if (!IS_DEMO_LINK) localStorage.removeItem('mep_user');
       if (window.google?.accounts?.id) window.google.accounts.id.disableAutoSelect();
       const previewUser = {
         sub: 'preview-mode',
@@ -10135,6 +10138,11 @@
       if (previewButton) {
         if (previewModeAllowed) previewButton.hidden = false;
         else previewButton.remove();
+      }
+      if (IS_DEMO_LINK) {
+        setLoginStatus('Mode demo: data contoh, tidak terhubung ke data proyek.');
+        enterPreviewMode();
+        return;
       }
 
       const clientId = window.GOOGLE_CONFIG?.CLIENT_ID?.trim() || '';
@@ -10171,6 +10179,11 @@
 
     function logoutAppSession() {
       hideConnectionProblem();
+      if (IS_DEMO_LINK) {
+        closeSettingsModal();
+        showAppNotice('Ini mode demo. Data contoh hanya tersimpan di browser Anda.');
+        return;
+      }
       localStorage.removeItem('mep_user');
       currentGoogleCredential = '';
       currentAuthUser = null;
