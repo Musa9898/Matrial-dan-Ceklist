@@ -2722,6 +2722,13 @@
     .kurva-legend .legend-actual { background: var(--success-green); }
     .kurva-legend .legend-bar { background: rgba(41, 55, 125, 0.25); height: 10px; }
     .kurva-legend .legend-holiday { background: rgba(240, 181, 27, 0.35); height: 10px; }
+    .kurva-legend button { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 6px 8px; background: var(--card-bg); color: var(--text-dark); font: inherit; cursor: pointer; }
+    .kurva-legend button[aria-pressed="false"] { opacity: 0.5; text-decoration: line-through; }
+    .kurva-legend button:focus-visible, .kurva-hit:focus-visible { outline: 2px solid var(--brand-gold); outline-offset: 2px; }
+    .kurva-master-tip { width: min(320px, calc(100vw - 64px)); max-height: 360px; overflow-y: auto; }
+    .kurva-source-line { fill: none; stroke-width: 1.8; stroke-linejoin: round; pointer-events: none; }
+    .kurva-master-weights { margin-bottom: 12px; }
+    .kurva-master-weights input { max-width: 100px; }
     .kurva-subtitle { font-size: 0.9rem; color: var(--text-dark); margin: 0 0 8px; }
     .kurva-groups { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
     .kurva-group { background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 14px; overflow: hidden; }
@@ -2805,6 +2812,7 @@
     .kurva-progress-summary strong { font-size: 0.9rem; color: var(--text-dark); }
     .kurva-progress-summary .is-ahead strong { color: var(--success-green); }
     .kurva-progress-summary .is-behind strong { color: var(--danger-red); }
+    .kurva-progress-summary > p { grid-column: 1 / -1; margin: 0; }
     .kurva-input-group { margin-bottom: 12px; }
     .kurva-input-group h4 { font-size: 0.8rem; color: var(--brand-navy); margin-bottom: 6px; text-transform: uppercase; }
     body.theme-dark .kurva-input-group h4 { color: var(--brand-gold); }
@@ -4539,9 +4547,33 @@
         </div>
         <div class="kurva-progress-body">
         <div class="form-row">
+          <label for="kurvaProgressSource">Sumber progres</label>
+          <select id="kurvaProgressSource" onchange="renderKurvaProgressForm()">
+            <option value="">Utama (input sebelumnya)</option>
+          </select>
+          <span class="form-hint">Pilih utama atau subcontractor. Input kumulatif masing-masing dijumlahkan ke Kurva S utama, bukan dihitung sebagai kurva terpisah. Simpan progres sebelum mengganti sumber/minggu atau menambah subcontractor.</span>
+        </div>
+        <div class="form-row">
+          <button class="btn-cancel" id="kurvaSubcontractorAdd" type="button" aria-expanded="false" aria-controls="kurvaSubcontractorForm" onclick="toggleKurvaSubcontractorForm(true)">+ Tambah Subcont</button>
+          <span class="form-hint" id="kurvaSubcontractorCount"></span>
+          <div id="kurvaSubcontractorForm" hidden>
+            <label for="kurvaSubcontractorName">Nama Subcont</label>
+            <input id="kurvaSubcontractorName" type="text" maxlength="100" placeholder="Masukkan nama Subcont" autocomplete="off">
+            <p class="form-hint">Nama diisi manual sesuai subcontractor proyek. Tidak ada daftar nama bawaan.</p>
+            <button class="btn-save" type="button" onclick="addKurvaSubcontractor()">Simpan Subcont</button>
+            <button class="btn-cancel" type="button" onclick="toggleKurvaSubcontractorForm(false)">Batal</button>
+          </div>
+        </div>
+        <div class="form-row">
           <label class="required-label" for="kurvaProgressWeek">Minggu</label>
           <select id="kurvaProgressWeek" onchange="renderKurvaProgressForm()"></select>
         </div>
+        <details class="kurva-master-weights">
+          <summary>Bobot rencana Master Schedule</summary>
+          <p class="form-hint">Maincont adalah total proyek 100%, bukan sumber input tambahan. Tetapkan porsi rencana tiap Subcont; sisa bobot adalah pekerjaan langsung Maincont. Plan tiap sumber mengikuti bentuk jadwal master × porsi bobot, atau jadwal Excel Subcont sendiri × bobot bila diunggah (minggu disejajarkan lewat tanggal mulai). Input/progres lama tidak dihitung ulang.</p>
+          <div id="kurvaMasterWeights"></div>
+          <button class="btn-cancel" type="button" onclick="saveKurvaMasterWeights()">Simpan Bobot Rencana</button>
+        </details>
         <p class="form-hint">Isi progres kumulatif tiap pekerjaan (0–100% dari item tersebut) sampai akhir minggu yang dipilih. Realisasi, kumulatif, dan deviasi dihitung otomatis dari bobot.</p>
         <div id="kurvaProgressSummary" class="kurva-progress-summary"></div>
         <label for="kurvaProgressSearch">Cari item / bidang / area</label>
@@ -4887,6 +4919,15 @@
         <div class="detail-section">
           <h4>Dokumentasi Foto</h4>
           <div class="checklist-photo-gallery" id="checklistDetailPhotos"></div>
+          <div id="checklistDetailPhotoControls">
+            <label for="checklistDetailPhotoInput">Tambah Foto</label>
+            <input id="checklistDetailPhotoInput" type="file" accept="image/*" multiple onchange="appendChecklistDetailPhotos(this)">
+            <p class="form-hint">Pilih satu atau beberapa foto. Foto langsung disimpan sebagai tambahan; foto lama dan status inspeksi tetap.</p>
+          </div>
+          <div class="photo-upload-status" id="checklistDetailPhotoUploadStatus" role="status" aria-live="polite" aria-busy="false" hidden>
+            <span class="loading-spinner" id="checklistDetailPhotoUploadSpinner" hidden aria-hidden="true"></span>
+            <span id="checklistDetailPhotoUploadMessage"></span>
+          </div>
         </div>
         <div class="detail-section">
           <h4>Catatan dan Pengetesan</h4>
@@ -5474,6 +5515,7 @@
     let currentScope = 'unit';
     let selectedMaterialForEntry = '';
     let selectedChecklistDetailId = '';
+    let checklistDetailPhotoSaving = false;
     let selectedChecklistPhotoFiles = [];
     let editingAssetId = '';
     let selectedAssetDetailId = '';
@@ -6630,6 +6672,7 @@
     function buildPdfKurvaReport({ from, to }) {
       if (!projectSchedule) return '<div class="pdf-empty">Belum ada jadwal Kurva S untuk proyek ini.</div>';
       const curve = kurvaSCore.computeCurve(projectSchedule);
+      const master = projectSchedule.subcontractors?.length ? kurvaSCore.computeMasterSchedule(projectSchedule) : null;
       const currentWeek = getKurvaCurrentWeek();
       const planWeek = Math.max(1, currentWeek);
       const reported = curve.lastReportedWeek;
@@ -6650,6 +6693,7 @@
       if (hasBaseline) weekHeaders.push(['Baseline Kum.', true]);
       weekHeaders.push(['Realisasi Mgg', true], ['Realisasi Kum.', true], ['Deviasi', true]);
       const weekRows = [];
+      const sourceRows = [];
       for (let week = 1; week <= projectSchedule.weekCount; week += 1) {
         const start = kurvaSCore.getWeekStartDate(projectSchedule.startDate, week);
         const next = kurvaSCore.getWeekStartDate(projectSchedule.startDate, week + 1);
@@ -6662,6 +6706,10 @@
         if (hasBaseline) row.push(fmt(curve.baselineCumulative[index]));
         row.push(fmt(curve.actualWeekly[index]), fmt(curve.actualCumulative[index]), `<span class="${deviationClass(dev)}">${fmt(dev)}</span>`);
         weekRows.push(row);
+        if (master) master.sources.forEach((source) => {
+          sourceRows.push([week, escapeHtml(source.name), source.weight === null ? 'Belum diisi' : fmt(source.weight),
+            source.planCumulative ? fmt(source.planCumulative[index]) : 'Belum diisi', fmt(source.actualCumulative[index])]);
+        });
       }
       return `
         <style>@page { size: A4 landscape; margin: 10mm; }</style>
@@ -6678,12 +6726,16 @@
           ${hasBaseline ? '<span><i style="background:#94a3b8"></i>Baseline</span>' : ''}
           <span><i style="background:#10b981"></i>Realisasi</span>
           <span><i style="background:#ef4444"></i>Minggu ini</span>
+          ${master ? master.sources.map((source) => `<span><i style="background:${source.color}"></i>${escapeHtml(source.name)} (putus panjang: plan, titik: actual)</span>`).join('') : ''}
         </div>
-        <div class="pdf-chart">${buildKurvaChart(curve, currentWeek, 1000).replace(' (klik minggu untuk detail)', '')}</div>
+        <div class="pdf-chart">${buildKurvaChart(curve, currentWeek, 1000, master).replace(' (klik minggu untuk detail)', '')}</div>
         <h4>Rekap per Kelompok Pekerjaan (rencana s.d. minggu ${planWeek}, realisasi s.d. minggu ${reported || 0})</h4>
         ${pdfTable(['No', 'Kelompok', ['Item', true], ['Bobot', true], ['Rencana', true], ['Realisasi', true], ['Deviasi', true]], groupRows, 'Belum ada item pekerjaan.')}
         <h4>Tabel Progres Mingguan (%)</h4>
-        ${pdfTable(weekHeaders, weekRows)}`;
+        ${pdfTable(weekHeaders, weekRows)}
+        ${master ? `<h4>Master Schedule — Kontribusi Sumber (%)</h4>
+          <p>Plan sumber = plan master × porsi bobot. Maincont total adalah gabungan, termasuk pekerjaan langsung. Kolom kosong/– berarti belum ada laporan, bukan 0%.</p>
+          ${pdfTable(['Minggu', 'Sumber', ['Bobot', true], ['Rencana Kum.', true], ['Realisasi Kum.', true]], sourceRows)}` : ''}`;
     }
 
     function buildPdfCalculatorReport() {
@@ -9708,10 +9760,11 @@
       const mayReopenDefect = item.status === 'Defect' || (item.statusHistory || []).some((entry) => entry.to === 'Defect');
       document.getElementById('detailStatusDefectOption').hidden = !mayReopenDefect;
 
-      const photos = Array.isArray(item.photos) ? item.photos : (item.photo ? [item.photo] : []);
-      document.getElementById('checklistDetailPhotos').innerHTML = photos.length
-        ? photos.map((source, index) => projectPhotoMarkup(source, `Foto ${index + 1} inspeksi ${item.work}`, 'checklist-photo')).join('')
-        : '<div class="history-placeholder">Belum ada foto dokumentasi</div>';
+      renderChecklistDetailPhotos(item);
+      document.getElementById('checklistDetailPhotoControls').hidden = !canAccess('checklist');
+      document.getElementById('checklistDetailPhotoInput').value = '';
+      document.getElementById('checklistDetailPhotoInput').disabled = checklistDetailPhotoSaving;
+      setPhotoUploadStatus('checklistDetail', 'idle', '');
 
       const notes = [
         item.note ? `<div class="checklist-note"><strong>Catatan:</strong> ${escapeHtml(item.note)}</div>` : '',
@@ -9730,6 +9783,67 @@
       document.getElementById('checklistDetailProgress').value = item.progress;
       updateChecklistDetailStatusControls();
       document.getElementById('modalChecklistDetail').style.display = 'flex';
+    }
+
+    function renderChecklistDetailPhotos(item) {
+      const photos = Array.isArray(item.photos) ? item.photos : (item.photo ? [item.photo] : []);
+      document.getElementById('checklistDetailPhotos').innerHTML = photos.length
+        ? photos.map((source, index) => projectPhotoMarkup(source, `Foto ${index + 1} inspeksi ${item.work}`, 'checklist-photo')).join('')
+        : '<div class="history-placeholder">Belum ada foto dokumentasi</div>';
+
+    }
+
+    async function appendChecklistDetailPhotos(input) {
+      const files = Array.from(input.files || []);
+      input.value = '';
+      if (!files.length || !requireAccess('checklist') || checklistDetailPhotoSaving) return;
+      const item = checklistItems.find((entry) => entry.id === selectedChecklistDetailId);
+      if (!item) {
+        showAppNotice('Item ceklist tidak ditemukan. Buka ulang detail inspeksi.');
+        return;
+      }
+      const projectId = activeProjectId;
+      const previousPhotos = item.photos;
+      let appendedPhotos;
+      const isCurrentDetail = () => activeProjectId === projectId && selectedChecklistDetailId === item.id;
+      checklistDetailPhotoSaving = true;
+      input.disabled = true;
+      try {
+        const photos = [];
+        for (let index = 0; index < files.length; index += 1) {
+          if (isCurrentDetail()) setPhotoUploadStatus('checklistDetail', 'loading', `Memproses foto ${index + 1}/${files.length}: ${files[index].name}`);
+          photos.push(await readChecklistPhoto(files[index], buildPhotoWatermark(files[index], [
+            ['Area', getChecklistArea(item)],
+            ['Pekerjaan', `${item.discipline || 'MEP'} – ${item.work}`],
+            ['SPV', item.supervisor]
+          ])));
+        }
+        if (activeProjectId !== projectId || !checklistItems.includes(item)) {
+          throw new Error('Data proyek berubah. Buka ulang ceklist dan pilih foto kembali.');
+        }
+        if (!requireAccess('checklist')) return;
+        appendedPhotos = [...(Array.isArray(previousPhotos) ? previousPhotos : (item.photo ? [item.photo] : [])), ...photos];
+        item.photos = appendedPhotos;
+        if (isCurrentDetail()) setPhotoUploadStatus('checklistDetail', 'loading', 'Menyimpan tambahan foto…');
+        if (!await persistChecklistItems()) throw new Error('Tambahan foto gagal disimpan. Silakan coba kembali.');
+      } catch (error) {
+        if (appendedPhotos && item.photos === appendedPhotos) {
+          if (previousPhotos === undefined) delete item.photos;
+          else item.photos = previousPhotos;
+        }
+        if (isCurrentDetail()) setPhotoUploadStatus('checklistDetail', 'error', error.message);
+        showAppNotice(error.message || 'Foto tidak dapat disimpan.');
+        return;
+      } finally {
+        checklistDetailPhotoSaving = false;
+        input.disabled = false;
+      }
+      if (activeProjectId === projectId) renderChecklistCards();
+      if (isCurrentDetail()) {
+        const savedItem = checklistItems.find((entry) => entry.id === item.id);
+        if (savedItem) renderChecklistDetailPhotos(savedItem);
+        setPhotoUploadStatus('checklistDetail', 'success', `${files.length} foto berhasil ditambahkan.`);
+      }
     }
 
     function exportSelectedChecklistPdf() {
@@ -10281,6 +10395,10 @@
 
     async function saveChecklistStatusUpdate() {
       if (!requireAccess('checklist')) return;
+      if (checklistDetailPhotoSaving) {
+        showAppNotice('Tunggu penyimpanan foto selesai sebelum mengubah status.');
+        return;
+      }
       const item = checklistItems.find((entry) => entry.id === selectedChecklistDetailId);
       if (!item) return;
 
@@ -12182,7 +12300,7 @@
       return [...groups.entries()];
     }
 
-    function buildKurvaChart(curve, currentWeek, availableWidth) {
+    function buildKurvaChart(curve, currentWeek, availableWidth, master = null) {
       const weeks = projectSchedule.weekCount;
       // Drawn at 1:1 pixel scale; narrow screens get a minimum width and scroll horizontally.
       const width = Math.round(Math.max(availableWidth || 480, 62 + weeks * 20));
@@ -12221,19 +12339,43 @@
         const basePoints = [`${x(0)},${y(0)}`, ...curve.baselineCumulative.map((value, index) => `${x(index + 1)},${y(value)}`)];
         parts.push(`<polyline class="kurva-baseline" points="${basePoints.join(' ')}"/>`);
       }
-      parts.push(`<polyline class="kurva-plan" points="${planPoints.join(' ')}"/>`);
+      parts.push(`<polyline class="kurva-plan" data-master-series="0" style="${master ? 'stroke-width:3.5' : ''}" points="${planPoints.join(' ')}"/>`);
       if (curve.lastReportedWeek) {
         const actualPoints = [`${x(0)},${y(0)}`];
         for (let week = 1; week <= curve.lastReportedWeek; week += 1) actualPoints.push(`${x(week)},${y(curve.actualCumulative[week - 1])}`);
-        parts.push(`<polyline class="kurva-actual" points="${actualPoints.join(' ')}"/>`);
+        parts.push(`<polyline class="kurva-actual" data-master-series="1" style="${master ? 'stroke:#10b981;stroke-width:3.5' : ''}" points="${actualPoints.join(' ')}"/>`);
         Object.keys(projectSchedule.progress).map(Number).filter((week) => week >= 1 && week <= curve.lastReportedWeek).sort((a, b) => a - b).forEach((week, order) => {
-          parts.push(`<circle class="kurva-actual-dot${week === curve.lastReportedWeek ? ' is-last' : ''}" style="--kurva-i:${order}" cx="${x(week)}" cy="${y(curve.actualCumulative[week - 1])}" r="3.5"/>`);
+          parts.push(`<circle data-master-series="1" class="kurva-actual-dot${week === curve.lastReportedWeek ? ' is-last' : ''}" style="--kurva-i:${order}" cx="${x(week)}" cy="${y(curve.actualCumulative[week - 1])}" r="3.5"/>`);
+        });
+      }
+      if (master) {
+        kurvaSCore.getMasterChartData(master).datasets.slice(2).forEach((dataset, offset) => {
+          const points = [`${x(0)},${y(0)}`, ...dataset.data.flatMap((value, index) => value === null ? [] : [`${x(index + 1)},${y(value)}`])];
+          parts.push(`<polyline class="kurva-source-line" data-master-series="${offset + 2}" stroke="${dataset.borderColor}" stroke-dasharray="${dataset.borderDash.join(' ')}" stroke-dashoffset="${dataset.borderDashOffset}" points="${points.join(' ')}"><title>${escapeHtml(dataset.label)}</title></polyline>`);
         });
       }
       for (let week = 1; week <= weeks; week += 1) {
-        parts.push(`<rect class="kurva-hit" data-week="${week}" x="${x(week - 1)}" y="${pad.top}" width="${x(week) - x(week - 1)}" height="${plotHeight + 24}"/>`);
+        parts.push(`<rect class="kurva-hit" data-week="${week}" tabindex="0" role="button" aria-label="Rincian minggu ${week}" x="${x(week - 1)}" y="${pad.top}" width="${x(week) - x(week - 1)}" height="${plotHeight + 24}"/>`);
       }
-      return `<svg class="kurva-chart" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Grafik kurva S rencana dan realisasi">${parts.join('')}</svg><div class="kurva-tip" hidden></div>`;
+      return `<svg class="kurva-chart" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="group" aria-label="Grafik kurva S rencana dan realisasi">${parts.join('')}</svg><div class="kurva-tip${master ? ' kurva-master-tip' : ''}" hidden></div>`;
+    }
+
+    function buildKurvaMasterTable(master, includeWeek = () => true) {
+      const fmt = (value) => value === null ? 'Belum ada laporan' : formatKurvaPercent(value, 3);
+      return `<div class="kurva-table-scroll"><table class="kurva-table">
+        <caption>Kontribusi kumulatif terhadap total proyek (%), bukan persen penyelesaian kontrak Subcont</caption>
+        <thead><tr><th scope="col">Minggu</th><th scope="col">Rencana Maincont</th><th scope="col">Realisasi Maincont</th><th scope="col">Deviasi Maincont</th>
+          ${master.sources.map((source) => `<th scope="col">Rencana ${escapeHtml(source.name)} (${source.weight === null ? 'bobot belum diisi' : formatKurvaPercent(source.weight)})</th><th scope="col">Realisasi ${escapeHtml(source.name)}</th>`).join('')}</tr></thead>
+        <tbody>${master.total.planCumulative.map((plan, index) => !includeWeek(index + 1) ? '' : `<tr><th scope="row">${index + 1}</th>
+          <td>${fmt(plan)}</td><td>${fmt(master.total.actualCumulative[index])}</td><td>${master.total.deviation[index] === null ? '–' : fmt(master.total.deviation[index])}</td>
+          ${master.sources.map((source) => `<td>${source.planCumulative ? fmt(source.planCumulative[index]) : 'Bobot belum diisi'}</td><td>${fmt(source.actualCumulative[index])}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table></div>`;
+    }
+
+    function buildKurvaMasterLegend(master) {
+      return kurvaSCore.getMasterChartData(master).datasets.map((dataset, index) =>
+        `<button type="button" data-master-toggle="${index}" aria-pressed="true" aria-label="Tampilkan/sembunyikan ${escapeHtml(dataset.label)}">
+          <i style="background:${dataset.borderColor};${dataset.borderDash.length ? `background:repeating-linear-gradient(90deg,${dataset.borderColor} 0 ${dataset.kind === 'actual' ? 2 : 5}px,transparent ${dataset.kind === 'actual' ? 2 : 5}px 8px)` : ''}"></i>${escapeHtml(dataset.label)}</button>`).join('');
     }
 
     let kurvaAttentionDraft = null;
@@ -12414,6 +12556,7 @@
       }
 
       const curve = kurvaSCore.computeCurve(projectSchedule);
+      const master = projectSchedule.subcontractors?.length ? kurvaSCore.computeMasterSchedule(projectSchedule) : null;
       const currentWeek = getKurvaCurrentWeek();
       const planWeek = Math.max(1, currentWeek);
       const reported = curve.lastReportedWeek;
@@ -12481,6 +12624,7 @@
         <div class="kurva-meta">
           <strong>${escapeHtml(projectSchedule.title || getActiveProjectName())}</strong>
           <span>Mulai ${escapeHtml(formatKurvaDate(projectSchedule.startDate, true))} · ${projectSchedule.weekCount} minggu · Total bobot ${formatKurvaPercent(curve.totalWeight)}</span>
+          ${master ? `<span>Master Schedule · Maincont (total) ${formatKurvaPercent(curve.totalWeight)} · ${master.sources.slice(1).map((source) => `${escapeHtml(source.name)}: ${source.weight === null ? 'bobot belum diisi' : formatKurvaPercent(source.weight)}`).join(' · ')}</span>` : ''}
           ${projectSchedule.detailItems?.length ? `<span>${projectSchedule.detailItems.length} item rincian · sumber: ${escapeHtml(projectSchedule.detailSource?.fileName || '')} · volume mulai minggu ${projectSchedule.detailStartWeek}</span>` : ''}
           ${projectSchedule.detailMappingVersions?.length ? `<span>Pemetaan terkini berlaku mulai minggu ${projectSchedule.detailMappingVersions[projectSchedule.detailMappingVersions.length - 1].fromWeek}; minggu lama memakai pemetaan sebelumnya.</span>` : ''}
           ${projectSchedule.detailMappingAudit?.length ? `<details class="kurva-group"><summary>Riwayat koreksi pemetaan (${projectSchedule.detailMappingAudit.length})</summary>${projectSchedule.detailMappingAudit.map((entry) => `<p>Minggu ${entry.fromWeek} · ${escapeHtml(entry.reason)}<br>${escapeHtml(entry.updatedBy)} · ${escapeHtml(entry.updatedAt)}<br>${entry.changes.added} ditambahkan · ${entry.changes.moved} pindah induk · ${entry.changes.removed} tidak diikutkan.</p>`).join('')}</details>` : ''}
@@ -12510,14 +12654,18 @@
         </div>
         ${behindWeeks && currentWeek >= 1 ? `<div class="kurva-alert">Progres minggu ke-${reported + 1}${behindWeeks > 1 ? `–${currentWeek}` : ''} belum diisi.</div>` : ''}
         <div class="kurva-chart-card">
-          <div class="kurva-chart-scroll">${buildKurvaChart(curve, currentWeek, container.clientWidth - 36)}</div>
+          <div class="kurva-chart-scroll">${buildKurvaChart(curve, currentWeek, container.clientWidth - 36, master)}</div>
           <div class="kurva-legend">
-            <span><i class="legend-plan"></i>${revision ? `Rencana revisi ke-${revision}` : 'Rencana kumulatif'}</span>
+            ${master ? buildKurvaMasterLegend(master) : `<span><i class="legend-plan"></i>${revision ? `Rencana revisi ke-${revision}` : 'Rencana kumulatif'}</span><span><i class="legend-actual"></i>Realisasi kumulatif</span>`}
             ${curve.baselineCumulative ? '<span><i class="legend-baseline"></i>Rencana awal (baseline)</span>' : ''}
-            <span><i class="legend-actual"></i>Realisasi kumulatif</span>
             <span><i class="legend-bar"></i>Rencana mingguan</span>
             ${projectSchedule.holidays.length ? '<span><i class="legend-holiday"></i>Libur</span>' : ''}
           </div>
+          ${master ? `<section aria-label="Master Schedule Maincont dan Subcont">
+            <h4 class="kurva-subtitle">Master Schedule — Maincont (total) & kontribusi Subcont</h4>
+            <p class="form-hint">Maincont adalah total gabungan, termasuk pekerjaan langsung. Klik legenda untuk menampilkan/menyembunyikan setiap garis. Garis Subcont adalah kontribusi terhadap proyek, bukan persen kontrak. ${master.configured ? 'Plan sumber = plan master × porsi bobot; tidak mengubah jadwal utama.' : 'Bobot rencana sumber belum lengkap. Atur di Input Progres → Bobot rencana Master Schedule; plan sumber yang belum diisi tidak ditebak.'}</p>
+            ${buildKurvaMasterTable(master)}
+          </section>` : ''}
         </div>
         <h4 class="kurva-subtitle">Progres per Pekerjaan</h4>
         <div class="kurva-groups">${groupsHtml}</div>
@@ -12540,10 +12688,26 @@
               const chartScroll = container.querySelector('.kurva-chart-scroll');
       if (animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) startKurvaAnimation(container);
       if (chartScroll) {
+        container.querySelectorAll('[data-master-toggle]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const visible = button.getAttribute('aria-pressed') !== 'true';
+            button.setAttribute('aria-pressed', String(visible));
+            chartScroll.querySelectorAll(`[data-master-series="${button.dataset.masterToggle}"]`).forEach((line) => { line.style.display = visible ? '' : 'none'; });
+          });
+        });
+        chartScroll.querySelectorAll('.kurva-hit').forEach((hit) => {
+          const show = () => showKurvaWeekTip(chartScroll, curve, Number(hit.dataset.week), master, false);
+          hit.addEventListener('pointerenter', (event) => { if (event.pointerType === 'mouse') show(); });
+          hit.addEventListener('focus', show);
+          hit.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); show(); }
+            if (event.key === 'Escape') showKurvaWeekTip(chartScroll, curve, 0, master);
+          });
+        });
         chartScroll.addEventListener('click', (event) => {
           if (event.target.closest('.kurva-tip') && !event.target.closest('.kurva-tip-close')) return;
           const hit = event.target.closest('.kurva-hit');
-          showKurvaWeekTip(chartScroll, curve, hit ? Number(hit.dataset.week) : 0);
+          showKurvaWeekTip(chartScroll, curve, hit ? Number(hit.dataset.week) : 0, master, !hit);
         });
       }
               if (chartScroll && chartScroll.scrollWidth > chartScroll.clientWidth && currentWeek >= 1) {
@@ -12584,11 +12748,11 @@
       if (counters.length) requestAnimationFrame(tick);
     }
 
-    function showKurvaWeekTip(chartScroll, curve, week) {
+    function showKurvaWeekTip(chartScroll, curve, week, master = null, toggle = true) {
       const tip = chartScroll.querySelector('.kurva-tip');
       const select = chartScroll.querySelector('.kurva-select');
       const hit = week ? chartScroll.querySelector(`.kurva-hit[data-week="${week}"]`) : null;
-      if (!tip || !select || !hit || tip.dataset.week === String(week)) {
+      if (!tip || !select || !hit || (toggle && tip.dataset.week === String(week))) {
         if (tip) { tip.hidden = true; tip.dataset.week = ''; }
         if (select) select.style.display = 'none';
         return;
@@ -12613,6 +12777,8 @@
           <dt>Deviasi</dt><dd class="${devClass}">${dev === null ? '–' : `${dev > 0 ? '+' : ''}${formatKurvaPercent(dev, 3)}`}</dd>
           <dt>Pekerjaan aktif</dt><dd>${activeItems}</dd>
         </dl>
+        ${master ? `<strong>Maincont (total proyek)</strong><dl><dt>Plan / Actual</dt><dd>${fmt(master.total.planCumulative[index])} / ${fmt(master.total.actualCumulative[index])}</dd></dl>
+          ${master.sources.map((source) => `<strong>${escapeHtml(source.name)}</strong><dl><dt>Plan / Actual</dt><dd>${source.planCumulative ? fmt(source.planCumulative[index]) : 'Bobot belum diisi'} / ${fmt(source.actualCumulative[index])}</dd></dl>`).join('')}` : ''}
         <small>${report ? `Diisi ${escapeHtml(report.updatedBy || '-')}` : week <= curve.lastReportedWeek ? 'Tidak ada perubahan progres' : 'Belum ada laporan'}</small>`;
       tip.hidden = false;
       tip.dataset.week = String(week);
@@ -12793,6 +12959,19 @@
         importedBy: getSignedInName(),
         progress
       };
+      if (previous?.subcontractors?.length) {
+        next.subcontractors = previous.subcontractors.map((subcontractor) => ({
+          ...subcontractor,
+          progress: kurvaSCore.remapProgress(subcontractor.progress, previous.startDate, startDate, next.weekCount, itemIds)
+        }));
+        next.subcontractorMainProgress = kurvaSCore.remapProgress(previous.subcontractorMainProgress, previous.startDate, startDate, next.weekCount, itemIds);
+        try {
+          next.progress = kurvaSCore.combineSubcontractorProgress(next);
+        } catch (error) {
+          showAppNotice(error.message);
+          return;
+        }
+      }
       if (isReschedule) {
         const revision = (previous.revision || 0) + 1;
         next.revision = revision;
@@ -12844,6 +13023,7 @@
       }).join('');
       select.value = String(projectSchedule.detailItems?.length ? Math.min(projectSchedule.weekCount, Math.max(currentWeek, projectSchedule.detailStartWeek)) : currentWeek);
       document.getElementById('kurvaProgressSearch').value = '';
+      renderKurvaProgressSources();
       renderKurvaProgressForm();
       document.getElementById('modalKurvaProgress').style.display = 'flex';
     }
@@ -12852,14 +13032,114 @@
       document.getElementById('modalKurvaProgress').style.display = 'none';
     }
 
+    function toggleKurvaSubcontractorForm(open) {
+      if (open && (!requireAccess('kurva_s') || !projectSchedule)) return;
+      if (open && (projectSchedule.subcontractors || []).length >= 10) {
+        showAppNotice('Maksimal 10 subcontractor per proyek.');
+        return;
+      }
+      document.getElementById('kurvaSubcontractorForm').hidden = !open;
+      document.getElementById('kurvaSubcontractorAdd').setAttribute('aria-expanded', String(open));
+      const input = document.getElementById('kurvaSubcontractorName');
+      input.value = '';
+      if (open) input.focus();
+    }
+
+    function renderKurvaProgressSources(selected = '') {
+      const subcontractors = projectSchedule.subcontractors || [];
+      document.getElementById('kurvaProgressSource').innerHTML = '<option value="">Utama / pekerjaan langsung Maincont (input sebelumnya)</option>'
+        + subcontractors.map((entry) => `<option value="${escapeHtml(entry.id)}">${escapeHtml(entry.name)}</option>`).join('');
+      document.getElementById('kurvaProgressSource').value = selected;
+      document.getElementById('kurvaSubcontractorName').value = '';
+      document.getElementById('kurvaSubcontractorForm').hidden = true;
+      document.getElementById('kurvaSubcontractorAdd').setAttribute('aria-expanded', 'false');
+      document.getElementById('kurvaSubcontractorAdd').disabled = subcontractors.length >= 10;
+      document.getElementById('kurvaSubcontractorCount').textContent = `${subcontractors.length}/10 subcontractor. Klik + Tambah Subcont untuk memasukkan nama sendiri. Data utama tetap dipertahankan. Jangan masukkan pekerjaan yang sama pada dua sumber.`;
+      document.getElementById('kurvaMasterWeights').innerHTML = subcontractors.map((entry, index) =>
+        `<div class="form-row"><label for="kurvaMasterWeight${index}">${escapeHtml(entry.name)} — bobot proyek (%)</label>
+          <input id="kurvaMasterWeight${index}" data-subcontractor-weight="${escapeHtml(entry.id)}" type="number" min="0" max="100" step="any" value="${entry.weight === undefined || entry.weight === null ? '' : Number(entry.weight)}" placeholder="Belum diisi"></div>
+        <div class="form-row"><label for="kurvaSubPlan${index}">Jadwal Excel ${escapeHtml(entry.name)} (opsional)</label>
+          <input id="kurvaSubPlan${index}" type="file" accept=".xlsx" onchange="importKurvaSubcontractorPlan('${escapeHtml(entry.id)}', this)">
+          <span class="form-hint">${entry.plan ? `Terpasang: ${escapeHtml(entry.plan.fileName || 'jadwal Subcont')} (${entry.plan.weekCount} minggu). Pilih file lain untuk mengganti.` : 'Belum ada. Plan memakai bentuk jadwal master × bobot.'}</span></div>`).join('');
+    }
+
+    async function importKurvaSubcontractorPlan(sourceId, input) {
+      const file = input.files?.[0];
+      input.value = '';
+      if (!file || !requireAccess('kurva_s') || !projectSchedule) return;
+      const previous = projectSchedule;
+      const projectId = activeProjectId;
+      try {
+        const parsed = { ...await kurvaSCore.parseScheduleFile(await file.arrayBuffer()), fileName: file.name };
+        if (projectId !== activeProjectId || previous !== projectSchedule) return;
+        projectSchedule = kurvaSCore.setSourcePlan(previous, sourceId, parsed);
+      } catch (error) {
+        showAppNotice(error.message || 'File jadwal Subcont tidak dapat dibaca.');
+        return;
+      }
+      if (!await persistActiveProjectData()) {
+        projectSchedule = previous;
+        return;
+      }
+      renderKurvaProgressSources(document.getElementById('kurvaProgressSource').value);
+      renderKurvaS({ animate: false });
+      showAppNotice('Jadwal Subcont tersimpan. Plan Subcont kini mengikuti jadwalnya sendiri × bobot proyek.');
+    }
+
+    async function saveKurvaMasterWeights() {
+      if (!requireAccess('kurva_s') || !projectSchedule) return;
+      const weights = {};
+      for (const input of document.querySelectorAll('[data-subcontractor-weight]')) {
+        if (input.value.trim() === '' || !input.checkValidity() || !Number.isFinite(Number(input.value))) {
+          input.focus();
+          showAppNotice('Isi bobot tiap Subcont dengan angka 0–100%. Total tidak boleh melebihi 100%.');
+          return;
+        }
+        weights[input.dataset.subcontractorWeight] = Number(input.value);
+      }
+      const previous = projectSchedule;
+      try {
+        projectSchedule = kurvaSCore.setMasterWeights(previous, weights);
+      } catch (error) {
+        showAppNotice(error.message);
+        return;
+      }
+      if (!await persistActiveProjectData()) {
+        projectSchedule = previous;
+        return;
+      }
+      renderKurvaS({ animate: false });
+      showAppNotice('Bobot rencana Master Schedule tersimpan. Progres dan jadwal utama tidak diubah.');
+    }
+
+    async function addKurvaSubcontractor() {
+      if (!requireAccess('kurva_s') || !projectSchedule) return;
+      const previous = projectSchedule;
+      let next;
+      try {
+        next = kurvaSCore.addSubcontractor(previous, document.getElementById('kurvaSubcontractorName').value);
+      } catch (error) {
+        showAppNotice(error.message);
+        return;
+      }
+      projectSchedule = next;
+      if (!await persistActiveProjectData()) {
+        projectSchedule = previous;
+        return;
+      }
+      renderKurvaProgressSources(next.subcontractors[next.subcontractors.length - 1].id);
+      renderKurvaProgressForm();
+    }
+
     function renderKurvaProgressForm() {
       const week = Number(document.getElementById('kurvaProgressWeek').value) || 1;
-      const previous = kurvaSCore.getItemProgressAt(projectSchedule, week - 1);
-      const current = kurvaSCore.getItemProgressAt(projectSchedule, week);
+      const source = kurvaSCore.getProgressSource(projectSchedule, document.getElementById('kurvaProgressSource')?.value || '');
+      const previous = kurvaSCore.getItemProgressAt(source, week - 1);
+      const current = kurvaSCore.getItemProgressAt(source, week);
       const useDetails = isKurvaDetailWeek(week);
       const details = kurvaSCore.getDetailItemsAt(projectSchedule, week);
-      const volumes = useDetails ? kurvaSCore.getDetailVolumesAt(projectSchedule, week) : {};
-      const previousVolumes = useDetails ? kurvaSCore.getDetailVolumesAt(projectSchedule, week - 1) : {};
+      const volumes = useDetails ? kurvaSCore.getDetailVolumesAt(source, week) : {};
+      const previousVolumes = useDetails ? kurvaSCore.getDetailVolumesAt(source, week - 1) : {};
       const detailsByParent = new Map();
       details.forEach((detail) => {
         if (!detailsByParent.has(detail.parentId)) detailsByParent.set(detail.parentId, []);
@@ -12870,7 +13150,7 @@
           <h4>${escapeHtml(group)}</h4>
           ${items.map((item) => {
             const plan = Math.min(100, getKurvaItemPlanAt(item, week) / item.weight * 100);
-            const limit = kurvaSCore.getItemProgressLimit(projectSchedule, week, item.id);
+            const limit = kurvaSCore.getItemProgressLimit(source, week, item.id);
             const notStarted = week < item.startWeek;
             const children = detailsByParent.get(item.id) || [];
             return `
@@ -12899,7 +13179,7 @@
                     <small data-detail-percent="${escapeHtml(detail.id)}">${formatKurvaPercent(volumes[detail.id] / detail.qty * 100)}</small>
                   </span>
                   <span class="kurva-input-field">
-                    <input type="number" inputmode="decimal" step="any" min="${previousVolumes[detail.id]}" max="${kurvaSCore.getDetailVolumeLimit(projectSchedule, week, detail)}" value="${volumes[detail.id]}" data-detail-id="${escapeHtml(detail.id)}" oninput="updateKurvaProgressSummary()" aria-label="Volume ${escapeHtml(detail.name)} (${escapeHtml(detail.unit)})">
+                    <input type="number" inputmode="decimal" step="any" min="${previousVolumes[detail.id]}" max="${kurvaSCore.getDetailVolumeLimit(source, week, detail)}" value="${volumes[detail.id]}" data-detail-id="${escapeHtml(detail.id)}" oninput="updateKurvaProgressSummary()" aria-label="Volume ${escapeHtml(detail.name)} (${escapeHtml(detail.unit)})">
                     <span>${escapeHtml(detail.unit)}</span>
                   </span>
                 </label>`).join('')}
@@ -12937,24 +13217,49 @@
         });
       }
       let actual = 0;
+      let valid = true;
       document.querySelectorAll('#kurvaProgressItems input[data-item-id]').forEach((input) => {
         const item = itemsById.get(input.dataset.itemId);
         const value = Math.min(100, Math.max(0, Number(input.value) || 0));
-        input.classList.toggle('is-invalid', input.value === '' || Number(input.value) < Number(input.min) || Number(input.value) > Number(input.max));
+        const invalid = input.value === '' || !Number.isFinite(Number(input.value)) || Number(input.value) < Number(input.min) || Number(input.value) > Number(input.max);
+        input.classList.toggle('is-invalid', invalid);
+        if (invalid) valid = false;
         if (item) actual += item.weight * value / 100;
       });
+      if (!valid) {
+        document.getElementById('kurvaProgressSummary').innerHTML = '<p class="kurva-alert is-error" role="alert">Perbaiki progres kosong/di luar batas sebelum menghitung atau menyimpan progres.</p>';
+        return;
+      }
+      let sourceSummary = '';
+      if (projectSchedule.subcontractors?.length) {
+        const values = Object.fromEntries([...document.querySelectorAll('#kurvaProgressItems input[data-item-id]')]
+          .map((input) => [input.dataset.itemId, Number(input.value)]));
+        const sourceId = document.getElementById('kurvaProgressSource').value;
+        try {
+          const draft = kurvaSCore.setSourceProgress(projectSchedule, sourceId, week, {
+            values, ...(isKurvaDetailWeek(week) ? { detailVolumes: getKurvaDraftVolumes() } : {})
+          });
+          actual = kurvaSCore.computeCurve(draft).actualCumulative[week - 1];
+          sourceSummary = `<p class="form-hint">Realisasi gabungan seluruh sumber. Kontribusi kumulatif sumber terpilih: ${formatKurvaPercent(projectSchedule.items.reduce((sum, item) => sum + item.weight * values[item.id] / 100, 0))} dari bobot proyek. Persen input dihitung terhadap seluruh item, bukan persen kontrak subcontractor.</p>`;
+        } catch (error) {
+          document.getElementById('kurvaProgressSummary').innerHTML = `<p class="kurva-alert is-error" role="alert">${escapeHtml(error.message)}</p>`;
+          return;
+        }
+      }
       const plan = kurvaSCore.computeCurve(projectSchedule).planCumulative[week - 1];
       const deviation = actual - plan;
       document.getElementById('kurvaProgressSummary').innerHTML = `
         <div><span>Rencana kum.</span><strong>${formatKurvaPercent(plan)}</strong></div>
         <div><span>Realisasi kum.</span><strong>${formatKurvaPercent(actual)}</strong></div>
-        <div class="${deviation >= -0.005 ? 'is-ahead' : 'is-behind'}"><span>Deviasi</span><strong>${deviation > 0 ? '+' : ''}${formatKurvaPercent(deviation)}</strong></div>`;
+        <div class="${deviation >= -0.005 ? 'is-ahead' : 'is-behind'}"><span>Deviasi</span><strong>${deviation > 0 ? '+' : ''}${formatKurvaPercent(deviation)}</strong></div>${sourceSummary}`;
     }
 
     async function saveKurvaProgress() {
       if (!requireAccess('kurva_s') || !projectSchedule) return;
       const week = Number(document.getElementById('kurvaProgressWeek').value);
-      const previous = kurvaSCore.getItemProgressAt(projectSchedule, week - 1);
+      const sourceId = document.getElementById('kurvaProgressSource').value;
+      const source = kurvaSCore.getProgressSource(projectSchedule, sourceId);
+      const previous = kurvaSCore.getItemProgressAt(source, week - 1);
       const itemsById = new Map(projectSchedule.items.map((item) => [item.id, item]));
       const values = {};
       let detailVolumes;
@@ -12988,11 +13293,17 @@
         const rounded = input.readOnly ? value : Math.round(value * 100) / 100;
         if (input.readOnly || projectSchedule.detailMappingVersions?.length || rounded !== previous[input.dataset.itemId]) values[input.dataset.itemId] = rounded;
       }
-      const oldEntry = projectSchedule.progress[week];
-      projectSchedule.progress[week] = { values, ...(detailVolumes ? { detailVolumes } : {}), updatedAt: new Date().toISOString(), updatedBy: getSignedInName() };
+      const previousSchedule = projectSchedule;
+      try {
+        projectSchedule = kurvaSCore.setSourceProgress(projectSchedule, sourceId, week, {
+          values, ...(detailVolumes ? { detailVolumes } : {}), updatedAt: new Date().toISOString(), updatedBy: getSignedInName()
+        });
+      } catch (error) {
+        showAppNotice(error.message);
+        return;
+      }
       if (!await persistActiveProjectData()) {
-        if (oldEntry) projectSchedule.progress[week] = oldEntry;
-        else delete projectSchedule.progress[week];
+        projectSchedule = previousSchedule;
         return;
       }
       closeKurvaProgressModal();
@@ -13455,6 +13766,21 @@
             'Input Progres: tanpa rincian, isi progres kumulatif induk 0–100%. Setelah Import Rincian Bobot, isi volume kumulatif terpasang per item; persentase serta progres induk dihitung otomatis, bukan diisi manual.',
             'Baca grafik rencana dan realisasi, tabel mingguan serta deviasi. Bobot item digunakan otomatis untuk menghitung kontribusi progres proyek.'
           ]],
+          ['Input subcontractor (tambahan)', [
+            'Admin/operator membuka Input Progres, klik + Tambah Subcont, isi nama manual lalu klik Simpan Subcont. Nama yang disimpan otomatis dipilih sebagai sumber progres. Maksimal 10 nama unik per proyek; tidak ada nama bawaan atau akun subcontractor terpisah.',
+            'Utama (input sebelumnya) tetap menyimpan laporan lama. Masing-masing subcontractor menyimpan kontribusinya sendiri per minggu; nilai kumulatif diteruskan jika sumber tersebut belum mengisi minggu berikutnya.',
+            'Persen subcontractor adalah bagian terhadap seluruh item master, bukan persentase terhadap kontrak subcontractor. Contoh: utama 20%, subcontractor A 10% dan B 15% menghasilkan progres item gabungan 45%. Bobot, rencana dan deviasi tetap memakai rumus lama.',
+            'Untuk rincian BOQ, isi volume kumulatif yang dikerjakan sumber terpilih. Total volume semua sumber tidak boleh melampaui QTY, dan total persen induk tidak boleh melampaui 100% atau turun. Pekerjaan yang sudah dicatat di utama jangan dicatat lagi pada subcontractor.',
+            'Simpan sebelum mengganti sumber/minggu atau menambah nama. Nama yang ditambahkan langsung disimpan, sedangkan isian progres baru disimpan melalui Simpan Progres. Grafik, Attention, PDF dan Excel membaca hasil gabungan yang sudah tersimpan. Reschedule mempertahankan sumber input dengan aturan pemindahan minggu/identitas item yang sama.'
+          ]],
+          ['Master Schedule — grafik & bobot kontribusi', [
+            'Maincont (total) adalah gabungan proyek, bukan input yang dijumlahkan lagi. Garis plan biru dan actual hijau lebih tebal. Garis tiap Subcont berwarna berbeda: putus panjang = plan, titik = actual. Pekerjaan langsung Maincont ditampilkan terpisah agar total kontribusi dapat diperiksa.',
+            'Pada Input Progres → Bobot rencana Master Schedule, isi porsi bobot tiap Subcont lalu Simpan Bobot Rencana. Contoh A 30%, B 40%, C 30%; total tidak boleh melebihi 100%. Jika total 80%, sisanya 20% untuk pekerjaan langsung Maincont. Hanya role dengan izin Kurva S lama yang dapat menyimpan.',
+            'Plan kontribusi = plan kumulatif master × porsi bobot. Ini simulasi alokasi mengikuti bentuk jadwal master, bukan import jadwal independen tiap Subcont. Total bobot master harus 100%; aplikasi tidak menormalkan bobot lama otomatis. Mengubah porsi tidak mengubah actual, rumus bobot item, laporan lama atau rencana master.',
+            'Data lama tanpa porsi tetap menampilkan actual. Plan sumber tidak ditebak sampai seluruh bobot diisi; tabel dan tooltip memberi keterangan Bobot belum diisi. Actual dapat berada di atas porsi rencana karena porsi tidak membatasi ulang laporan lama.',
+            'Klik legenda untuk menampilkan/menyembunyikan tiap garis. Hover, sentuh atau fokus keyboard pada minggu untuk melihat plan/actual Maincont dan seluruh sumber, termasuk garis yang disembunyikan. Tabel kontribusi di bawah grafik dapat digulir horizontal; actual setelah laporan terakhir tetap kosong, bukan prediksi.',
+            'PDF dan Excel menyertakan kontribusi sumber tersimpan. Menyembunyikan garis hanya memengaruhi tampilan browser, bukan data maupun ekspor.'
+          ]],
           ['Download Excel dengan format asli', [
             'Simpan progres terlebih dahulu, lalu pilih Download Excel di tab Kurva S. Pilih Master Kurva S atau Rincian Bobot / BOQ dan minggu akhir riwayat yang ingin diekspor.',
             'Pilih kembali workbook .xlsx asli yang sesuai jadwal aktif atau katalog BOQ. File yang berbeda item, identitas/baris, bobot atau rencana ditolak. Setelah Reschedule, gunakan master revisi yang sesuai jadwal aktif.',
@@ -13577,6 +13903,10 @@
       {
         anchor: '#modalChecklistDetail h3', title: 'Detail & Perubahan Status Inspeksi',
         sections: [
+          ['Menambah foto', [
+            'Pada Dokumentasi Foto, pilih Tambah Foto untuk memasukkan satu atau beberapa foto ke ceklist yang sudah tersimpan. Foto langsung diproses dengan watermark dan disimpan; tunggu pesan berhasil sebelum menutup atau berpindah proyek.',
+            'Foto lama, catatan, status/progres dan riwayat tetap dipertahankan. Tambahan foto ikut tampil pada kartu dan PDF dengan opsi sertakan foto. Akses penambahan mengikuti izin Ceklist.'
+          ]],
           ['PDF per item', [
             'Klik PDF Item Ini pada detail inspeksi untuk mengekspor hanya ceklist yang sedang dibuka, bukan semua inspeksi pada tanggal yang sama. Pilih sertakan foto dan isi penandatangan, lalu gunakan Simpan sebagai PDF pada dialog cetak browser.',
             'PDF memakai data yang sudah disimpan: area, tanggal, pekerjaan, kategori, status/progres, SPV, PIC/target, catatan, pengetesan dan riwayat perubahan status. Simpan perubahan status terlebih dahulu jika ingin hasil terbaru. Tombol mengikuti izin PDF Ceklist; PDF pada tab tetap untuk rekap berdasarkan tanggal.'
@@ -13693,6 +14023,9 @@
         sections: [
           ['Cara mengisi', [
             'Daftar item dapat digulir tanpa menggeser tombol Batal dan Simpan Progres di bawah. Batal menutup tanpa menyimpan; gunakan Simpan Progres untuk menyimpan perubahan.',
+            'Pilih Sumber progres: Utama (input sebelumnya) atau salah satu dari maksimal 10 subcontractor per proyek. Klik + Tambah Subcont, ketik nama sendiri lalu Simpan Subcont; Batal menutup isian tanpa menambah data. Simpan progres sebelum berpindah sumber/minggu atau menambah nama.',
+            'Isi hanya kontribusi kumulatif sumber terpilih terhadap seluruh item/QTY, bukan realisasi gabungan. Utama 20% + subcontractor A 10% = gabungan 30%. Untuk BOQ, volume dijumlahkan dan persen induk dihitung dengan rumus bobot rincian yang sama. Jangan mencatat pekerjaan yang sama pada dua sumber.',
+            'Ringkasan menampilkan realisasi gabungan dan kontribusi sumber terpilih. Total semua sumber tidak boleh melebihi 100% atau QTY, termasuk pada minggu berikutnya; pesan kesalahan menunjukkan minggu yang perlu diperiksa.',
             'Rekap induk — otomatis dari item rincian adalah ringkasan, bukan item tambahan. Isi volume pada rincian; persen induk hanya-baca dan kontribusi proyek tidak dihitung dua kali.',
             'Input persen manual — belum ada rincian terpetakan berarti induk belum mempunyai rincian BOQ; isi persen kumulatifnya atau periksa pemetaan sebelum menyimpan import rincian. Pada minggu sebelum aktivasi rincian, input persen historis tetap berlaku.',
             'Nama pekerjaan berwarna abu-abu menandakan minggu yang dipilih belum mencapai minggu mulai rencananya, bukan data legacy atau item duplikat. Lihat keterangan mulai minggu pada induk.',
@@ -14384,6 +14717,232 @@
         return Object.fromEntries([...totals].map(([id, value]) => [id, round(value.done / value.weight * 100)]));
       }
 
+      function setMasterWeights(schedule, weights) {
+        if (!schedule.subcontractors?.length) throw new Error('Tambahkan minimal satu Subcont sebelum mengatur bobot.');
+        const totalWeight = schedule.items.reduce((sum, item) => sum + Number(item.weight), 0);
+        if (Math.abs(totalWeight - 100) > 0.001) throw new Error('Master Schedule memerlukan total bobot jadwal 100%. Periksa file master, bobot lama tidak dinormalisasi otomatis.');
+        let total = 0;
+        const subcontractors = schedule.subcontractors.map((source) => {
+          const weight = weights[source.id];
+          if (!Number.isFinite(weight) || weight < 0 || weight > 100) throw new Error('Bobot setiap Subcont wajib berupa angka 0–100%.');
+          total += weight;
+          return { ...source, weight };
+        });
+        if (total > 100 + 0.000001) throw new Error('Total bobot Subcont tidak boleh melebihi 100%. Sisa bobot dialokasikan ke pekerjaan langsung Maincont.');
+        return { ...schedule, subcontractors };
+      }
+
+      function setSourcePlan(schedule, sourceId, parsed) {
+        const source = schedule.subcontractors?.find((entry) => entry.id === sourceId);
+        if (!source) throw new Error('Subcontractor tidak ditemukan pada proyek ini.');
+        const own = computeCurve({ ...parsed, progress: {} });
+        if (!(own.totalWeight > 0)) throw new Error('Total bobot jadwal Subcont harus lebih dari 0.');
+        const plan = {
+          fileName: String(parsed.fileName || '').slice(0, 200),
+          startDate: parsed.startDate || '',
+          weekCount: parsed.weekCount,
+          planCumulative: own.planCumulative.map((value) => round(value / own.totalWeight * 100, 6))
+        };
+        return { ...schedule, subcontractors: schedule.subcontractors.map((entry) => entry.id === sourceId ? { ...entry, plan } : entry) };
+      }
+
+      // Own-schedule cumulative (% of the subcontractor's scope) aligned to the master's week numbers by start date.
+      function getSourcePlanCumulative(schedule, source) {
+        const plan = source.plan;
+        if (!plan?.planCumulative?.length) return null;
+        const offset = schedule.startDate && plan.startDate ? getWeekOffset(schedule.startDate, plan.startDate) : 0;
+        const last = plan.planCumulative.length;
+        return Array.from({ length: schedule.weekCount }, (_, index) => {
+          const week = index + 1 - offset;
+          return week < 1 ? 0 : Number(plan.planCumulative[Math.min(week, last) - 1]) || 0;
+        });
+      }
+
+      function computeMasterSchedule(schedule) {
+        const total = computeCurve(schedule);
+        const subcontractors = schedule.subcontractors || [];
+        const configured = subcontractors.length > 0
+          && subcontractors.every((source) => Number.isFinite(source.weight) && source.weight >= 0 && source.weight <= 100)
+          && subcontractors.reduce((sum, source) => sum + source.weight, 0) <= 100.000001
+          && Math.abs(total.totalWeight - 100) <= 0.001;
+        const remaining = configured ? Math.max(0, 100 - subcontractors.reduce((sum, source) => sum + source.weight, 0)) : null;
+        const palette = ['#d97706', '#9333ea', '#0891b2', '#db2777', '#4d7c0f', '#dc2626', '#4f46e5', '#0f766e', '#a16207', '#be185d'];
+        const entries = [
+          { id: '', name: 'Maincont - pekerjaan langsung', weight: remaining, color: '#64748b' },
+          ...subcontractors.map((source, index) => ({ id: source.id, name: source.name,
+            weight: configured ? source.weight : null, color: palette[index % palette.length],
+            ownPlan: getSourcePlanCumulative(schedule, source) }))
+        ];
+        const sources = entries.map((entry) => {
+          const sourceCurve = computeCurve(getProgressSource(schedule, entry.id));
+          // A source without a newer report carries its own last value through the master's reporting horizon.
+          const lastValue = sourceCurve.lastReportedWeek ? sourceCurve.actualCumulative[sourceCurve.lastReportedWeek - 1] : 0;
+          const actualCumulative = total.actualCumulative.map((value, index) => value === null ? null : sourceCurve.actualCumulative[index] ?? lastValue);
+          return { ...entry,
+            planCumulative: entry.weight === null ? null : (entry.ownPlan || total.planCumulative).map((value) => round(value * entry.weight / 100, 6)),
+            actualCumulative
+          };
+        });
+        return { total, sources, configured };
+      }
+
+      function getMasterChartData(master) {
+        const dataset = (label, data, color, width, dash, sourceId, kind) => ({
+          label, data, borderColor: color, backgroundColor: color, borderWidth: width,
+          borderDash: dash, borderDashOffset: 0, pointRadius: 2, pointHoverRadius: 5, tension: 0, fill: false,
+          spanGaps: false, sourceId, kind
+        });
+        return {
+          labels: master.total.planCumulative.map((_, index) => `Minggu ${index + 1}`),
+          datasets: [
+            dataset('Maincont (total) - Plan', master.total.planCumulative, '#29377d', 3.5, [], 'master', 'plan'),
+            dataset('Maincont (total) - Actual', master.total.actualCumulative, '#10b981', 3.5, [], 'master', 'actual'),
+            ...master.sources.flatMap((source, index) => [
+              ...(source.planCumulative ? [{ ...dataset(`${source.name} - Plan`, source.planCumulative, source.color, 1.8, [8, 4], source.id, 'plan'), borderDashOffset: index * 4 }] : []),
+              { ...dataset(`${source.name} - Actual`, source.actualCumulative, source.color, 1.8, [2, 3], source.id, 'actual'), borderDashOffset: index * 2 }
+            ])
+          ]
+        };
+      }
+
+      function createMasterChartConfig(schedule) {
+        const master = computeMasterSchedule(schedule);
+        const fmt = (value) => value === null || value === undefined ? 'Belum ada laporan' : `${value.toFixed(3)}%`;
+        return {
+          type: 'line',
+          data: getMasterChartData(master),
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: { y: { min: 0, max: Math.max(100, master.total.totalWeight), title: { display: true, text: 'Kontribusi kumulatif proyek (%)' } } },
+            plugins: {
+              legend: { onClick(event, item, legend) {
+                const index = item.datasetIndex;
+                legend.chart.setDatasetVisibility(index, !legend.chart.isDatasetVisible(index));
+                legend.chart.update();
+              } },
+              tooltip: { callbacks: {
+                label: (context) => `${context.dataset.label}: ${fmt(context.raw)}`,
+                afterBody(items) {
+                  if (!items.length) return [];
+                  const index = items[0].dataIndex;
+                  return [
+                    `Maincont (total): Plan ${fmt(master.total.planCumulative[index])} / Actual ${fmt(master.total.actualCumulative[index])}`,
+                    ...master.sources.map((source) => `${source.name}: Plan ${source.planCumulative ? fmt(source.planCumulative[index]) : 'Bobot belum diisi'} / Actual ${fmt(source.actualCumulative[index])}`)
+                  ];
+                }
+              } }
+            }
+          }
+        };
+      }
+
+      function getProgressSource(schedule, sourceId = '') {
+        if (!sourceId) return schedule.subcontractors?.length
+          ? { ...schedule, progress: schedule.subcontractorMainProgress }
+          : schedule;
+        const source = schedule.subcontractors?.find((entry) => entry.id === sourceId);
+        if (!source) throw new Error('Subcontractor tidak ditemukan pada proyek ini.');
+        return { ...schedule, progress: source.progress };
+      }
+
+      function addSubcontractor(schedule, name) {
+        const trimmed = String(name || '').trim();
+        const sources = schedule.subcontractors || [];
+        if (!trimmed || trimmed.length > 100) throw new Error('Nama subcontractor wajib diisi, maksimal 100 karakter.');
+        if (sources.length >= 10) throw new Error('Maksimal 10 subcontractor per proyek.');
+        if (sources.some((entry) => entry.name.toLowerCase() === trimmed.toLowerCase())) {
+          throw new Error('Nama subcontractor sudah terdaftar pada proyek ini.');
+        }
+        let index = 1;
+        while (sources.some((entry) => entry.id === `subcont-${index}`)) index += 1;
+        return { ...schedule,
+          subcontractorMainProgress: schedule.subcontractorMainProgress || schedule.progress,
+          subcontractors: [...sources, { id: `subcont-${index}`, name: trimmed, progress: {} }]
+        };
+      }
+
+      function combineSubcontractorProgress(schedule) {
+        const subcontractors = schedule.subcontractors || [];
+        if (!subcontractors.length) return schedule.progress;
+        if (subcontractors.length > 10 || new Set(subcontractors.map((entry) => entry.id)).size !== subcontractors.length
+          || !schedule.subcontractorMainProgress) throw new Error('Data sumber progres subcontractor tidak valid.');
+        const sources = [getProgressSource(schedule), ...subcontractors.map((entry) => getProgressSource(schedule, entry.id))];
+        const weeks = [...new Set(sources.flatMap(reportedWeeks))].sort((a, b) => a - b);
+        const firstSubcontractorWeek = Math.min(...subcontractors.flatMap((entry) => reportedWeeks({ ...schedule, progress: entry.progress })));
+        const details = new Map([...(schedule.detailCatalog || []), ...(schedule.detailItems || []),
+          ...(schedule.detailMappingVersions || []).flatMap((entry) => entry.items)].map((item) => [item.id, item]));
+        const states = sources.map(() => ({
+          values: Object.fromEntries(schedule.items.map((item) => [item.id, 0])),
+          detailVolumes: Object.fromEntries([...details.keys()].map((id) => [id, 0]))
+        }));
+        const progress = {};
+        let previousValues = Object.fromEntries(schedule.items.map((item) => [item.id, 0]));
+        let previousVolumes = {};
+        weeks.forEach((week) => {
+          sources.forEach((source, index) => {
+            const state = states[index];
+            Object.entries(source.progress[week]?.values || {}).forEach(([id, value]) => {
+              if (Object.hasOwn(state.values, id)) state.values[id] = clampPercent(value);
+            });
+            Object.entries(source.progress[week]?.detailVolumes || {}).forEach(([id, value]) => {
+              if (details.has(id)) state.detailVolumes[id] = Number(value);
+            });
+          });
+          const values = {};
+          const detailVolumes = {};
+          schedule.items.forEach((item) => {
+            const value = round(states.reduce((sum, state) => sum + state.values[item.id], 0), 6);
+            if (!Number.isFinite(value) || value > 100 || value < previousValues[item.id] - 0.000001) {
+              throw new Error(`Minggu ${week}: total progres "${item.name}" dari utama dan subcontractor tidak boleh turun atau melebihi 100%. Periksa input ganda.`);
+            }
+            values[item.id] = value;
+          });
+          details.forEach((detail, id) => {
+            const volume = states.reduce((sum, state) => sum + state.detailVolumes[id], 0);
+            if (!Number.isFinite(volume) || volume > detail.qty + 0.000001 || volume < (previousVolumes[id] || 0) - 0.000001) {
+              throw new Error(`Minggu ${week}: total volume "${detail.name}" tidak boleh turun atau melebihi QTY ${detail.qty} ${detail.unit || ''}. Periksa input ganda.`);
+            }
+            detailVolumes[id] = volume;
+          });
+          const entries = sources.map((source) => source.progress[week]).filter(Boolean);
+          const latest = [...entries].sort((a, b) => String(a.updatedAt || '').localeCompare(String(b.updatedAt || ''))).pop();
+          progress[week] = week < firstSubcontractorWeek ? schedule.subcontractorMainProgress[week]
+            : { ...latest, values, ...(details.size ? { detailVolumes } : {}) };
+          previousValues = values;
+          previousVolumes = detailVolumes;
+        });
+        return progress;
+      }
+
+      function setSourceProgress(schedule, sourceId, week, entry) {
+        if (!Number.isInteger(week) || week < 1 || week > schedule.weekCount) throw new Error('Minggu progres tidak valid.');
+        const source = getProgressSource(schedule, sourceId);
+        const previous = getItemProgressAt(source, week - 1);
+        const itemIds = new Set(schedule.items.map((item) => item.id));
+        Object.entries(entry.values || {}).forEach(([id, value]) => {
+          if (!itemIds.has(id) || !Number.isFinite(value) || value < previous[id] || value > getItemProgressLimit(source, week, id)) {
+            throw new Error('Progres sumber harus kumulatif, antara 0-100%, dan tidak melebihi minggu sesudahnya.');
+          }
+        });
+        const details = new Map(getDetailItemsAt(schedule, week).map((item) => [item.id, item]));
+        const previousVolumes = getDetailVolumesAt(source, week - 1);
+        Object.entries(entry.detailVolumes || {}).forEach(([id, value]) => {
+          const detail = details.get(id);
+          if (!detail || !Number.isFinite(value) || value < previousVolumes[id] || value > getDetailVolumeLimit(source, week, detail)) {
+            throw new Error('Volume sumber harus kumulatif, tidak melampaui QTY atau volume minggu sesudahnya.');
+          }
+        });
+        const progress = { ...source.progress, [week]: entry };
+        if (!schedule.subcontractors?.length) return { ...schedule, progress };
+        const next = sourceId
+          ? { ...schedule, subcontractors: schedule.subcontractors.map((subcontractor) =>
+            subcontractor.id === sourceId ? { ...subcontractor, progress } : subcontractor) }
+          : { ...schedule, subcontractorMainProgress: progress };
+        return { ...next, progress: combineSubcontractorProgress(next) };
+      }
+
       function reportedWeeks(schedule) {
         return Object.keys(schedule?.progress || {}).map(Number)
           .filter((week) => Number.isInteger(week) && week >= 1 && week <= schedule.weekCount)
@@ -14514,6 +15073,15 @@
         getDetailVolumesAt,
         getDetailVolumeLimit,
         aggregateDetailProgress,
+        getProgressSource,
+        addSubcontractor,
+        combineSubcontractorProgress,
+        setSourceProgress,
+        setMasterWeights,
+        setSourcePlan,
+        computeMasterSchedule,
+        getMasterChartData,
+        createMasterChartConfig,
         parseScheduleFile,
         parseScheduleGrid,
         parseSheetXml,
@@ -14624,6 +15192,18 @@
                 parent ? [parent.group, parent.subgroup, parent.name].filter(Boolean).join(' / ') : '',
                 volume, percent, contribution]);
             });
+          }
+        }
+        if (schedule.subcontractors?.length) {
+          const master = kurvaSCore.computeMasterSchedule(schedule);
+          if (rows.length + lastWeek + 3 > 1048576) throw new Error('Riwayat Master Schedule melebihi batas baris Excel. Pilih minggu akhir yang lebih kecil.');
+          rows.push([], ['MASTER SCHEDULE', 'Kontribusi kumulatif proyek (%); plan sumber = plan master × porsi bobot. Nilai kosong berarti belum ada laporan.'],
+            ['Minggu', 'Rencana Maincont', 'Realisasi Maincont', 'Deviasi Maincont',
+              ...master.sources.flatMap((source) => [`Rencana ${source.name} (bobot ${source.weight === null ? 'belum diisi' : source.weight}%)`, `Realisasi ${source.name}`])]);
+          for (let week = 1; week <= lastWeek; week += 1) {
+            const index = week - 1;
+            rows.push([week, master.total.planCumulative[index], master.total.actualCumulative[index], master.total.deviation[index],
+              ...master.sources.flatMap((source) => [source.planCumulative ? source.planCumulative[index] : null, source.actualCumulative[index]])]);
           }
         }
         return rows;
