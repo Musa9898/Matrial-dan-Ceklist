@@ -4921,8 +4921,8 @@
           <div class="checklist-photo-gallery" id="checklistDetailPhotos"></div>
           <div id="checklistDetailPhotoControls">
             <label for="checklistDetailPhotoInput">Tambah Foto</label>
-            <input id="checklistDetailPhotoInput" type="file" accept="image/*" multiple onchange="appendChecklistDetailPhotos(this)">
-            <p class="form-hint">Pilih satu atau beberapa foto. Foto langsung disimpan sebagai tambahan; foto lama dan status inspeksi tetap.</p>
+            <input id="checklistDetailPhotoInput" type="file" accept="image/*" multiple data-photo-picker onchange="appendChecklistDetailPhotos(this)">
+            <p class="form-hint">Gunakan Kamera untuk mengambil foto langsung atau Galeri / File untuk memilih foto. Kamera belakang dibuka pada HP yang mendukung; di komputer dapat tampil pemilih file. Foto langsung disimpan sebagai tambahan; foto lama dan status inspeksi tetap.</p>
           </div>
           <div class="photo-upload-status" id="checklistDetailPhotoUploadStatus" role="status" aria-live="polite" aria-busy="false" hidden>
             <span class="loading-spinner" id="checklistDetailPhotoUploadSpinner" hidden aria-hidden="true"></span>
@@ -13904,7 +13904,7 @@
         anchor: '#modalChecklistDetail h3', title: 'Detail & Perubahan Status Inspeksi',
         sections: [
           ['Menambah foto', [
-            'Pada Dokumentasi Foto, pilih Tambah Foto untuk memasukkan satu atau beberapa foto ke ceklist yang sudah tersimpan. Foto langsung diproses dengan watermark dan disimpan; tunggu pesan berhasil sebelum menutup atau berpindah proyek.',
+            'Pada Dokumentasi Foto, gunakan Kamera untuk mengambil foto langsung lewat kamera belakang HP yang mendukung, atau Galeri / File untuk memilih satu atau beberapa foto. Di komputer/browser tanpa dukungan kamera langsung, tombol Kamera dapat membuka pemilih file. Foto kamera diproses dengan watermark dan langsung disimpan; tunggu pesan berhasil sebelum menutup atau berpindah proyek.',
             'Foto lama, catatan, status/progres dan riwayat tetap dipertahankan. Tambahan foto ikut tampil pada kartu dan PDF dengan opsi sertakan foto. Akses penambahan mengikuti izin Ceklist.'
           ]],
           ['PDF per item', [

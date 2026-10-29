@@ -8,6 +8,31 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const start = html.indexOf('    async function appendChecklistDetailPhotos(');
 const source = html.slice(start, html.indexOf('    function exportSelectedChecklistPdf()', start));
 
+test('saved checklist uses the shared camera/gallery picker and clears capture for gallery', () => {
+  assert.match(html, /id="checklistDetailPhotoInput"[^>]*data-photo-picker[^>]*onchange="appendChecklistDetailPhotos\(this\)"/);
+  const attributes = {};
+  let clicked = 0;
+  const input = {
+    disabled: false, dataset: {},
+    setAttribute: (name, value) => { attributes[name] = value; },
+    removeAttribute: (name) => { delete attributes[name]; },
+    click: () => { clicked += 1; }
+  };
+  const context = vm.createContext({});
+  const pickerStart = html.indexOf('    function openPhotoPicker(');
+  vm.runInContext(html.slice(pickerStart, html.indexOf('    const cameraPhotoFiles', pickerStart)), context);
+  context.openPhotoPicker(input, true);
+  assert.equal(attributes.capture, 'environment');
+  assert.equal(input.dataset.source, 'camera');
+  context.openPhotoPicker(input, false);
+  assert.equal(attributes.capture, undefined);
+  assert.equal(input.dataset.source, 'file');
+  assert.equal(clicked, 2);
+  input.disabled = true;
+  context.openPhotoPicker(input, true);
+  assert.equal(clicked, 2);
+});
+
 function fixture(options = {}) {
   const item = { id: 'inspection', work: 'Pipa', supervisor: 'Musa', status: 'Belum', progress: 0,
     note: 'Catatan lama', statusHistory: [], photos: ['old.jpg'], ...options.item };
